@@ -1,0 +1,8 @@
+sum-of-submodular
+=================
+sum-of-submodular implements algorithms for optimizing a sum of submodular 
+functions. That is
+    f(S) = sum_C f_C(S \cap C)
+where the functions f_C are all submodular, and C are all subsets of a base set
+V. Note that f itself is submodular, but if the f_C have nice structure, we 
+can do better than general submodular optimization.
