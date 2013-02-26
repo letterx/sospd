@@ -1,4 +1,5 @@
 #include "submodular-flow.hpp"
+#include <algorithm>
 
 SubmodularFlow::SubmodularFlow() 
     : m_num_nodes(0),

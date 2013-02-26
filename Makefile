@@ -11,7 +11,7 @@ OBJS = $(SRCS:.cpp=.o)
 .PHONY: all
 all: $(OBJS)
 
-%.o: %.cxx
+%.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -MMD -o $@ -c $<
 	@cp $*.d $*.P; \
 	 sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \

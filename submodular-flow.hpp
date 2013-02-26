@@ -1,8 +1,7 @@
 #ifndef _SUBMODULAR_FLOW_HPP_
 #define _SUBMODULAR_FLOW_HPP_
 
-#include <vector>
-#include <memory>
+#include "sos-common.hpp"
 
 typedef int64_t REAL;
 
@@ -88,7 +87,7 @@ class SubmodularFlow {
  */
 class EnergyTableClique : public SubmodularFlow::Clique {
     public:
-        typedef SubmodularFlow::Clique::NodeId NodeId;
+        typedef SubmodularFlow::NodeId NodeId;
         typedef uint32_t Assignment;
 
         EnergyTableClique(const std::vector<NodeId>& nodes, 
@@ -102,6 +101,6 @@ class EnergyTableClique : public SubmodularFlow::Clique {
 
     protected:
         std::vector<REAL> m_energy;
-}
+};
 
 #endif
