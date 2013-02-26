@@ -34,6 +34,9 @@ class SubmodularFlow {
         // After computing the max flow, extract the min cut
         void ComputeMinCut();
 
+        // Compute the total energy across all cliques of the current labeling
+        REAL ComputeEnergy() const;
+
         /* Clique: abstract base class for user-defined clique functions
          *
          * Clique stores the list of nodes associated with a clique.
@@ -73,6 +76,8 @@ class SubmodularFlow {
         typedef std::vector<CliqueId> NeighborList;
 
         NodeId m_num_nodes;
+        std::vector<REAL> m_c_si;
+        std::vector<REAL> m_c_it;
         std::vector<REAL> m_phi_si;
         std::vector<REAL> m_phi_it;
         std::vector<int> m_labels; 

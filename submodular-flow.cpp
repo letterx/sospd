@@ -3,6 +3,8 @@
 
 SubmodularFlow::SubmodularFlow() 
     : m_num_nodes(0),
+    m_c_si(),
+    m_c_it(),
     m_phi_si(),
     m_phi_it(),
     m_labels(),
@@ -15,6 +17,8 @@ SubmodularFlow::NodeId SubmodularFlow::AddNode(int n) {
     ASSERT(n >= 1);
     NodeId first_node = m_num_nodes;
     for (int i = 0; i < n; ++i) {
+        m_c_si.push_back(0);
+        m_c_it.push_back(0);
         m_phi_si.push_back(0);
         m_phi_it.push_back(0);
         m_labels.push_back(-1);
@@ -29,8 +33,8 @@ int SubmodularFlow::GetLabel(NodeId n) const {
 }
 
 void SubmodularFlow::AddUnaryTerm(NodeId n, REAL E0, REAL E1) {
-    m_phi_si[n] += E0;
-    m_phi_it[n] += E1;
+    m_c_si[n] += E0;
+    m_c_it[n] += E1;
 }
 
 void SubmodularFlow::AddClique(const CliquePtr& cp) {
@@ -48,6 +52,18 @@ void SubmodularFlow::PushRelabel() {
 
 void SubmodularFlow::ComputeMinCut() { 
     // Implement me (Sam)
+}
+
+REAL SubmodularFlow::ComputeEnergy() const {
+    REAL total = 0;
+    for (NodeId i = 0; i < m_num_nodes; ++i) {
+        if (m_labels[i] == 1) total += m_c_it;
+        else total += m_c_si;
+    }
+    for (const CliquePtr& cp : m_cliques) {
+        total += cp->ComputeEnergy(m_labels);
+    }
+    return total;
 }
 
 REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
