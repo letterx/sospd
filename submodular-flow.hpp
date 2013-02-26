@@ -89,11 +89,13 @@ class SubmodularFlow {
 class EnergyTableClique : public SubmodularFlow::Clique {
     public:
         typedef SubmodularFlow::Clique::NodeId NodeId;
+        typedef uint32_t Assignment;
 
         EnergyTableClique(const std::vector<NodeId>& nodes, 
                           const std::vector<REAL>& energy)
             : SubmodularFlow::Clique(nodes),
-            m_energy(energy) { }
+            m_energy(energy) 
+        { ASSERT(nodes.size() <= 31); }
 
         virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
         virtual REAL ExchangeCapacity(NodeId u, NodeId v) const;

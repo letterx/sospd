@@ -50,9 +50,28 @@ void SubmodularFlow::ComputeMinCut() {
 }
 
 REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
-    // Implement me (Alex)
+    Assignment assgn = 0;
+    for (size_t i = 0; i < this->m_nodes.size(); ++i) {
+        NodeId n = this->m_nodes[i];
+        if (labels[n] == 1) {
+            assgn |= 1 << i;
+        }
+    }
+    return m_energy[assgn];
 }
 
 REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
-    // Implement me (Alex)
+    // This is not the most efficient way to do things, but it works
+    const size_t u_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), u) - this->m_nodes.begin();
+    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.end();
+
+    REAL min_energy = std::numeric_limits<REAL>::max();
+    Assignment num_assgns = 1 << this->m_nodes.size();
+    for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
+        if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
+            // then assgn is a set separating u from v
+            if (m_energy[assgn] < min_energy) min_energy = m_energy[assgn];
+        }
+    }
+    return min_energy;
 }
