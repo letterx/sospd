@@ -6,17 +6,17 @@
 
 typedef int64_t REAL;
 
-class SubmodularFlowNetwork {
+class SubmodularFlow {
     public:
         typedef int NodeId;
         struct Clique;
         typedef std::shared_ptr<Clique> CliquePtr;
         typedef std::vector<CliquePtr> CliqueVec;
 
-        SubmodularFlowNetwork();
+        SubmodularFlow();
 
         NodeId AddNode(int n = 1);
-        int GetLabel(NodeId n);
+        int GetLabel(NodeId n) const;
         void AddUnaryTerm(NodeId n, REAL E0, REAL E1);
         void AddClique(const CliquePtr& cp);
 
@@ -35,8 +35,8 @@ class SubmodularFlowNetwork {
             Clique(const std::vector<NodeId>& nodes) : m_nodes(nodes) { }
             ~Clique() = default;
 
-            REAL ComputeEnergy(const std::vector<int>& labels) const = 0;
-            REAL ExchangeCapacity(NodeId u, NodeId v) const = 0;
+            virtual REAL ComputeEnergy(const std::vector<int>& labels) const = 0;
+            virtual REAL ExchangeCapacity(NodeId u, NodeId v) const = 0;
 
             const std::vector<NodeId>& Nodes() const { return m_nodes; }
             size_t Size() const { return m_nodes.size(); }
@@ -57,5 +57,24 @@ class SubmodularFlowNetwork {
         std::vector<REAL> m_phi_it;
         CliqueVec m_cliques;
 };
+
+/*
+ * EnergyTableClique: stores energy as a list of 2^k values for each subset
+ */
+class EnergyTableClique : public SubmodularFlow::Clique {
+    public:
+        typedef SubmodularFlow::Clique::NodeId NodeId;
+
+        EnergyTableClique(const std::vector<NodeId>& nodes, 
+                          const std::vector<REAL>& energy)
+            : SubmodularFlow::Clique(nodes),
+            m_energy(energy) { }
+
+        virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
+        virtual REAL ExchangeCapacity(NodeId u, NodeId v) const;
+
+    protected:
+        std::vector<REAL> m_energy;
+}
 
 #endif

@@ -28,4 +28,10 @@ void SubmodularFlow::ComputeMinCut() {
     // Implement me (Sam)
 }
 
+REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
+    // Implement me (Alex)
+}
 
+REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
+    // Implement me (Alex)
+}
