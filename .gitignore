@@ -14,5 +14,5 @@
 
 # Trash files
 *~
-.swp
-.swo
+*.swp
+*.swo
