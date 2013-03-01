@@ -17,3 +17,6 @@
 *.swp
 *.swo
 *.P
+
+# Compiled Binaries
+unit-test
