@@ -37,6 +37,13 @@ void SubmodularFlow::AddUnaryTerm(NodeId n, REAL E0, REAL E1) {
     m_c_it[n] += E1;
 }
 
+void SubmodularFlow::AddUnaryTerm(NodeId n, REAL coeff) {
+    if (coeff > 0) 
+        AddUnaryTerm(n, 0, coeff);
+    else
+        AddUnaryTerm(n, -coeff, 0);
+}
+
 void SubmodularFlow::AddClique(const CliquePtr& cp) {
     m_cliques.push_back(cp);
     for (NodeId i : cp->Nodes()) {

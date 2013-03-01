@@ -25,6 +25,7 @@ class SubmodularFlow {
         // AddUnaryTerm for node n, with cost E0 for not being in S and E1
         // for being in S
         void AddUnaryTerm(NodeId n, REAL E0, REAL E1);
+        void AddUnaryTerm(NodeId n, REAL coeff);
 
         // Add Clique pointed to by cp
         void AddClique(const CliquePtr& cp);

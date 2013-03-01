@@ -1,6 +1,6 @@
 CXX ?= g++
 DEFS = 
-INCLUDES = -I.
+INCLUDES = -I. -I./higher-order-energy/include -I./higher-order-energy/qpbo
 CXX_FLAGS = -g -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = 
 LIBS = 
@@ -8,7 +8,8 @@ TEST_DIR = ./test
 
 TEST_SRCS = $(wildcard $(TEST_DIR)/*.cpp)
 TEST_OBJS = $(TEST_SRCS:.cpp=.o)
-CORE_SRCS = submodular-flow.cpp
+CORE_SRCS = submodular-flow.cpp \
+			gen-random.cpp
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
 SRCS = $(CORE_SRCS) $(TEST_SRCS)
