@@ -46,6 +46,11 @@ void SubmodularFlow::AddClique(const CliquePtr& cp) {
     m_num_cliques++;
 }
 
+void SubmodularFlow::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
+    CliquePtr cp(new EnergyTableClique(nodes, energyTable));
+    AddClique(cp);
+}
+
 void SubmodularFlow::PushRelabel() {
     // Implement me (Sam)
 }

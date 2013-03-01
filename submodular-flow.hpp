@@ -26,8 +26,10 @@ class SubmodularFlow {
         // for being in S
         void AddUnaryTerm(NodeId n, REAL E0, REAL E1);
 
-        // AddClique pointed to by cp
+        // Add Clique pointed to by cp
         void AddClique(const CliquePtr& cp);
+        // Add Clique defined by nodes and energy table given
+        void AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable);
 
         // Compute the max flow using PushRelabel
         void PushRelabel();
