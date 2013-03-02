@@ -20,10 +20,14 @@ SRCS = $(CORE_SRCS) $(TEST_SRCS) $(QPBO_SRCS)
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
-all: $(OBJS) unit-test
+all: $(OBJS) unit-test higher-order-experiment
 
 unit-test: $(CORE_OBJS) $(TEST_OBJS) $(QPBO_OBJS)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(CORE_OBJS) $(TEST_OBJS) $(QPBO_OBJS) $(LIBS) -lboost_unit_test_framework 
+
+higher-order-experiment: higher-order-experiment.o $(CORE_OBJS) $(QPBO_OBJS)
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ higher-order-experiment.o $(CORE_OBJS) $(QPBO_OBJS) $(LIBS)
+
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -MMD -o $@ -c $<
