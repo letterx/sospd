@@ -12,14 +12,18 @@ CORE_SRCS = submodular-flow.cpp \
 			gen-random.cpp
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
-SRCS = $(CORE_SRCS) $(TEST_SRCS)
+QPBO_DIR = ./higher-order-energy/qpbo
+QPBO_SRCS = $(wildcard $(QPBO_DIR)/*.cpp)
+QPBO_OBJS = $(QPBO_SRCS:.cpp=.o)
+
+SRCS = $(CORE_SRCS) $(TEST_SRCS) $(QPBO_SRCS)
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
 all: $(OBJS) unit-test
 
-unit-test: $(CORE_OBJS) $(TEST_OBJS)
-	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(CORE_OBJS) $(TEST_OBJS) $(LIBS) -lboost_unit_test_framework 
+unit-test: $(CORE_OBJS) $(TEST_OBJS) $(QPBO_OBJS)
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(CORE_OBJS) $(TEST_OBJS) $(QPBO_OBJS) $(LIBS) -lboost_unit_test_framework 
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -MMD -o $@ -c $<
@@ -32,13 +36,16 @@ unit-test: $(CORE_OBJS) $(TEST_OBJS)
 
 .PHONY: clean
 clean: 
-	rm $(OBJS)
+	rm -rf $(OBJS)
 	rm -rf *.o
 	rm -rf *.P
 	rm -rf *.d
 	rm -rf $(TEST_DIR)/*.o
 	rm -rf $(TEST_DIR)/*.P
 	rm -rf $(TEST_DIR)/*.d
+	rm -rf $(QPBO_DIR)/*.o
+	rm -rf $(QPBO_DIR)/*.P
+	rm -rf $(QPBO_DIR)/*.d
 
 .PHONY: distclean
 distclean: clean
