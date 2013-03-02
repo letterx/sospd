@@ -5,11 +5,18 @@
 #include "higher-order.hpp"
 
 template <typename REAL>
-void GenRandomEnergyTable(std::vector<REAL>& energy_table, size_t k, REAL clique_range) {
-    uint32_t num_assignments = 1 << k;
+void GenRandomEnergyTable(std::vector<REAL>& energy_table, size_t k, REAL clique_range, std::mt19937& random_gen) {
+    std::uniform_int_distribution<REAL> energy_dist(-clique_range, 0);
+    const uint32_t num_assignments = 1 << k;
     energy_table = std::vector<REAL>(num_assignments, 0);
 
-    // Implement me!
+    for (uint32_t subset = 1; subset < num_assignments; ++subset) {
+        REAL subset_energy = energy_dist(random_gen);
+        for (uint32_t assignment = 0; assignment < num_assignments; ++assignment) {
+            if ((assignment & subset) == subset)
+                energy_table[assignment] += subset_energy;
+        }
+    }
 }
 
 template <typename HigherOrder, typename REAL>
@@ -36,7 +43,7 @@ void GenRandom(HigherOrder& ho,
                 clique_nodes.push_back(new_node);
         }
         std::vector<REAL> energy_table;
-        GenRandomEnergyTable(energy_table, k, clique_range);
+        GenRandomEnergyTable(energy_table, k, clique_range, random_gen);
         ho.AddClique(clique_nodes, energy_table);
     }
 
