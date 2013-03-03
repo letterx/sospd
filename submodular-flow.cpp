@@ -33,15 +33,23 @@ int SubmodularFlow::GetLabel(NodeId n) const {
 }
 
 void SubmodularFlow::AddUnaryTerm(NodeId n, REAL E0, REAL E1) {
+    // Reparametize so that E0, E1 >= 0
+    if (E0 < 0) {
+        AddConstantTerm(E0);
+        E0 = 0;
+        E1 -= E0;
+    }
+    if (E1 < 0) {
+        AddConstantTerm(E1);
+        E1 = 0;
+        E0 -= E1;
+    }
     m_c_si[n] += E0;
     m_c_it[n] += E1;
 }
 
 void SubmodularFlow::AddUnaryTerm(NodeId n, REAL coeff) {
-    if (coeff > 0) 
-        AddUnaryTerm(n, 0, coeff);
-    else
-        AddUnaryTerm(n, -coeff, 0);
+    AddUnaryTerm(n, 0, coeff);
 }
 
 void SubmodularFlow::AddClique(const CliquePtr& cp) {
@@ -51,6 +59,7 @@ void SubmodularFlow::AddClique(const CliquePtr& cp) {
         m_neighbors[i].push_back(m_num_cliques);
     }
     m_num_cliques++;
+    cp->NormalizeEnergy(*this);
 }
 
 void SubmodularFlow::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
@@ -76,6 +85,31 @@ REAL SubmodularFlow::ComputeEnergy() const {
         total += cp->ComputeEnergy(m_labels);
     }
     return total;
+}
+
+void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
+    const size_t n = this->m_nodes.size();
+    const Assignment num_assignments = 1 << n;
+    const REAL constant_term = m_energy[num_assignments - 1];
+    std::vector<REAL> marginals;
+    Assignment assgn = num_assignments - 1; // The all 1 assignment
+    for (size_t i = 0; i < n; ++i) {
+        Assignment next_assgn = assgn ^ (1 << i);
+        marginals.push_back(m_energy[assgn] - m_energy[next_assgn]);
+        assgn = next_assgn;
+    }
+
+    for (Assignment a = 0; a < num_assignments; ++a) {
+        m_energy[a] -= constant_term;
+        for (size_t i = 0; i < n; ++i) {
+            if (!(a & (1 << i))) m_energy[a] += marginals[i];
+        }
+    }
+
+    sf.AddConstantTerm(constant_term);
+    for (size_t i = 0; i < n; ++i) {
+        sf.AddUnaryTerm(this->m_nodes[i], -marginals[i], 0);
+    }
 }
 
 REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {

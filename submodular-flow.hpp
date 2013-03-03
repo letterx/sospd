@@ -22,6 +22,9 @@ class SubmodularFlow {
         // computed flow yet, respectively
         int GetLabel(NodeId n) const;
 
+        // Add a constant to the energy function
+        void AddConstantTerm(REAL c) { m_constant_term += c; }
+
         // AddUnaryTerm for node n, with cost E0 for not being in S and E1
         // for being in S
         void AddUnaryTerm(NodeId n, REAL E0, REAL E1);
@@ -59,6 +62,10 @@ class SubmodularFlow {
             virtual REAL ComputeEnergy(const std::vector<int>& labels) const = 0;
             // Returns the exchange capacity between nodes u and v
             virtual REAL ExchangeCapacity(NodeId u, NodeId v) const = 0;
+            // Normalizes energy so that it is always >= 0, and the all 1 and 
+            // all 0 labeling have energy 0. Subtracts a linear function from 
+            // the energy, so we may need to change c_si, c_it
+            virtual void NormalizeEnergy(SubmodularFlow& sf) = 0;
 
             const std::vector<NodeId>& Nodes() const { return m_nodes; }
             size_t Size() const { return m_nodes.size(); }
@@ -78,6 +85,7 @@ class SubmodularFlow {
     protected:
         typedef std::vector<CliqueId> NeighborList;
 
+        REAL m_constant_term;
         NodeId m_num_nodes;
         std::vector<REAL> m_c_si;
         std::vector<REAL> m_c_it;
@@ -106,6 +114,7 @@ class EnergyTableClique : public SubmodularFlow::Clique {
 
         virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
         virtual REAL ExchangeCapacity(NodeId u, NodeId v) const;
+        virtual void NormalizeEnergy(SubmodularFlow& sf);
 
     protected:
         std::vector<REAL> m_energy;
