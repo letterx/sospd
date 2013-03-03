@@ -38,6 +38,13 @@ void SubmodularFlow::AddUnaryTerm(NodeId n, REAL E0, REAL E1) {
     m_c_it[n] += E1;
 }
 
+void SubmodularFlow::AddUnaryTerm(NodeId n, REAL coeff) {
+    if (coeff > 0)
+        AddUnaryTerm(n, 0, coeff);
+    else
+        AddUnaryTerm(n, -coeff, 0);
+}
+
 void SubmodularFlow::AddClique(const CliquePtr& cp) {
     m_cliques.push_back(cp);
     for (NodeId i : cp->Nodes()) {
@@ -47,22 +54,10 @@ void SubmodularFlow::AddClique(const CliquePtr& cp) {
     m_num_cliques++;
 }
 
-/* Deprecated..
-// sums up alpha values of cliques that node i belongs to
-REAL SumAlphaCi(NodeId i) {
-    REAL total = 0;
-    for(CliqueVec::iterator it = m_cliques[i].begin(); it != m_cliques[i].end(); ++it) {
-        CliquePtr clique = *it;
-        for (std::vector<NodeId>::iterator nodei = clique->m_nodes.begin();
-                nodei != clique->m_nodes.end(); ++nodei) {
-            if (*nodei == i) {
-                total += clique->m_alpha_ci[*nodei];
-                break;
-            }
-        }
-    }
-    return total;
-}*/
+void SubmodularFlow::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
+    CliquePtr cp(new EnergyTableClique(nodes, energyTable));
+    AddClique(cp);
+}
 
 //////// Push Relabel methods ///////////
 
@@ -77,7 +72,6 @@ void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
 
 void SubmodularFlow::remove_from_active_list(NodeId u) {
     layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
-}
 
 void SubmodularFlow::PushRelabel()
 {
@@ -187,8 +181,8 @@ void SubmodularFlow::ComputeMinCut() {
 REAL SubmodularFlow::ComputeEnergy() const {
     REAL total = 0;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
-        if (m_labels[i] == 1) total += m_c_it;
-        else total += m_c_si;
+        if (m_labels[i] == 1) total += m_c_it[i];
+        else total += m_c_si[i];
     }
     for (const CliquePtr& cp : m_cliques) {
         total += cp->ComputeEnergy(m_labels);
@@ -215,9 +209,14 @@ REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
     REAL min_energy = std::numeric_limits<REAL>::max();
     Assignment num_assgns = 1 << this->m_nodes.size();
     for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
+        REAL alpha_C = 0;
+        for (size_t i = 0; i < this->m_alpha_Ci.size(); ++i) {
+            if (assgn & (1 << i)) alpha_C += this->m_alpha_Ci[i];
+        }
         if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
             // then assgn is a set separating u from v
-            if (m_energy[assgn] < min_energy) min_energy = m_energy[assgn];
+            REAL energy = m_energy[assgn] - alpha_C;
+            if (energy < min_energy) min_energy = energy;
         }
     }
     return min_energy;

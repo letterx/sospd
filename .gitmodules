@@ -1,0 +1,3 @@
+[submodule "higher-order-energy"]
+	path = higher-order-energy
+	url = https://github.com/letterx/higher-order-energy.git
