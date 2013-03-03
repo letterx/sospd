@@ -120,7 +120,7 @@ void SubmodularFlow::PushRelabel()
     }
 }
 
-Arc SubmodularFlow::FindPushableEdge(NodeId i) {
+SubmodularFlow::Arc SubmodularFlow::FindPushableEdge(NodeId i) {
     for(std::vector<Arc>::iterator it = m_arc_list[i].begin();
             it != m_arc_list[i].end(); ++it) {
         Arc arc = *it;
@@ -141,7 +141,7 @@ void SubmodularFlow::Push(Arc arc) {
         delta = std::min(excess[arc.i], m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
-        delta = std::min(excess[arc.i], Clique::CliqueResidualCapacity(arc));
+        delta = std::min(excess[arc.i], m_cliques[arc.c].CliqueResidualCapacity(arc));
         std::vector<REAL> & alpha_ci = m_cliques[arc.c].AlphaCi();
         alpha_ci[arc.i] += delta
         alpha_ci[arc.j] -= delta
@@ -161,13 +161,13 @@ void SubmodularFlow::Relabel(NodeId i) {
 }
 
 /* Calculates minimum f_bar w.r.t. to a Clique */
-REAL Clique::CliqueResidualCapacity(Arc arc) {
-    Clique clique = m_cliques[arc.c];
-    const size_t u_idx = std::find(clique.m_nodes.begin(), clique.m_nodes.end(), arc.i) - clique.m_nodes.begin();
-    const size_t v_idx = std::find(clique.m_nodes.begin(), clique.m_nodes.end(), arc.j) - clique.m_nodes.end();
+REAL Clique::CliqueResidualCapacity(SubmodularFlow:Arc arc) {
+    // Clique clique = m_cliques[arc.c];
+    const size_t u_idx = std::find(this->m_nodes.begin(), clique.m_nodes.end(), arc.i) - this->m_nodes.begin();
+    const size_t v_idx = std::find(this->m_nodes.begin(), clique.m_nodes.end(), arc.j) - this->m_nodes.end();
 
     REAL min_f_bar = std::numeric_limits<REAL>::max();
-    Assignment num_assgns = 1 << clique.m_nodes.size();
+    Assignment num_assgns = 1 << this->m_nodes.size();
     for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
         if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
             // then assgn is a set separating u from v
