@@ -2,6 +2,7 @@
 #define _SUBMODULAR_FLOW_HPP_
 
 #include "sos-common.hpp"
+#include "boost/optional/optional.hpp"
 #include <list>
 #include <map>
 
@@ -72,7 +73,7 @@ class SubmodularFlow {
 
             const std::vector<NodeId>& Nodes() const { return m_nodes; }
             size_t Size() const { return m_nodes.size(); }
-            std::vector<REAL> AlphaCi() { return m_alpha_Ci; }
+            std::vector<REAL>& AlphaCi() { return m_alpha_Ci; }
 
             protected:
             std::vector<NodeId> m_nodes; // The list of nodes in the clique
@@ -102,19 +103,20 @@ class SubmodularFlow {
         typedef typename std::list<NodeId>::iterator list_iterator;
         std::map<NodeId, typename std::list<NodeId>::iterator> layer_list_ptr;
 
+        // Data needed during push-relabel
         NodeId s,t;
-        std::map<NodeId,int> dis;
-        std::map<NodeId,REAL> excess;
+        std::vector<int> dis;
+        std::vector<REAL> excess;
         std::vector<int> current_arc_index;
         std::vector< std::vector<Arc> > m_arc_list;
 
         void add_to_active_list(NodeId u, Layer& layer);
         void remove_from_active_list(NodeId u);
-       Arc FindPushableEdge(NodeId i);
+        REAL ResCap(Arc arc);
+        boost::optional<Arc> FindPushableEdge(NodeId i);
         void Push(Arc arc);
         void Relabel(NodeId i);
 
-    //  protected:
         typedef std::vector<CliqueId> NeighborList;
 
         NodeId m_num_nodes;

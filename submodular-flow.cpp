@@ -1,6 +1,6 @@
 #include "submodular-flow.hpp"
-#include <boost/heap/binomial_heap.hpp>
 #include <algorithm>
+#include <limits>
 
 SubmodularFlow::SubmodularFlow()
     : m_num_nodes(0),
@@ -72,27 +72,74 @@ void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
 
 void SubmodularFlow::remove_from_active_list(NodeId u) {
     layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
+}
 
 void SubmodularFlow::PushRelabel()
 {
-    // Super source and sink
-    s = m_num_nodes;
-    t = m_num_nodes + 1;
+    // super source and sink
+    s = m_num_nodes; t = m_num_nodes + 1;
+    max_active = 0; min_active = m_num_nodes + 2; // n
 
-    // init dis
-    for (int i = 0; i <= m_num_nodes + 1; ++i) {
-	dis[i] = 0;
+    dis.clear(); excess.clear(); current_arc_index.clear();
+    m_arc_list.clear(); layers.clear();
+
+    // init data structures
+    for (int i = 0; i < m_num_nodes + 2; ++i) {
+        dis.push_back(0);
+        excess.push_back(0);
+        current_arc_index.push_back(0);
+        std::vector<Arc> arc_list;
+        m_arc_list.push_back(arc_list);
+        Layer layer;
+        layers.push_back(layer);
     }
     dis[s] = m_num_nodes + 2; // n = m_num_nodes + 2
 
     // saturate arcs out of s.
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         m_phi_si[i] = m_c_si[i];
-	if (m_c_si[i] > 0) {
+        if (m_c_si[i] > 0) {
             excess[s] -= m_c_si[i];
             excess[i] += m_c_si[i];
-	    add_to_active_list(i, layers[0]);
-	}
+	        add_to_active_list(i, layers[0]);
+        }
+    }
+
+    // initialize arc lists
+    Arc arc;
+    for (NodeId i = 0; i < m_num_nodes; ++i) {
+        // arcs from source
+        arc.i = s;
+        arc.j = i;
+        arc.c = -1;
+        m_arc_list[arc.i].push_back(arc);
+
+        // arcs to source
+        arc.i = i;
+        arc.j = s;
+        m_arc_list[arc.i].push_back(arc);
+
+        // arcs to sink
+        arc.j = t;
+        m_arc_list[arc.i].push_back(arc);
+
+        // arcs from sink
+        arc.i = t;
+        arc.j = i;
+        m_arc_list[arc.i].push_back(arc);
+    }
+
+    // Arcs between nodes of clique
+    for (int cid = 0; cid < m_num_cliques; ++cid) {
+        CliquePtr cp = m_cliques[cid];
+        for (NodeId i : cp->Nodes()) {
+            for (NodeId j : cp->Nodes()) {
+                arc.i = i;
+                arc.j = j;
+                arc.c = cid;
+                m_arc_list[i].push_back(arc);
+            }
+        }
     }
 
     // find active i w/ largest distance
@@ -105,29 +152,39 @@ void SubmodularFlow::PushRelabel()
         else {
             NodeId i = *u_iter;
             remove_from_active_list(i);
-	    Arc arc = FindPushableEdge(i);
-	    if (arc == NULL)
-	        Push(arc);
-	    else
-	        Relabel(i);
+            boost::optional<Arc> arc = FindPushableEdge(i);
+	        if (arc)
+	            Push(*arc);
+	        else
+                Relabel(i);
         }
     }
 }
 
-SubmodularFlow::Arc SubmodularFlow::FindPushableEdge(NodeId i) {
-    for(std::vector<Arc>::iterator it = m_arc_list[i].begin();
-            it != m_arc_list[i].end(); ++it) {
-        Arc arc = *it;
-        if (d[i] = d[arc.j] + 1 && res_cap(arc) > 0) {
-	        return arc;
+REAL SubmodularFlow::ResCap(Arc arc) {
+    if (arc.j == s) {
+        return m_phi_si[arc.i];
+    } else if (arc.j == t) {
+        return m_c_it[arc.i] - m_phi_it[arc.i];
+    } else {
+        return m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j);
+    }
+}
+
+boost::optional<SubmodularFlow::Arc> SubmodularFlow::FindPushableEdge(NodeId i) {
+    // Use current arc?
+    for (Arc arc : m_arc_list[i]) {
+        if (dis[i] == dis[arc.j] + 1 && ResCap(arc) > 0) {
+	        return boost::optional<SubmodularFlow::Arc>(arc);
         }
     }
-    return NULL;
+    return boost::optional<SubmodularFlow::Arc>();
 }
 
 void SubmodularFlow::Push(Arc arc) {
-    REAL delta;
+    REAL delta; // amount to push
 
+    // Note, we never have arc.i == s or t
     if (arc.j == s) {  // reverse arc
         delta = std::min(excess[arc.i], m_phi_si[arc.i]);
         m_phi_si[arc.i] -= delta;
@@ -135,10 +192,10 @@ void SubmodularFlow::Push(Arc arc) {
         delta = std::min(excess[arc.i], m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
-        delta = std::min(excess[arc.i], m_cliques[arc.c].CliqueResidualCapacity(arc));
-        std::vector<REAL> & alpha_ci = m_cliques[arc.c].AlphaCi();
-        alpha_ci[arc.i] += delta
-        alpha_ci[arc.j] -= delta
+        delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j));
+        std::vector<REAL>& alpha_ci = m_cliques[arc.c]->AlphaCi();
+        alpha_ci[arc.i] += delta;
+        alpha_ci[arc.j] -= delta;
     }
     // Update (residual capacities) and excesses
     excess[arc.i] -= delta;
@@ -146,33 +203,16 @@ void SubmodularFlow::Push(Arc arc) {
 }
 
 void SubmodularFlow::Relabel(NodeId i) {
-    dis[i] = m_num_nodes + 5;  // init to > max
-    for(std::vector<Arc>::iterator it = m_arc_list[i].begin();
-            it != m_arc_list[i].end(); ++it) {
-        Arc arc = *it;
+    dis[i] = std::numeric_limits<int>::max();
+    for(Arc arc : m_arc_list[i]) {
+    // for(std::vector<Arc>::iterator it = m_arc_list[i].begin();
+   //         it != m_arc_list[i].end(); ++it) {
+   //     Arc arc = *it;
         dis[i] = std::min (dis[i], dis[arc.j] + 1);
     }
 }
 
-/* Calculates minimum f_bar w.r.t. to a Clique */
-REAL Clique::CliqueResidualCapacity(SubmodularFlow:Arc arc) {
-    // Clique clique = m_cliques[arc.c];
-    const size_t u_idx = std::find(this->m_nodes.begin(), clique.m_nodes.end(), arc.i) - this->m_nodes.begin();
-    const size_t v_idx = std::find(this->m_nodes.begin(), clique.m_nodes.end(), arc.j) - this->m_nodes.end();
-
-    REAL min_f_bar = std::numeric_limits<REAL>::max();
-    Assignment num_assgns = 1 << this->m_nodes.size();
-    for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
-        if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
-            // then assgn is a set separating u from v
-            f_bar = m_energy[assgn] - sum_alpha_ci;
-	        if (f_bar < min_f_bar) min_f_bar = f_bar;
-        }
-    }
-    return min_f_bar;
-}
-
-////////    end of push relabel stuff /////////////////
+//////////    end of push relabel    ///////////////////
 
 void SubmodularFlow::ComputeMinCut() {
     // Implement me (Sam)
