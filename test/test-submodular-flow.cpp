@@ -7,18 +7,12 @@
 #include "gen-random.hpp"
 #include "QPBO.h"
 
-BOOST_AUTO_TEST_SUITE(basicSubmodularFlow)
-
-/* Sanity check to make sure basic flow computation working on a minimally
- * sized graph.
- *
- * Sets up a submodular flow problem with a single clique. The clique has 4
+/* Sets up a submodular flow problem with a single clique. The clique has 4
  * nodes, and is equal to -1 when all 4 nodes are set to 1, 0 otherwise.
  */
-BOOST_AUTO_TEST_CASE(sanityCheck) {
+void SetupMinimalFlow(SubmodularFlow& sf) {
     typedef SubmodularFlow::NodeId NodeId;
 
-    SubmodularFlow sf;
     sf.AddNode(4);
 
     std::vector<NodeId> nodes = {0, 1, 2, 3};
@@ -26,6 +20,59 @@ BOOST_AUTO_TEST_CASE(sanityCheck) {
     std::vector<REAL> energyTable(numAssignments, 0);
     energyTable[0xf] = -1;
     sf.AddClique(nodes, energyTable);
+}
+
+BOOST_AUTO_TEST_SUITE(setupTests)
+
+BOOST_AUTO_TEST_CASE(defaultConstructor) {
+    SubmodularFlow sf;
+
+    BOOST_CHECK_EQUAL(sf.GetConstantTerm(), 0);
+    BOOST_CHECK_EQUAL(sf.GetNumNodes(), 0);
+    BOOST_CHECK_EQUAL(sf.GetC_si().size(), 0);
+    BOOST_CHECK_EQUAL(sf.GetC_it().size(), 0);
+    BOOST_CHECK_EQUAL(sf.GetPhi_si().size(), 0);
+    BOOST_CHECK_EQUAL(sf.GetPhi_it().size(), 0);
+    BOOST_CHECK_EQUAL(sf.GetLabels().size(), 0);
+    BOOST_CHECK_EQUAL(sf.GetNumCliques(), 0);
+    BOOST_CHECK_EQUAL(sf.GetCliques().size(), 0);
+    BOOST_CHECK_EQUAL(sf.GetNeighbors().size(), 0);
+    BOOST_CHECK_EQUAL(sf.ComputeEnergy(), 0);
+}
+
+BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
+    typedef SubmodularFlow::NodeId NodeId;
+    
+    SubmodularFlow sf;
+    SetupMinimalFlow(sf);
+
+    BOOST_CHECK_EQUAL(sf.GetConstantTerm(), -1);
+    BOOST_CHECK_EQUAL(sf.GetC_si().size(), 4);
+    BOOST_CHECK_EQUAL(sf.GetC_it().size(), 4);
+    BOOST_CHECK_EQUAL(sf.GetPhi_si().size(), 4);
+    BOOST_CHECK_EQUAL(sf.GetPhi_it().size(), 4);
+    BOOST_CHECK_EQUAL(sf.GetLabels().size(), 4);
+    BOOST_CHECK_EQUAL(sf.GetNumCliques(), 1);
+    BOOST_CHECK_EQUAL(sf.GetCliques().size(), 1);
+    BOOST_CHECK_EQUAL(sf.GetNeighbors().size(), 4);
+    BOOST_CHECK_EQUAL(sf.ComputeEnergy(), 0);
+
+}
+
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
+BOOST_AUTO_TEST_SUITE(flowTests)
+
+/* Sanity check to make sure basic flow computation working on a minimally
+ * sized graph.
+ */
+BOOST_AUTO_TEST_CASE(minimalFlow) {
+    typedef SubmodularFlow::NodeId NodeId;
+
+    SubmodularFlow sf;
+    SetupMinimalFlow(sf);
 
     sf.PushRelabel();
     sf.ComputeMinCut();

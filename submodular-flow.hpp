@@ -134,6 +134,21 @@ class SubmodularFlow {
         CliqueId m_num_cliques;
         CliqueVec m_cliques;
         std::vector<NeighborList> m_neighbors;
+
+    public:
+        // Functions for reading out data, useful for testing
+        const std::vector<int>& GetDis() const { return dis; }
+        const std::vector<REAL>& GetExcess() const { return excess; }
+        REAL GetConstantTerm() const { return m_constant_term; }
+        NodeId GetNumNodes() const { return m_num_nodes; }
+        const std::vector<REAL>& GetC_si() const { return m_c_si; }
+        const std::vector<REAL>& GetC_it() const { return m_c_it; }
+        const std::vector<REAL>& GetPhi_si() const { return m_phi_si; }
+        const std::vector<REAL>& GetPhi_it() const { return m_phi_it; }
+        const std::vector<int>& GetLabels() const { return m_labels; }
+        CliqueId GetNumCliques() const { return m_num_cliques; }
+        const CliqueVec& GetCliques() const { return m_cliques; }
+        const std::vector<NeighborList>& GetNeighbors() const { return m_neighbors; }
 };
 
 /*

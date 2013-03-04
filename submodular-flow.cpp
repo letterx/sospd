@@ -228,7 +228,7 @@ void SubmodularFlow::ComputeMinCut() {
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {
-    REAL total = 0;
+    REAL total = m_constant_term;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         if (m_labels[i] == 1) total += m_c_it[i];
         else total += m_c_si[i];
