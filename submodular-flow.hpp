@@ -146,6 +146,7 @@ class SubmodularFlow {
         const std::vector<REAL>& GetPhi_si() const { return m_phi_si; }
         const std::vector<REAL>& GetPhi_it() const { return m_phi_it; }
         const std::vector<int>& GetLabels() const { return m_labels; }
+        std::vector<int>& GetLabels() { return m_labels; }
         CliqueId GetNumCliques() const { return m_num_cliques; }
         const CliqueVec& GetCliques() const { return m_cliques; }
         const std::vector<NeighborList>& GetNeighbors() const { return m_neighbors; }

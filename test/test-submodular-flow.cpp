@@ -57,8 +57,100 @@ BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
     BOOST_CHECK_EQUAL(sf.GetNeighbors().size(), 4);
     BOOST_CHECK_EQUAL(sf.ComputeEnergy(), 0);
 
+    std::vector<int>& labels = sf.GetLabels();
+    const uint32_t max_assgn = 1 << 4;
+    for (uint32_t assgn = 0; assgn < max_assgn; ++assgn) {
+        for (NodeId i = 0; i < 4; ++i) {
+            if (assgn & (1 << i))
+                labels[i] = 1;
+            else 
+                labels[i] = 0;
+        }
+        if (assgn == 0xf)
+            BOOST_CHECK_EQUAL(sf.ComputeEnergy(), -1);
+        else
+            BOOST_CHECK_EQUAL(sf.ComputeEnergy(), 0);
+    }
 }
 
+BOOST_AUTO_TEST_CASE(randomFlowSetup) {
+    typedef SubmodularFlow::NodeId NodeId;
+    
+    SubmodularFlow sf;
+    const size_t n = 100;
+    const size_t k = 4;
+    const size_t m = 100;
+    const REAL clique_range = 100;
+    const REAL unary_mean = 800;
+    const REAL unary_var = 1600;
+    const unsigned int seed = 0;
+
+    GenRandom(sf, n, k, m, clique_range, unary_mean, unary_var, seed);
+
+    BOOST_CHECK_EQUAL(sf.GetC_si().size(), n);
+    BOOST_CHECK_EQUAL(sf.GetC_it().size(), n);
+    BOOST_CHECK_EQUAL(sf.GetPhi_si().size(), n);
+    BOOST_CHECK_EQUAL(sf.GetPhi_it().size(), n);
+    BOOST_CHECK_EQUAL(sf.GetLabels().size(), n);
+    BOOST_CHECK_EQUAL(sf.GetNumCliques(), m);
+    BOOST_CHECK_EQUAL(sf.GetCliques().size(), m);
+    BOOST_CHECK_EQUAL(sf.GetNeighbors().size(), n);
+
+}
+
+/* Check that for a clique c, the energy is always >= 0, and is equal to 0 at 
+ * the all 0 and all 1 labelings.
+ */
+void CheckNormalized(const SubmodularFlow::Clique& c, std::vector<int>& labels) {
+    const size_t n = c.Nodes().size();
+    BOOST_REQUIRE_LT(n, 32);
+    const uint32_t max_assgn = 1 << n;
+    for (uint32_t assgn = 0; assgn < max_assgn; ++assgn) {
+        for (size_t i = 0; i < n; ++i) {
+            if (assgn & (1 << i))
+                labels[c.Nodes()[i]] = 1;
+            else
+                labels[c.Nodes()[i]] = 0;
+        }
+        if (assgn == 0)
+            BOOST_CHECK_EQUAL(c.ComputeEnergy(labels), 0);
+        else if (assgn == max_assgn - 1)
+            BOOST_CHECK_EQUAL(c.ComputeEnergy(labels), 0);
+        else
+            BOOST_CHECK_GE(c.ComputeEnergy(labels), 0);
+    }
+}
+
+/* Check that all source-sink capacities are >= 0, and that cliques
+ * are normalized (i.e., are >= 0 for all labelings)
+ */
+BOOST_AUTO_TEST_CASE(randomFlowNormalized) {
+    typedef SubmodularFlow::NodeId NodeId;
+    
+    SubmodularFlow sf;
+    const size_t n = 100;
+    const size_t k = 4;
+    const size_t m = 100;
+    const REAL clique_range = 100;
+    const REAL unary_mean = 800;
+    const REAL unary_var = 1600;
+    const unsigned int seed = 0;
+
+    GenRandom(sf, n, k, m, clique_range, unary_mean, unary_var, seed);
+
+    for (size_t i = 0; i < n; ++i) {
+        BOOST_CHECK_GE(sf.GetC_si()[i], 0);
+        BOOST_CHECK_GE(sf.GetC_it()[i], 0);
+        BOOST_CHECK_EQUAL(sf.GetPhi_si()[i], 0);
+        BOOST_CHECK_EQUAL(sf.GetPhi_it()[i], 0);
+    }
+
+    for (const SubmodularFlow::CliquePtr& cp : sf.GetCliques()) {
+        const SubmodularFlow::Clique& c = *cp;
+        BOOST_CHECK_EQUAL(c.Nodes().size(), 4);
+        CheckNormalized(c, sf.GetLabels());
+    }
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 
