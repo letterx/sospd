@@ -13,7 +13,7 @@ CORE_SRCS = submodular-flow.cpp \
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
 QPBO_DIR = ./higher-order-energy/qpbo
-QPBO_SRCS = $(wildcard $(QPBO_DIR)/*.cpp)
+QPBO_SRCS = $(QPBO_DIR)/QPBO.cpp
 QPBO_OBJS = $(QPBO_SRCS:.cpp=.o)
 
 SRCS = $(CORE_SRCS) $(TEST_SRCS) $(QPBO_SRCS)
