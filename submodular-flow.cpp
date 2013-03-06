@@ -3,7 +3,8 @@
 #include <limits>
 
 SubmodularFlow::SubmodularFlow()
-    : m_num_nodes(0),
+    : m_constant_term(0),
+    m_num_nodes(0),
     m_c_si(),
     m_c_it(),
     m_phi_si(),
