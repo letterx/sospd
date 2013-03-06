@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(defaultConstructor) {
 
 BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
     typedef SubmodularFlow::NodeId NodeId;
-    
+
     SubmodularFlow sf;
     SetupMinimalFlow(sf);
 
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
         for (NodeId i = 0; i < 4; ++i) {
             if (assgn & (1 << i))
                 labels[i] = 1;
-            else 
+            else
                 labels[i] = 0;
         }
         if (assgn == 0xf)
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
 
 BOOST_AUTO_TEST_CASE(randomFlowSetup) {
     typedef SubmodularFlow::NodeId NodeId;
-    
+
     SubmodularFlow sf;
     const size_t n = 100;
     const size_t k = 4;
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(randomFlowSetup) {
 
 }
 
-/* Check that for a clique c, the energy is always >= 0, and is equal to 0 at 
+/* Check that for a clique c, the energy is always >= 0, and is equal to 0 at
  * the all 0 and all 1 labelings.
  */
 void CheckNormalized(const SubmodularFlow::Clique& c, std::vector<int>& labels) {
@@ -126,7 +126,7 @@ void CheckNormalized(const SubmodularFlow::Clique& c, std::vector<int>& labels) 
  */
 BOOST_AUTO_TEST_CASE(randomFlowNormalized) {
     typedef SubmodularFlow::NodeId NodeId;
-    
+
     SubmodularFlow sf;
     const size_t n = 100;
     const size_t k = 4;
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(minimalFlow) {
     }
 }
 
-/* More complicated test case on a larger graph. 
+/* More complicated test case on a larger graph.
  *
  * GenRandom generates a random submodular function that can be turned into
  * a submodular quadratic function by HigherOrderEnergy. We generate the

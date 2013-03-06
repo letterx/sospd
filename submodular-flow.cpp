@@ -1,6 +1,7 @@
 #include "submodular-flow.hpp"
 #include <algorithm>
 #include <limits>
+#include <queue>
 
 SubmodularFlow::SubmodularFlow()
     : m_constant_term(0),
@@ -222,10 +223,42 @@ void SubmodularFlow::Relabel(NodeId i) {
     }
 }
 
-//////////    end of push relabel    ///////////////////
+///////////////    end of push relabel    ///////////////////
 
 void SubmodularFlow::ComputeMinCut() {
-    // Implement me (Sam)
+    for (NodeId i = 0; i < m_num_nodes; ++i) {
+        dis[i] = std::numeric_limits<int>::max();
+        m_labels[i] = 1;
+    }
+    dis[t] = 0;
+    // curr is the current level of nodes to be visited;
+    // next is the next layer to visit.
+    std::queue<NodeId> curr, next;
+    next.push(t);
+
+    int level = 1;
+    while (!next.empty()) {
+        // Empty next; next becomes curr
+        std::queue<NodeId> empty;
+        std::swap(next, empty);
+        std::swap(curr, next);
+
+        while (!curr.empty()) {
+            NodeId u = curr.front();
+            curr.pop();
+            for (Arc arc : m_arc_list[u]) {
+                arc.i = arc.j;
+                arc.j = u;
+                if (ResCap(arc) > 0
+                        && dis[arc.i] < std::numeric_limits<int>::max()) {
+                    m_labels[arc.i] = 0;
+                    next.push(arc.i);
+                    dis[arc.i] = level;
+                }
+            }
+        }
+        ++level;
+    }
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {

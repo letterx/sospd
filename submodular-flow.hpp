@@ -70,8 +70,8 @@ class SubmodularFlow {
             virtual REAL ComputeEnergy(const std::vector<int>& labels) const = 0;
             // Returns the exchange capacity between nodes u and v
             virtual REAL ExchangeCapacity(NodeId u, NodeId v) const = 0;
-            // Normalizes energy so that it is always >= 0, and the all 1 and 
-            // all 0 labeling have energy 0. Subtracts a linear function from 
+            // Normalizes energy so that it is always >= 0, and the all 1 and
+            // all 0 labeling have energy 0. Subtracts a linear function from
             // the energy, so we may need to change c_si, c_it
             virtual void NormalizeEnergy(SubmodularFlow& sf) = 0;
 
