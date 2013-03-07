@@ -234,6 +234,13 @@ void TestInvariants(const SubmodularFlow& sf) {
     TestDistance(sf);
 }
 
+void TestFinalInvariants(const SubmodularFlow& sf) {
+    const auto& excess = sf.GetExcess();
+    for (NodeId i = 0; i < sf.GetNumNodes(); ++i) {
+        BOOST_REQUIRE_EQUAL(excess[i], 0);
+    }
+}
+
 void TestInvariantsPreserved(SubmodularFlow& sf) {
     sf.PushRelabelInit();
     TestInvariants(sf);
@@ -242,6 +249,7 @@ void TestInvariantsPreserved(SubmodularFlow& sf) {
         sf.PushRelabelStep();
         TestInvariants(sf);
     }
+    TestFinalInvariants(sf);
 }
 
 BOOST_AUTO_TEST_CASE(minimalGraph) {
