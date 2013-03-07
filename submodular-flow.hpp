@@ -153,6 +153,8 @@ class SubmodularFlow {
         CliqueId GetNumCliques() const { return m_num_cliques; }
         const CliqueVec& GetCliques() const { return m_cliques; }
         const std::vector<NeighborList>& GetNeighbors() const { return m_neighbors; }
+        int GetMaxActive() const { return max_active; }
+        int GetMinActive() const { return min_active; }
 
         // Functions for breaking push-relabel into pieces
         // Only use for testing!

@@ -228,10 +228,25 @@ void TestDistance(const SubmodularFlow& sf) {
     }
 }
 
+void TestExcessBounds(const SubmodularFlow& sf) {
+    const auto& dis = sf.GetDis();
+    const auto& excess = sf.GetExcess();
+    const int max_active = sf.GetMaxActive();
+    const int min_active = sf.GetMinActive();
+
+    for (NodeId i = 0; i < sf.GetNumNodes(); ++i) {
+        if (excess[i] > 0) {
+            BOOST_REQUIRE_LE(dis[i], max_active);
+            BOOST_REQUIRE_GE(dis[i], min_active);
+        }
+    }
+}
+
 void TestInvariants(const SubmodularFlow& sf) {
     TestNonnegativeCapacities(sf);
     TestExcess(sf);
     TestDistance(sf);
+    TestExcessBounds(sf);
 }
 
 void TestFinalInvariants(const SubmodularFlow& sf) {
