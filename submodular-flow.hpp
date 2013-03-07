@@ -118,6 +118,9 @@ class SubmodularFlow {
         void remove_from_active_list(NodeId u);
         REAL ResCap(Arc arc);
         boost::optional<Arc> FindPushableEdge(NodeId i);
+        void PushRelabelInit();
+        void PushRelabelStep();
+        bool PushRelabelNotDone();
         void Push(Arc arc);
         void Relabel(NodeId i);
 

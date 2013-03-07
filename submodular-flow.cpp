@@ -85,7 +85,7 @@ void SubmodularFlow::remove_from_active_list(NodeId u) {
     layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
 }
 
-void SubmodularFlow::PushRelabel()
+void SubmodularFlow::PushRelabelInit()
 {
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
@@ -152,23 +152,38 @@ void SubmodularFlow::PushRelabel()
             }
         }
     }
+}
+
+void SubmodularFlow::PushRelabelStep()
+{
+    Layer& layer = layers[max_active];
+    list_iterator u_iter = layer.active_vertices.begin();
+
+    if (u_iter == layer.active_vertices.end())
+        --max_active;
+    else {
+        NodeId i = *u_iter;
+        remove_from_active_list(i);
+        boost::optional<Arc> arc = FindPushableEdge(i);
+        if (arc)
+            Push(*arc);
+        else
+            Relabel(i);
+    }
+}
+
+bool SubmodularFlow::PushRelabelNotDone()
+{
+    return max_active >= min_active;
+}
+
+void SubmodularFlow::PushRelabel()
+{
+    PushRelabelInit();
 
     // find active i w/ largest distance
-    while (max_active >= min_active) {
-        Layer& layer = layers[max_active];
-        list_iterator u_iter = layer.active_vertices.begin();
-
-        if (u_iter == layer.active_vertices.end())
-            --max_active;
-        else {
-            NodeId i = *u_iter;
-            remove_from_active_list(i);
-            boost::optional<Arc> arc = FindPushableEdge(i);
-	        if (arc)
-	            Push(*arc);
-	        else
-                Relabel(i);
-        }
+    while (PushRelabelNotDone()) {
+        PushRelabelStep();
     }
 }
 
