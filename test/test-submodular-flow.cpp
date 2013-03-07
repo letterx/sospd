@@ -7,11 +7,12 @@
 #include "gen-random.hpp"
 #include "QPBO.h"
 
+typedef SubmodularFlow::NodeId NodeId;
+
 /* Sets up a submodular flow problem with a single clique. The clique has 4
  * nodes, and is equal to -1 when all 4 nodes are set to 1, 0 otherwise.
  */
 void SetupMinimalFlow(SubmodularFlow& sf) {
-    typedef SubmodularFlow::NodeId NodeId;
 
     sf.AddNode(4);
 
@@ -41,8 +42,6 @@ BOOST_AUTO_TEST_CASE(defaultConstructor) {
 }
 
 BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
-    typedef SubmodularFlow::NodeId NodeId;
-
     SubmodularFlow sf;
     SetupMinimalFlow(sf);
 
@@ -74,8 +73,6 @@ BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
 }
 
 BOOST_AUTO_TEST_CASE(randomFlowSetup) {
-    typedef SubmodularFlow::NodeId NodeId;
-
     SubmodularFlow sf;
     const size_t n = 100;
     const size_t k = 4;
@@ -125,8 +122,6 @@ void CheckNormalized(const SubmodularFlow::Clique& c, std::vector<int>& labels) 
  * are normalized (i.e., are >= 0 for all labelings)
  */
 BOOST_AUTO_TEST_CASE(randomFlowNormalized) {
-    typedef SubmodularFlow::NodeId NodeId;
-
     SubmodularFlow sf;
     const size_t n = 100;
     const size_t k = 4;
@@ -155,14 +150,80 @@ BOOST_AUTO_TEST_CASE(randomFlowNormalized) {
 BOOST_AUTO_TEST_SUITE_END()
 
 
+
+BOOST_AUTO_TEST_SUITE(flowInvariants)
+
+void TestNonnegativeCapacities(const SubmodularFlow& sf) {
+    const auto& c_si = sf.GetC_si();
+    const auto& c_it = sf.GetC_it();
+    const auto& phi_si = sf.GetPhi_si();
+    const auto& phi_it = sf.GetPhi_it();
+
+    for (NodeId i = 0; i < sf.GetNumNodes(); ++i) {
+        BOOST_REQUIRE_GE(phi_si[i], 0);
+        BOOST_REQUIRE_GE(phi_it[i], 0);
+        BOOST_REQUIRE_GE(c_si[i], phi_si[i]);
+        BOOST_REQUIRE_GE(c_it[i], phi_it[i]);
+    }
+    for (const auto& cp : sf.GetCliques()) {
+        const auto& c = *cp;
+        for (NodeId i : c.Nodes()) {
+            for (NodeId j : c.Nodes()) {
+                if (i == j) continue;
+                BOOST_REQUIRE_GE(c.ExchangeCapacity(i, j), 0);
+            }
+        }
+    }
+}
+
+void TestInvariants(const SubmodularFlow& sf) {
+    TestNonnegativeCapacities(sf);
+
+
+}
+
+void TestInvariantsPreserved(SubmodularFlow& sf) {
+    sf.PushRelabelInit();
+    TestInvariants(sf);
+
+    while (sf.PushRelabelNotDone()) {
+        sf.PushRelabelStep();
+        TestInvariants(sf);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(minimalGraph) {
+    SubmodularFlow sf;
+    SetupMinimalFlow(sf);
+    TestInvariantsPreserved(sf);
+}
+
+BOOST_AUTO_TEST_CASE(largeGraph) {
+    SubmodularFlow sf;
+
+    const size_t n = 100;
+    const size_t k = 4;
+    const size_t m = 100;
+    const REAL clique_range = 100;
+    const REAL unary_mean = 800;
+    const REAL unary_var = 1600;
+    const unsigned int seed = 0;
+
+    GenRandom(sf, n, k, m, clique_range, unary_mean, unary_var, seed);
+    TestInvariantsPreserved(sf);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
+
+
 BOOST_AUTO_TEST_SUITE(flowTests)
 
 /* Sanity check to make sure basic flow computation working on a minimally
  * sized graph.
  */
 BOOST_AUTO_TEST_CASE(minimalFlow) {
-    typedef SubmodularFlow::NodeId NodeId;
-
     SubmodularFlow sf;
     SetupMinimalFlow(sf);
 

@@ -118,9 +118,6 @@ class SubmodularFlow {
         void remove_from_active_list(NodeId u);
         REAL ResCap(Arc arc);
         boost::optional<Arc> FindPushableEdge(NodeId i);
-        void PushRelabelInit();
-        void PushRelabelStep();
-        bool PushRelabelNotDone();
         void Push(Arc arc);
         void Relabel(NodeId i);
 
@@ -153,6 +150,12 @@ class SubmodularFlow {
         CliqueId GetNumCliques() const { return m_num_cliques; }
         const CliqueVec& GetCliques() const { return m_cliques; }
         const std::vector<NeighborList>& GetNeighbors() const { return m_neighbors; }
+
+        // Functions for breaking push-relabel into pieces
+        // Only use for testing!
+        void PushRelabelInit();
+        void PushRelabelStep();
+        bool PushRelabelNotDone();
 };
 
 /*
