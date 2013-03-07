@@ -8,6 +8,7 @@
 #include "QPBO.h"
 
 typedef SubmodularFlow::NodeId NodeId;
+typedef SubmodularFlow::CliqueId CliqueId;
 
 /* Sets up a submodular flow problem with a single clique. The clique has 4
  * nodes, and is equal to -1 when all 4 nodes are set to 1, 0 otherwise.
@@ -176,8 +177,29 @@ void TestNonnegativeCapacities(const SubmodularFlow& sf) {
     }
 }
 
+void TestExcess(const SubmodularFlow& sf) {
+    const auto& excess = sf.GetExcess();
+    const auto& phi_si = sf.GetPhi_si();
+    const auto& phi_it = sf.GetPhi_it();
+    const auto& cliques = sf.GetCliques();
+    const auto& neighbors = sf.GetNeighbors();
+
+    for (NodeId i = 0; i < sf.GetNumNodes(); ++i) {
+        REAL expected_excess = phi_si[i] - phi_it[i];
+        for (CliqueId cid : neighbors[i]) {
+            const auto& c = *cliques[cid];
+            const size_t clique_index = std::find(c.Nodes().begin(), c.Nodes().end(), i) - c.Nodes().begin();
+            BOOST_REQUIRE_EQUAL(i, c.Nodes()[clique_index]);
+            expected_excess -= c.AlphaCi()[clique_index];
+        }
+        BOOST_REQUIRE_GE(excess[i], 0);
+        BOOST_REQUIRE_EQUAL(expected_excess, excess[i]);
+    }
+}
+
 void TestInvariants(const SubmodularFlow& sf) {
     TestNonnegativeCapacities(sf);
+    TestExcess(sf);
 
 
 }

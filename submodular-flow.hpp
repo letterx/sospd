@@ -78,6 +78,7 @@ class SubmodularFlow {
             const std::vector<NodeId>& Nodes() const { return m_nodes; }
             size_t Size() const { return m_nodes.size(); }
             std::vector<REAL>& AlphaCi() { return m_alpha_Ci; }
+            const std::vector<REAL>& AlphaCi() const { return m_alpha_Ci; }
 
             protected:
             std::vector<NodeId> m_nodes; // The list of nodes in the clique
