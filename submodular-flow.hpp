@@ -138,6 +138,8 @@ class SubmodularFlow {
 
     public:
         // Functions for reading out data, useful for testing
+        NodeId GetS() const { return s; }
+        NodeId GetT() const { return t; }
         const std::vector<int>& GetDis() const { return dis; }
         const std::vector<REAL>& GetExcess() const { return excess; }
         REAL GetConstantTerm() const { return m_constant_term; }

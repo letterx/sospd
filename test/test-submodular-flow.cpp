@@ -197,11 +197,41 @@ void TestExcess(const SubmodularFlow& sf) {
     }
 }
 
+void TestDistance(const SubmodularFlow& sf) {
+    const auto& dis = sf.GetDis();
+    const auto& cliques = sf.GetCliques();
+    const auto& c_si = sf.GetC_si();
+    const auto& c_it = sf.GetC_it();
+    const auto& phi_si = sf.GetPhi_si();
+    const auto& phi_it = sf.GetPhi_it();
+    NodeId s = sf.GetS();
+    NodeId t = sf.GetT();
+
+    BOOST_REQUIRE_EQUAL(dis[s], sf.GetNumNodes()+2);
+    BOOST_REQUIRE_EQUAL(dis[t], 0);
+    
+    for (NodeId i = 0; i < sf.GetNumNodes(); ++i) {
+        BOOST_REQUIRE_GE(dis[i], 0);
+        if (c_si[i] - phi_si[i] > 0) BOOST_REQUIRE_LE(dis[s], dis[i]+1);
+        if (phi_si[i] > 0) BOOST_REQUIRE_LE(dis[i], dis[s]+1);
+        if (c_it[i] - phi_it[i] > 0) BOOST_REQUIRE_LE(dis[i], dis[t]+1);
+    }
+    for (const auto& cp : cliques) {
+        const auto& c = *cp;
+        for (NodeId i : c.Nodes()) {
+            for (NodeId j : c.Nodes()) {
+                if (i == j) continue;
+                if (c.ExchangeCapacity(i, j) > 0)
+                    BOOST_REQUIRE_LE(dis[i], dis[j]+1);
+            }
+        }
+    }
+}
+
 void TestInvariants(const SubmodularFlow& sf) {
     TestNonnegativeCapacities(sf);
     TestExcess(sf);
-
-
+    TestDistance(sf);
 }
 
 void TestInvariantsPreserved(SubmodularFlow& sf) {
