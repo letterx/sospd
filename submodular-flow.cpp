@@ -226,16 +226,17 @@ void SubmodularFlow::Push(Arc arc) {
     // Update (residual capacities) and excesses
     excess[arc.i] -= delta;
     excess[arc.j] += delta;
+    if (excess[arc.j] > 0) {
+        add_to_active_list(arc.j, layers[dis[arc.j]]);
+    }
 }
 
 void SubmodularFlow::Relabel(NodeId i) {
     dis[i] = std::numeric_limits<int>::max();
     for(Arc arc : m_arc_list[i]) {
-    // for(std::vector<Arc>::iterator it = m_arc_list[i].begin();
-   //         it != m_arc_list[i].end(); ++it) {
-   //     Arc arc = *it;
         dis[i] = std::min (dis[i], dis[arc.j] + 1);
     }
+    add_to_active_list(i, layers[dis[i]]);
 }
 
 ///////////////    end of push relabel    ///////////////////
