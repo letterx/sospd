@@ -21,3 +21,5 @@
 # Compiled Binaries
 unit-test
 higher-order-experiment
+svm_sos_classify
+svm_sos_learn
