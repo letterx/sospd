@@ -1,6 +1,6 @@
 CXX ?= g++
 DEFS = 
-INCLUDES = -I. -I./higher-order-energy/include -I./higher-order-energy/qpbo
+INCLUDES = -I./submodular-flow/ -I./higher-order-energy/include -I./higher-order-energy/qpbo
 CXX_FLAGS = -g -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = 
 LIBS = 
@@ -8,8 +8,8 @@ TEST_DIR = ./test
 
 TEST_SRCS = $(wildcard $(TEST_DIR)/*.cpp)
 TEST_OBJS = $(TEST_SRCS:.cpp=.o)
-CORE_SRCS = submodular-flow.cpp \
-			gen-random.cpp
+CORE_SRCS = submodular-flow/submodular-flow.cpp \
+			submodular-flow/gen-random.cpp
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
 QPBO_DIR = ./higher-order-energy/qpbo
@@ -44,13 +44,22 @@ clean:
 	rm -rf *.o
 	rm -rf *.P
 	rm -rf *.d
+	rm -rf *~
 	rm -rf $(TEST_DIR)/*.o
 	rm -rf $(TEST_DIR)/*.P
 	rm -rf $(TEST_DIR)/*.d
+	rm -rf $(TEST_DIR)/*~
 	rm -rf $(QPBO_DIR)/*.o
 	rm -rf $(QPBO_DIR)/*.P
 	rm -rf $(QPBO_DIR)/*.d
+	rm -rf $(QPBO_DIR)/*~
+	rm -rf submodular-flow/*.o
+	rm -rf submodular-flow/*.P
+	rm -rf submodular-flow/*.d
+	rm -rf submodular-flow/*~
 
 .PHONY: distclean
 distclean: clean
+	rm -rf unit-test
+	rm -rf higher-order-experiment
 
