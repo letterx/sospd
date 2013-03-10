@@ -245,7 +245,8 @@ void SubmodularFlow::Relabel(NodeId i) {
         }
     }
     // remove_from_active_list(i);
-    add_to_active_list(i, layers[dis[i]]);
+    if (dis[i] < dis[s])
+        add_to_active_list(i, layers[dis[i]]);
 }
 
 ///////////////    end of push relabel    ///////////////////
