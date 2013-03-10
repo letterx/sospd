@@ -299,13 +299,17 @@ void SubmodularFlow::ComputeMinCut() {
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {
+    return ComputeEnergy(m_labels);
+}
+
+REAL SubmodularFlow::ComputeEnergy(const std::vector<int>& labels) const {
     REAL total = m_constant_term;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
-        if (m_labels[i] == 1) total += m_c_it[i];
+        if (labels[i] == 1) total += m_c_it[i];
         else total += m_c_si[i];
     }
     for (const CliquePtr& cp : m_cliques) {
-        total += cp->ComputeEnergy(m_labels);
+        total += cp->ComputeEnergy(labels);
     }
     return total;
 }
@@ -349,7 +353,7 @@ REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
 REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
     // This is not the most efficient way to do things, but it works
     const size_t u_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), u) - this->m_nodes.begin();
-    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.end();
+    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.begin();
 
     REAL min_energy = std::numeric_limits<REAL>::max();
     Assignment num_assgns = 1 << this->m_nodes.size();

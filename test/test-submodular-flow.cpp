@@ -292,6 +292,43 @@ BOOST_AUTO_TEST_CASE(largeGraph) {
     TestInvariantsPreserved(sf);
 }
 
+BOOST_AUTO_TEST_CASE(computeMinCut) {
+    SubmodularFlow sf;
+
+    const size_t n = 10;
+    const size_t k = 4;
+    const size_t m = 10;
+    const REAL clique_range = 100;
+    const REAL unary_mean = 800;
+    const REAL unary_var = 1600;
+    const unsigned int seed = 0;
+
+    GenRandom(sf, n, k, m, clique_range, unary_mean, unary_var, seed);
+
+    sf.PushRelabel();
+    const auto& dis = sf.GetDis();
+    const NodeId s = sf.GetS();
+    std::vector<int> pr_labels;
+    for (size_t i = 0; i < n; ++i) {
+        if (dis[i] < dis[s])
+            pr_labels.push_back(0);
+        else
+            pr_labels.push_back(1);
+    }
+
+    sf.ComputeMinCut();
+
+    BOOST_CHECK_EQUAL(sf.ComputeEnergy(), sf.ComputeEnergy(pr_labels));
+    for (size_t i = 0; i < n; ++i) {
+        BOOST_CHECK_EQUAL(sf.GetLabel(i), pr_labels[i]);
+    }
+
+    const auto& cliques = sf.GetCliques();
+    for (auto cp : cliques) {
+        BOOST_CHECK_EQUAL(cp->ComputeEnergyAlpha(pr_labels), 0);
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 
@@ -345,6 +382,13 @@ BOOST_AUTO_TEST_CASE(identicalToHigherOrder) {
     QPBO<REAL> qr(n, 0);
     ho.ToQuadratic(qr);
     qr.Solve();
+
+    std::vector<int> qr_labels;
+    for (size_t i = 0; i < n; ++i)
+        qr_labels.push_back(qr.GetLabel(i));
+
+    // If this test fails, there's a problem in the higher-order code. Email me
+    BOOST_CHECK_EQUAL(sf.ComputeEnergy(qr_labels)*2, qr.ComputeTwiceEnergy());
 
     BOOST_CHECK_EQUAL(sf.ComputeEnergy()*2, qr.ComputeTwiceEnergy());
     for (size_t i = 0; i < n; ++i) {
