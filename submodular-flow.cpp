@@ -190,8 +190,12 @@ void SubmodularFlow::PushRelabel()
 }
 
 REAL SubmodularFlow::ResCap(Arc arc) {
-    if (arc.j == s) {
+    if (arc.i == s) {
+        return m_c_si[arc.j] - m_phi_it[arc.j];
+    } else if (arc.j == s) {
         return m_phi_si[arc.i];
+    } else if (arc.i == t) {
+        return m_phi_it[arc.j];
     } else if (arc.j == t) {
         return m_c_it[arc.i] - m_phi_it[arc.i];
     } else {
@@ -274,7 +278,7 @@ void SubmodularFlow::ComputeMinCut() {
             for (Arc arc : m_arc_list[u]) {
                 arc.i = arc.j;
                 arc.j = u;
-                if (ResCap(arc) > 0
+                if (ResCap(arc) > 0 && arc.i != s && arc.i != t
                         && dis[arc.i] == std::numeric_limits<int>::max()) {
                     m_labels[arc.i] = 0;
                     next.push(arc.i);
@@ -284,6 +288,8 @@ void SubmodularFlow::ComputeMinCut() {
         }
         ++level;
     }
+    for (int label : m_labels)
+        std::cout << label << std::endl;
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {
