@@ -21,10 +21,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+extern "C" {
 #include "svm_struct_api.h"
 #include "svm_light/svm_common.h"
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct/svm_struct_learn.h"
+}
 
 
 void svm_learn_struct_joint_custom(SAMPLE sample, STRUCT_LEARN_PARM *sparm,

@@ -19,8 +19,10 @@
 
 #include <stdio.h>
 #include <string.h>
+extern "C" {
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"
+}
 
 void        svm_struct_learn_api_init(int argc, char* argv[])
 {
@@ -98,6 +100,7 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
     c.rhs=NULL;
     c.m=0;
   }
+#if 0
   else { /* add constraints so that all learned weights are
             positive. WARNING: Currently, they are positive only up to
             precision epsilon set by -e. */
@@ -113,6 +116,7 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
       c.rhs[i]=0.0;
     }
   }
+#endif
   return(c);
 }
 
