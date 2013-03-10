@@ -346,6 +346,13 @@ BOOST_AUTO_TEST_CASE(identicalToHigherOrder) {
     ho.ToQuadratic(qr);
     qr.Solve();
 
+    std::vector<int> qr_labels;
+    for (size_t i = 0; i < n; ++i)
+        qr_labels.push_back(qr.GetLabel(i));
+
+    // If this test fails, there's a problem in the higher-order code. Email me
+    BOOST_CHECK_EQUAL(sf.ComputeEnergy(qr_labels)*2, qr.ComputeTwiceEnergy());
+
     BOOST_CHECK_EQUAL(sf.ComputeEnergy()*2, qr.ComputeTwiceEnergy());
     for (size_t i = 0; i < n; ++i) {
         BOOST_REQUIRE(qr.GetLabel(i) >= 0);

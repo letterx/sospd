@@ -50,6 +50,7 @@ class SubmodularFlow {
 
         // Compute the total energy across all cliques of the current labeling
         REAL ComputeEnergy() const;
+        REAL ComputeEnergy(const std::vector<int>& labels) const;
 
         /* Clique: abstract base class for user-defined clique functions
          *

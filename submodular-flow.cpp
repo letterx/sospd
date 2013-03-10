@@ -293,13 +293,17 @@ void SubmodularFlow::ComputeMinCut() {
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {
+    return ComputeEnergy(m_labels);
+}
+
+REAL SubmodularFlow::ComputeEnergy(const std::vector<int>& labels) const {
     REAL total = m_constant_term;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
-        if (m_labels[i] == 1) total += m_c_it[i];
+        if (labels[i] == 1) total += m_c_it[i];
         else total += m_c_si[i];
     }
     for (const CliquePtr& cp : m_cliques) {
-        total += cp->ComputeEnergy(m_labels);
+        total += cp->ComputeEnergy(labels);
     }
     return total;
 }
