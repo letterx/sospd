@@ -107,6 +107,11 @@ void SubmodularFlow::PushRelabelInit()
     }
     dis[s] = m_num_nodes + 2; // n = m_num_nodes + 2
 
+    for (int i = 0; i < 2 * (m_num_nodes + 2); ++i) {
+        Layer layer;
+        layers.push_back(layer);
+    }
+
     // saturate arcs out of s.
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         m_phi_si[i] = m_c_si[i];
@@ -224,6 +229,7 @@ void SubmodularFlow::Push(Arc arc) {
         delta = std::min(excess[arc.i], m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
+        std::cout << "Pushing on clique arc" << std::endl;
         delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j));
         std::vector<REAL>& alpha_ci = m_cliques[arc.c]->AlphaCi();
         alpha_ci[arc.i] += delta;
@@ -248,7 +254,7 @@ void SubmodularFlow::Relabel(NodeId i) {
             dis[i] = std::min (dis[i], dis[arc.j] + 1);
         }
     }
-    if (dis[i] < dis[s])
+    // if (dis[i] < dis[s])
         add_to_active_list(i, layers[dis[i]]);
 }
 
