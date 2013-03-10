@@ -347,7 +347,7 @@ REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
 REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
     // This is not the most efficient way to do things, but it works
     const size_t u_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), u) - this->m_nodes.begin();
-    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.end();
+    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.begin();
 
     REAL min_energy = std::numeric_limits<REAL>::max();
     Assignment num_assgns = 1 << this->m_nodes.size();
