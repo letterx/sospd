@@ -146,6 +146,7 @@ void SubmodularFlow::PushRelabelInit()
         CliquePtr cp = m_cliques[cid];
         for (NodeId i : cp->Nodes()) {
             for (NodeId j : cp->Nodes()) {
+                if (i == j) continue;
                 arc.i = i;
                 arc.j = j;
                 arc.c = cid;
@@ -227,12 +228,11 @@ void SubmodularFlow::Push(Arc arc) {
     // Update (residual capacities) and excesses
     excess[arc.i] -= delta;
     excess[arc.j] += delta;
-    if (excess[arc.j] > 0) {
+    if (excess[arc.j] > 0 && arc.j != s && arc.j != t) {
         remove_from_active_list(arc.j);
         add_to_active_list(arc.j, layers[dis[arc.j]]);
     }
     if (excess[arc.i] > 0) {
-        // remove_from_active_list(arc.i);
         add_to_active_list(arc.i, layers[dis[arc.i]]);
     }
 }
@@ -244,7 +244,6 @@ void SubmodularFlow::Relabel(NodeId i) {
             dis[i] = std::min (dis[i], dis[arc.j] + 1);
         }
     }
-    // remove_from_active_list(i);
     if (dis[i] < dis[s])
         add_to_active_list(i, layers[dis[i]]);
 }
