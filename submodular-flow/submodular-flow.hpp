@@ -50,6 +50,7 @@ class SubmodularFlow {
 
         // Compute the total energy across all cliques of the current labeling
         REAL ComputeEnergy() const;
+        REAL ComputeEnergy(const std::vector<int>& labels) const;
 
         /* Clique: abstract base class for user-defined clique functions
          *
@@ -79,6 +80,17 @@ class SubmodularFlow {
             size_t Size() const { return m_nodes.size(); }
             std::vector<REAL>& AlphaCi() { return m_alpha_Ci; }
             const std::vector<REAL>& AlphaCi() const { return m_alpha_Ci; }
+            size_t GetIndex(NodeId i) const {
+                return std::find(this->m_nodes.begin(), this->m_nodes.end(), i) - this->m_nodes.begin();
+            }
+            // Returns the energy of the given labeling, minus alphas for i in S
+            REAL ComputeEnergyAlpha(const std::vector<int>& labels) const {
+                REAL e = ComputeEnergy(labels);
+                for (size_t idx = 0; idx < m_nodes.size(); ++idx) {
+                    if (labels[m_nodes[idx]] == 1) e -= m_alpha_Ci[idx];
+                }
+                return e;
+            }
 
             protected:
             std::vector<NodeId> m_nodes; // The list of nodes in the clique

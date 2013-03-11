@@ -74,16 +74,20 @@ void SubmodularFlow::AddClique(const std::vector<NodeId>& nodes, const std::vect
 //////// Push Relabel methods ///////////
 
 void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
-    // BOOST_USING_STD_MIN();
-    // BOOST_USING_STD_MAX();
     layer.active_vertices.push_front(u);
     max_active = std::max BOOST_PREVENT_MACRO_SUBSTITUTION(dis[u], max_active);
     min_active = std::min BOOST_PREVENT_MACRO_SUBSTITUTION(dis[u], min_active);
     layer_list_ptr[u] = layer.active_vertices.begin();
 }
 
+// Inefficient but doing the remove manually since
+// I don't have a perfect understanding/translation of the boost code.
 void SubmodularFlow::remove_from_active_list(NodeId u) {
-    layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
+    std::list<NodeId> temp;
+    for (NodeId i : layers[dis[u]].active_vertices) {
+        if (u != i) temp.push_back(i);
+    }
+    std::swap(layers[dis[u]].active_vertices, temp);
 }
 
 void SubmodularFlow::PushRelabelInit()
@@ -106,6 +110,12 @@ void SubmodularFlow::PushRelabelInit()
         layers.push_back(layer);
     }
     dis[s] = m_num_nodes + 2; // n = m_num_nodes + 2
+
+    // Adding extra layers
+    for (int i = 0; i < 2 * (m_num_nodes + 2); ++i) {
+        Layer layer;
+        layers.push_back(layer);
+    }
 
     // saturate arcs out of s.
     for (NodeId i = 0; i < m_num_nodes; ++i) {
@@ -146,6 +156,7 @@ void SubmodularFlow::PushRelabelInit()
         CliquePtr cp = m_cliques[cid];
         for (NodeId i : cp->Nodes()) {
             for (NodeId j : cp->Nodes()) {
+                if (i == j) continue;
                 arc.i = i;
                 arc.j = j;
                 arc.c = cid;
@@ -189,8 +200,12 @@ void SubmodularFlow::PushRelabel()
 }
 
 REAL SubmodularFlow::ResCap(Arc arc) {
-    if (arc.j == s) {
+    if (arc.i == s) {
+        return m_c_si[arc.j] - m_phi_it[arc.j];
+    } else if (arc.j == s) {
         return m_phi_si[arc.i];
+    } else if (arc.i == t) {
+        return m_phi_it[arc.j];
     } else if (arc.j == t) {
         return m_c_it[arc.i] - m_phi_it[arc.i];
     } else {
@@ -211,6 +226,7 @@ boost::optional<SubmodularFlow::Arc> SubmodularFlow::FindPushableEdge(NodeId i) 
 void SubmodularFlow::Push(Arc arc) {
     REAL delta; // amount to push
 
+    ASSERT(arc.i != s && arc.i != t);
     // Note, we never have arc.i == s or t
     if (arc.j == s) {  // reverse arc
         delta = std::min(excess[arc.i], m_phi_si[arc.i]);
@@ -220,19 +236,20 @@ void SubmodularFlow::Push(Arc arc) {
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
         delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j));
-        std::vector<REAL>& alpha_ci = m_cliques[arc.c]->AlphaCi();
-        alpha_ci[arc.i] += delta;
-        alpha_ci[arc.j] -= delta;
+        std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
+        Clique& c = *m_cliques[arc.c];
+        std::vector<REAL>& alpha_ci = c.AlphaCi();
+        alpha_ci[c.GetIndex(arc.i)] += delta;
+        alpha_ci[c.GetIndex(arc.j)] -= delta;
     }
     // Update (residual capacities) and excesses
     excess[arc.i] -= delta;
     excess[arc.j] += delta;
-    if (excess[arc.j] > 0) {
+    if (excess[arc.j] > 0 && arc.j != s && arc.j != t) {
         remove_from_active_list(arc.j);
         add_to_active_list(arc.j, layers[dis[arc.j]]);
     }
     if (excess[arc.i] > 0) {
-        // remove_from_active_list(arc.i);
         add_to_active_list(arc.i, layers[dis[arc.i]]);
     }
 }
@@ -244,9 +261,9 @@ void SubmodularFlow::Relabel(NodeId i) {
             dis[i] = std::min (dis[i], dis[arc.j] + 1);
         }
     }
-    // remove_from_active_list(i);
-    if (dis[i] < dis[s])
-        add_to_active_list(i, layers[dis[i]]);
+    // if (dis[i] < dis[s])
+    // Adding all active vertices back for now.
+    add_to_active_list(i, layers[dis[i]]);
 }
 
 ///////////////    end of push relabel    ///////////////////
@@ -275,7 +292,7 @@ void SubmodularFlow::ComputeMinCut() {
             for (Arc arc : m_arc_list[u]) {
                 arc.i = arc.j;
                 arc.j = u;
-                if (ResCap(arc) > 0
+                if (ResCap(arc) > 0 && arc.i != s && arc.i != t
                         && dis[arc.i] == std::numeric_limits<int>::max()) {
                     m_labels[arc.i] = 0;
                     next.push(arc.i);
@@ -285,16 +302,22 @@ void SubmodularFlow::ComputeMinCut() {
         }
         ++level;
     }
+    for (int label : m_labels)
+        std::cout << label << std::endl;
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {
+    return ComputeEnergy(m_labels);
+}
+
+REAL SubmodularFlow::ComputeEnergy(const std::vector<int>& labels) const {
     REAL total = m_constant_term;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
-        if (m_labels[i] == 1) total += m_c_it[i];
+        if (labels[i] == 1) total += m_c_it[i];
         else total += m_c_si[i];
     }
     for (const CliquePtr& cp : m_cliques) {
-        total += cp->ComputeEnergy(m_labels);
+        total += cp->ComputeEnergy(labels);
     }
     return total;
 }
@@ -338,7 +361,7 @@ REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
 REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
     // This is not the most efficient way to do things, but it works
     const size_t u_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), u) - this->m_nodes.begin();
-    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.end();
+    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.begin();
 
     REAL min_energy = std::numeric_limits<REAL>::max();
     Assignment num_assgns = 1 << this->m_nodes.size();
