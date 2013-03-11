@@ -72,7 +72,7 @@ typedef struct structmodel {
   double walpha;
   /* other information that is needed for the stuctural model can be
      added here, e.g. the grammar rules for NLP parsing */
-  int add_your_variables_here;
+  void *data;
 } STRUCTMODEL;
 
 typedef struct struct_learn_parm {

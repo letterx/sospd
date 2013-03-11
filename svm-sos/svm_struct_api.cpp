@@ -21,6 +21,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <memory>
 #include <stdio.h>
 #include <string.h>
 extern "C" {
@@ -30,6 +31,8 @@ extern "C" {
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include "svm_feature.hpp"
+
 class PatternData {
     public:
         PatternData(const cv::Mat& im, const cv::Mat& tri)
@@ -38,12 +41,35 @@ class PatternData {
         cv::Mat m_trimap;
 };
 
+PatternData* data(PATTERN& p) { return (PatternData*)p.data; }
+PATTERN MakePattern(PatternData* d) {
+    PATTERN p;
+    p.data = d;
+    return p;
+}
+
 class LabelData {
     public:
         LabelData(const cv::Mat& gt)
             : m_gt(gt) { }
         cv::Mat m_gt;
 };
+
+LabelData* data(LABEL& l) { return (LabelData*)l.data; }
+LABEL MakeLabel(LabelData* d) {
+    LABEL l;
+    l.data = d;
+    return l;
+}
+
+typedef FeatureGroup<PatternData, LabelData, int> FG;
+
+class ModelData {
+    public:
+        std::vector<std::shared_ptr<FG>> m_features;
+};
+
+ModelData* data(STRUCTMODEL& sm) { return (ModelData*)sm.data; }
 
 void        svm_struct_learn_api_init(int argc, char* argv[])
 {
@@ -111,9 +137,11 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
 
   examples=(EXAMPLE *)my_malloc(sizeof(EXAMPLE)*n);
   for (size_t i = 0; i < n; ++i) {
-      examples[i].x.data = new PatternData(images[i], trimaps[i]);
-      examples[i].y.data = new LabelData(gts[i]);
+      examples[i].x = MakePattern(new PatternData(images[i], trimaps[i]));
+      examples[i].y = MakeLabel(new LabelData(gts[i]));
   }
+
+  std::cout << " (" << n << " examples)... ";
 
   sample.n=n;
   sample.examples=examples;
@@ -129,6 +157,7 @@ void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
      feature space in sizePsi. This is the maximum number of different
      weights that can be learned. Later, the weight vector w will
      contain the learned weights for the model. */
+    sm->data = new ModelData;
 
   sm->sizePsi=100; /* replace by appropriate number of features */
 }
@@ -368,11 +397,11 @@ void        write_label(FILE *fp, LABEL y)
 } 
 
 void        free_pattern(PATTERN x) {
-    delete (PatternData*)x.data;
+    delete data(x);
 }
 
 void        free_label(LABEL y) {
-    delete (LabelData*)y.data;
+    delete data(y);
 }
 
 void        free_struct_model(STRUCTMODEL sm) 
@@ -381,6 +410,7 @@ void        free_struct_model(STRUCTMODEL sm)
   /* if(sm.w) free(sm.w); */ /* this is free'd in free_model */
   if(sm.svm_model) free_model(sm.svm_model,1);
   /* add free calls for user defined data here */
+  delete data(sm);
 }
 
 void        free_struct_sample(SAMPLE s)
