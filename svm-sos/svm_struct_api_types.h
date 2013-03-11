@@ -56,13 +56,13 @@
 typedef struct pattern {
   /* this defines the x-part of a training example, e.g. the structure
      for storing a natural language sentence in NLP parsing */
-  int add_your_variables_here;
+    void *data;
 } PATTERN;
 
 typedef struct label {
   /* this defines the y-part (the label) of a training example,
      e.g. the parse tree of the corresponding sentence. */
-  int add_your_variables_here;
+    void *data;
 } LABEL;
 
 typedef struct structmodel {

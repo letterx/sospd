@@ -17,12 +17,32 @@
 /*                                                                     */
 /***********************************************************************/
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
 #include <stdio.h>
 #include <string.h>
 extern "C" {
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"
 }
+#include <opencv2/core/core.hpp>
+
+class PatternData {
+    public:
+        PatternData(const cv::Mat& im, const cv::Mat& tri)
+            : m_image(im), m_trimap(tri) { }
+        cv::Mat m_image;
+        cv::Mat m_trimap;
+};
+
+class LabelData {
+    public:
+        LabelData(const cv::Mat& gt)
+            : m_gt(gt) { }
+        cv::Mat m_gt;
+};
 
 void        svm_struct_learn_api_init(int argc, char* argv[])
 {
@@ -54,12 +74,38 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
      examples must be written into sample.n */
   SAMPLE   sample;  /* sample */
   EXAMPLE  *examples;
-  long     n;       /* number of examples */
+  size_t n = 0;       /* number of examples */
 
-  n=100; /* replace by appropriate number of examples */
+  std::ifstream main_file(file);
+
+  std::string images_dir;
+  std::string trimap_dir;
+  std::string gt_dir;
+
+  std::getline(main_file, images_dir);
+  std::getline(main_file, trimap_dir);
+  std::getline(main_file, gt_dir);
+
+  std::vector<cv::Mat> images;
+  std::vector<cv::Mat> trimaps;
+  std::vector<cv::Mat> gts;
+
+  while (main_file.good()) {
+      std::getline(main_file, line);
+      if (!line.empty()) {
+          n++;
+          images.push_back(cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR));
+          trimaps.push_back(trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR));
+          gts.push_back(cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE));
+      }
+  }
+  main_file.close();
+
   examples=(EXAMPLE *)my_malloc(sizeof(EXAMPLE)*n);
-
-  /* fill in your code here */
+  for (size_t i = 0; i < n; ++i) {
+      examples[i].x.data = new PatternData(images[i], trimaps[i]);
+      examples[i].y.data = new LabelData(gts[i]);
+  }
 
   sample.n=n;
   sample.examples=examples;
@@ -314,11 +360,11 @@ void        write_label(FILE *fp, LABEL y)
 } 
 
 void        free_pattern(PATTERN x) {
-  /* Frees the memory of x. */
+    delete x.data;
 }
 
 void        free_label(LABEL y) {
-  /* Frees the memory of y. */
+    delete y.data;
 }
 
 void        free_struct_model(STRUCTMODEL sm) 
