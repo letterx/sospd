@@ -83,18 +83,20 @@ void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
 // Inefficient but doing the remove manually since
 // I don't have a perfect understanding/translation of the boost code.
 void SubmodularFlow::remove_from_active_list(NodeId u) {
-    std::list<NodeId> temp;
+/*    std::list<NodeId> temp;
     for (NodeId i : layers[dis[u]].active_vertices) {
         if (u != i) temp.push_back(i);
     }
     std::swap(layers[dis[u]].active_vertices, temp);
+*/
+    layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
 }
 
 void SubmodularFlow::PushRelabelInit()
 {
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
-    max_active = 0; min_active = m_num_nodes + 2; // n
+    max_active = 0; min_active = m_num_nodes + 2; // original nodes + source and sink
 
     dis.clear(); excess.clear(); current_arc_index.clear();
     m_arc_list.clear(); layers.clear();
@@ -109,10 +111,10 @@ void SubmodularFlow::PushRelabelInit()
         Layer layer;
         layers.push_back(layer);
     }
-    dis[s] = m_num_nodes + 2; // n = m_num_nodes + 2
+    dis[s] = m_num_nodes + 2;
 
     // Adding extra layers
-    for (int i = 0; i < 2 * (m_num_nodes + 2); ++i) {
+    for (int i = 0; i < (m_num_nodes + 2); ++i) {
         Layer layer;
         layers.push_back(layer);
     }
@@ -236,7 +238,7 @@ void SubmodularFlow::Push(Arc arc) {
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
         delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j));
-        std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
+        // std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
         Clique& c = *m_cliques[arc.c];
         std::vector<REAL>& alpha_ci = c.AlphaCi();
         alpha_ci[c.GetIndex(arc.i)] += delta;
