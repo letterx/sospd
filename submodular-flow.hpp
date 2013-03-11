@@ -80,6 +80,9 @@ class SubmodularFlow {
             size_t Size() const { return m_nodes.size(); }
             std::vector<REAL>& AlphaCi() { return m_alpha_Ci; }
             const std::vector<REAL>& AlphaCi() const { return m_alpha_Ci; }
+            size_t GetIndex(NodeId i) const {
+                return std::find(this->m_nodes.begin(), this->m_nodes.end(), i) - this->m_nodes.begin();
+            }
             // Returns the energy of the given labeling, minus alphas for i in S
             REAL ComputeEnergyAlpha(const std::vector<int>& labels) const {
                 REAL e = ComputeEnergy(labels);
