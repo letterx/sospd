@@ -9,7 +9,7 @@ CXX = g++
 LD = g++
 
 CFLAGS =   $(SFLAGS) -O3 -fomit-frame-pointer -ffast-math -Wall 
-LDFLAGS =  $(SFLAGS) -O3 -lm -Wall
+LDFLAGS =  $(SFLAGS) -O3 -lm -Wall -lopencv_core -lopencv_highgui
 #CFLAGS =  $(SFLAGS) -pg -Wall
 #LDFLAGS = $(SFLAGS) -pg -lm -Wall 
 

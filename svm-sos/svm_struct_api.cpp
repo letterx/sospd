@@ -28,6 +28,7 @@ extern "C" {
 #include "svm_struct_api.h"
 }
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 class PatternData {
     public:
@@ -81,10 +82,17 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
   std::string images_dir;
   std::string trimap_dir;
   std::string gt_dir;
+  std::string line;
 
-  std::getline(main_file, images_dir);
-  std::getline(main_file, trimap_dir);
-  std::getline(main_file, gt_dir);
+  do {
+      std::getline(main_file, images_dir);
+  } while (images_dir[0] != '#');
+  do {
+      std::getline(main_file, trimap_dir);
+  } while (trimap_dir[0] != '#');
+  do {
+      std::getline(main_file, gt_dir);
+  } while (gt_dir[0] != '#');
 
   std::vector<cv::Mat> images;
   std::vector<cv::Mat> trimaps;
@@ -92,10 +100,10 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
 
   while (main_file.good()) {
       std::getline(main_file, line);
-      if (!line.empty()) {
+      if (!line.empty() && line[0] != '#') {
           n++;
           images.push_back(cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR));
-          trimaps.push_back(trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR));
+          trimaps.push_back(cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR));
           gts.push_back(cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE));
       }
   }
@@ -360,11 +368,11 @@ void        write_label(FILE *fp, LABEL y)
 } 
 
 void        free_pattern(PATTERN x) {
-    delete x.data;
+    delete (PatternData*)x.data;
 }
 
 void        free_label(LABEL y) {
-    delete y.data;
+    delete (LabelData*)y.data;
 }
 
 void        free_struct_model(STRUCTMODEL sm) 
