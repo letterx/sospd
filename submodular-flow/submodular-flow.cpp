@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "submodular-flow.hpp"
 #include <algorithm>
 #include <limits>
@@ -226,16 +227,26 @@ void SubmodularFlow::Push(Arc arc) {
     // Update (residual capacities) and excesses
     excess[arc.i] -= delta;
     excess[arc.j] += delta;
+    if (excess[arc.j] > 0) {
+        remove_from_active_list(arc.j);
+        add_to_active_list(arc.j, layers[dis[arc.j]]);
+    }
+    if (excess[arc.i] > 0) {
+        // remove_from_active_list(arc.i);
+        add_to_active_list(arc.i, layers[dis[arc.i]]);
+    }
 }
 
 void SubmodularFlow::Relabel(NodeId i) {
     dis[i] = std::numeric_limits<int>::max();
     for(Arc arc : m_arc_list[i]) {
-    // for(std::vector<Arc>::iterator it = m_arc_list[i].begin();
-   //         it != m_arc_list[i].end(); ++it) {
-   //     Arc arc = *it;
-        dis[i] = std::min (dis[i], dis[arc.j] + 1);
+        if (ResCap(arc) > 0) {
+            dis[i] = std::min (dis[i], dis[arc.j] + 1);
+        }
     }
+    // remove_from_active_list(i);
+    if (dis[i] < dis[s])
+        add_to_active_list(i, layers[dis[i]]);
 }
 
 ///////////////    end of push relabel    ///////////////////
@@ -253,10 +264,10 @@ void SubmodularFlow::ComputeMinCut() {
 
     int level = 1;
     while (!next.empty()) {
-        // Empty next; next becomes curr
+        // Next becomes curr; empty next
+        std::swap(curr, next);
         std::queue<NodeId> empty;
         std::swap(next, empty);
-        std::swap(curr, next);
 
         while (!curr.empty()) {
             NodeId u = curr.front();
@@ -265,7 +276,7 @@ void SubmodularFlow::ComputeMinCut() {
                 arc.i = arc.j;
                 arc.j = u;
                 if (ResCap(arc) > 0
-                        && dis[arc.i] < std::numeric_limits<int>::max()) {
+                        && dis[arc.i] == std::numeric_limits<int>::max()) {
                     m_labels[arc.i] = 0;
                     next.push(arc.i);
                     dis[arc.i] = level;
