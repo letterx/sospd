@@ -12,8 +12,8 @@ int main(int argc, char **argv) {
     typedef boost::chrono::system_clock::time_point TimePt;
     typedef boost::chrono::duration<double> Duration;
 
-    const NodeId n = 100;
-    const size_t m = 100;
+    const NodeId n = 1000;
+    const size_t m = 1000;
     const size_t k = 4;
 
     TimePt ho_start = boost::chrono::system_clock::now();
