@@ -8,8 +8,8 @@ CC = gcc
 CXX = g++
 LD = g++
 
-CFLAGS =   $(SFLAGS) -O3 -fomit-frame-pointer -ffast-math -Wall -std=c++11
-LDFLAGS =  $(SFLAGS) -O3 -lm -Wall -lopencv_core -lopencv_highgui
+CFLAGS =   $(SFLAGS) -O3 -fomit-frame-pointer -ffast-math -Wall -std=c++11 -I../submodular-flow/
+LDFLAGS =  $(SFLAGS) -O3 -lm -Wall -lopencv_core -lopencv_highgui -L../lib -lsubmodular-flow
 #CFLAGS =  $(SFLAGS) -pg -Wall
 #LDFLAGS = $(SFLAGS) -pg -lm -Wall 
 

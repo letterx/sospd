@@ -32,6 +32,7 @@ extern "C" {
 #include <opencv2/highgui/highgui.hpp>
 
 #include "svm_feature.hpp"
+#include "submodular-flow.hpp"
 
 class PatternData {
     public:
@@ -62,7 +63,9 @@ LABEL MakeLabel(LabelData* d) {
     return l;
 }
 
-typedef FeatureGroup<PatternData, LabelData, int> FG;
+typedef SubmodularFlow CRF;
+
+typedef FeatureGroup<PatternData, LabelData, CRF> FG;
 
 class ModelData {
     public:
@@ -220,9 +223,16 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
      by psi() and range from index 1 to index sm->sizePsi. If the
      function cannot find a label, it shall return an empty label as
      recognized by the function empty_label(y). */
-  LABEL y;
+    LABEL y;
 
-  /* insert your code for computing the predicted label y here */
+    CRF crf;
+    for (auto fgp : data(sm)->m_features) {
+        fgp->AddToCRF(crf, *data(x));
+    }
+
+    // FIXME: Finish filling this out
+    
+
 
   return(y);
 }
