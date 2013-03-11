@@ -3,7 +3,7 @@ DEFS =
 INCLUDES = -I. -I./higher-order-energy/include -I./higher-order-energy/qpbo
 CXX_FLAGS = -g -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = 
-LIBS = -lboost_chrono -lboost_system
+LIBS = 
 TEST_DIR = ./test
 
 TEST_SRCS = $(wildcard $(TEST_DIR)/*.cpp)

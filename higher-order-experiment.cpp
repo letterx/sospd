@@ -1,5 +1,5 @@
 #include <iostream>
-#include <boost/chrono.hpp>
+#include <chrono>
 #include "higher-order.hpp"
 #include "QPBO.h"
 #include "gen-random.hpp"
@@ -9,14 +9,14 @@ int main(int argc, char **argv) {
     typedef int64_t REAL;
     typedef HigherOrderEnergy<REAL, 4> HOE;
     typedef typename HOE::NodeId NodeId;
-    typedef boost::chrono::system_clock::time_point TimePt;
-    typedef boost::chrono::duration<double> Duration;
+    typedef std::chrono::system_clock::time_point TimePt;
+    typedef std::chrono::duration<double> Duration;
 
     const NodeId n = 1000;
     const size_t m = 1000;
     const size_t k = 4;
 
-    TimePt ho_start = boost::chrono::system_clock::now();
+    TimePt ho_start = std::chrono::system_clock::now();
     HOE ho;
 
     GenRandom(ho, n, k, m, (REAL)100, (REAL)800, (REAL)1600, 0);
@@ -26,16 +26,16 @@ int main(int argc, char **argv) {
     ho.ToQuadratic(qr);
     qr.Solve();
 
-    Duration ho_time = boost::chrono::system_clock::now() - ho_start;
+    Duration ho_time = std::chrono::system_clock::now() - ho_start;
 
-    TimePt sf_start = boost::chrono::system_clock::now();
+    TimePt sf_start = std::chrono::system_clock::now();
 
     SubmodularFlow sf;
     GenRandom(sf, n, k, m, (REAL)100, (REAL)800, (REAL)1600, 0);
     sf.PushRelabel();
     sf.ComputeMinCut();
 
-    Duration sf_time = boost::chrono::system_clock::now() - sf_start;
+    Duration sf_time = std::chrono::system_clock::now() - sf_start;
 
     size_t labeled = 0;
     size_t ones = 0;
