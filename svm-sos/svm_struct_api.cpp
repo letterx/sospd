@@ -28,6 +28,8 @@ extern "C" {
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"
 }
+#include <boost/serialization/vector.hpp>
+#include <boost/archive/text_oarchive.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -51,9 +53,16 @@ PATTERN MakePattern(PatternData* d) {
 
 class LabelData {
     public:
-        LabelData(const cv::Mat& gt)
+        LabelData(const std::vector<int>& gt)
             : m_gt(gt) { }
-        cv::Mat m_gt;
+        std::vector<int> m_gt;
+
+    private:
+        friend class boost::serialization::access;
+        template <class Archive>
+        void serialize(Archive& ar, const unsigned int version) {
+            ar & m_gt;
+        }
 };
 
 LabelData* data(LABEL& l) { return (LabelData*)l.data; }
@@ -426,6 +435,10 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 void        write_label(FILE *fp, LABEL y)
 {
   /* Writes label y to file handle fp. */
+    std::ostringstream os;
+    boost::archive::text_oarchive oa(os);
+    oa << *data(y);
+    fwrite(os.str().c_str(), sizeof(char), os.str().size()+1, fp);
 } 
 
 void        free_pattern(PATTERN x) {
