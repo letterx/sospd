@@ -30,6 +30,8 @@ extern "C" {
 }
 #include <boost/serialization/vector.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -85,6 +87,12 @@ class ModelData {
             return n;
         }
         std::vector<std::shared_ptr<FG>> m_features;
+    private:
+        friend class boost::serialization::access;
+        template <class Archive>
+        void serialize(Archive& ar, const unsigned int version) {
+            // FIXME: Write out features???
+        }
 };
 
 ModelData* data(STRUCTMODEL& sm) { return (ModelData*)sm.data; }
@@ -424,12 +432,31 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
 			       STRUCT_LEARN_PARM *sparm)
 {
   /* Writes structural model sm to file file. */
+    std::ofstream ofs;
+    boost::archive::text_oarchive oa(ofs);
+    oa << sm->sizePsi;
+    for (long i = 0; i < sm->sizePsi; ++i) {
+        oa << sm->w[i];
+    }
+    oa << sm->walpha;
+    oa << *data(sm);
 }
 
 STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 {
   /* Reads structural model sm from file file. This function is used
      only in the prediction module, not in the learning module. */
+    STRUCTMODEL sm;
+    std::ifstream ifs;
+    boost::archive::text_iarchive ia(ifs);
+    ia >> sm.sizePsi;
+    for (long i = 0; i < sm.sizePsi; ++i) {
+        ia >> sm.w[i];
+    }
+    ia >> sm.walpha;
+    ia >> *data(sm);
+
+    return sm;
 }
 
 void        write_label(FILE *fp, LABEL y)
