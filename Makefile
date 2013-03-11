@@ -71,3 +71,6 @@ distclean: clean
 	rm -rf higher-order-experiment
 	rm -rf ./lib
 
+.PHONY: check
+check: ./unit-test
+	./unit-test
