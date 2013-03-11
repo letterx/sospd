@@ -66,10 +66,17 @@ typedef FeatureGroup<PatternData, LabelData, int> FG;
 
 class ModelData {
     public:
+        long NumFeatures() const {
+            long n = 0;
+            for (auto fgp : m_features)
+                n += fgp->NumFeatures();
+            return n;
+        }
         std::vector<std::shared_ptr<FG>> m_features;
 };
 
 ModelData* data(STRUCTMODEL& sm) { return (ModelData*)sm.data; }
+ModelData* data(STRUCTMODEL* sm) { return (ModelData*)sm->data; }
 
 void        svm_struct_learn_api_init(int argc, char* argv[])
 {
@@ -159,7 +166,7 @@ void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
      contain the learned weights for the model. */
     sm->data = new ModelData;
 
-  sm->sizePsi=100; /* replace by appropriate number of features */
+    sm->sizePsi=data(sm)->NumFeatures(); /* replace by appropriate number of features */
 }
 
 CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm, 
