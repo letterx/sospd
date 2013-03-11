@@ -226,6 +226,7 @@ boost::optional<SubmodularFlow::Arc> SubmodularFlow::FindPushableEdge(NodeId i) 
 void SubmodularFlow::Push(Arc arc) {
     REAL delta; // amount to push
 
+    ASSERT(arc.i != s && arc.i != t);
     // Note, we never have arc.i == s or t
     if (arc.j == s) {  // reverse arc
         delta = std::min(excess[arc.i], m_phi_si[arc.i]);
@@ -234,11 +235,12 @@ void SubmodularFlow::Push(Arc arc) {
         delta = std::min(excess[arc.i], m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
-        std::cout << "Pushing on clique arc" << std::endl;
         delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j));
-        std::vector<REAL>& alpha_ci = m_cliques[arc.c]->AlphaCi();
-        alpha_ci[arc.i] += delta;
-        alpha_ci[arc.j] -= delta;
+        std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
+        Clique& c = *m_cliques[arc.c];
+        std::vector<REAL>& alpha_ci = c.AlphaCi();
+        alpha_ci[c.GetIndex(arc.i)] += delta;
+        alpha_ci[c.GetIndex(arc.j)] -= delta;
     }
     // Update (residual capacities) and excesses
     excess[arc.i] -= delta;

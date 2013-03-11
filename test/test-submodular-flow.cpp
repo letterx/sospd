@@ -365,9 +365,9 @@ BOOST_AUTO_TEST_CASE(identicalToHigherOrder) {
     SubmodularFlow sf;
     HigherOrderEnergy<REAL, 4> ho;
 
-    const size_t n = 10;
+    const size_t n = 100;
     const size_t k = 4;
-    const size_t m = 10;
+    const size_t m = 100;
     const REAL clique_range = 100;
     const REAL unary_mean = 800;
     const REAL unary_var = 1600;
