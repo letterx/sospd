@@ -333,11 +333,26 @@ SVECTOR     *psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
      that ybar!=y that maximizes psi(x,ybar,sm)*sm.w (where * is the
      inner vector product) and the appropriate function of the
      loss + margin/slack rescaling method. See that paper for details. */
-  SVECTOR *fvec=NULL;
+    SVECTOR *fvec=NULL;
 
-  /* insert code for computing the feature vector for x and y here */
+    /* insert code for computing the feature vector for x and y here */
 
-  return(fvec);
+    std::vector<WORD> words;
+    FNUM fnum = 1;
+    for (auto fgp : data(sm)->m_features) {
+        std::vector<FVAL> values = fgp->Psi(*data(x), *data(y));
+        ASSERT(values.size() == fgp->NumFeatures());
+        for (FVAL v : values) {
+            WORD w;
+            w.wnum = fnum++;
+            w.weight = v;
+            words.push_back(w);
+        }
+    }
+
+    fvec = create_svector(words.data(), nullptr, 1.0);
+
+    return(fvec);
 }
 
 double      loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
