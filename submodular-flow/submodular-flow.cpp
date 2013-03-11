@@ -236,7 +236,7 @@ void SubmodularFlow::Push(Arc arc) {
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
         delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j));
-        std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
+        //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
         Clique& c = *m_cliques[arc.c];
         std::vector<REAL>& alpha_ci = c.AlphaCi();
         alpha_ci[c.GetIndex(arc.i)] += delta;
@@ -302,8 +302,6 @@ void SubmodularFlow::ComputeMinCut() {
         }
         ++level;
     }
-    for (int label : m_labels)
-        std::cout << label << std::endl;
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {
@@ -360,17 +358,18 @@ REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
 
 REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
     // This is not the most efficient way to do things, but it works
-    const size_t u_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), u) - this->m_nodes.begin();
-    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.begin();
+    const size_t u_idx = GetIndex(u);
+    const size_t v_idx = GetIndex(v);
+    const size_t n = this->m_nodes.size();
 
     REAL min_energy = std::numeric_limits<REAL>::max();
-    Assignment num_assgns = 1 << this->m_nodes.size();
+    Assignment num_assgns = 1 << n;
     for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
-        REAL alpha_C = 0;
-        for (size_t i = 0; i < this->m_alpha_Ci.size(); ++i) {
-            if (assgn & (1 << i)) alpha_C += this->m_alpha_Ci[i];
-        }
         if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
+            REAL alpha_C = 0;
+            for (size_t i = 0; i < n; ++i) {
+                if (assgn & (1 << i)) alpha_C += this->m_alpha_Ci[i];
+            }
             // then assgn is a set separating u from v
             REAL energy = m_energy[assgn] - alpha_C;
             if (energy < min_energy) min_energy = energy;

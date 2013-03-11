@@ -18,6 +18,10 @@
 *.swo
 *.P
 
+# gprof files
+gmon*.out
+gprof*.out
+
 # Compiled Binaries
 unit-test
 higher-order-experiment
