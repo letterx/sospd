@@ -74,16 +74,20 @@ void SubmodularFlow::AddClique(const std::vector<NodeId>& nodes, const std::vect
 //////// Push Relabel methods ///////////
 
 void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
-    // BOOST_USING_STD_MIN();
-    // BOOST_USING_STD_MAX();
     layer.active_vertices.push_front(u);
     max_active = std::max BOOST_PREVENT_MACRO_SUBSTITUTION(dis[u], max_active);
     min_active = std::min BOOST_PREVENT_MACRO_SUBSTITUTION(dis[u], min_active);
     layer_list_ptr[u] = layer.active_vertices.begin();
 }
 
+// Inefficient but doing the remove manually since
+// I don't have a perfect understanding/translation of the boost code.
 void SubmodularFlow::remove_from_active_list(NodeId u) {
-    layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
+    std::list<NodeId> temp;
+    for (NodeId i : layers[dis[u]].active_vertices) {
+        if (u != i) temp.push_back(i);
+    }
+    std::swap(layers[dis[u]].active_vertices, temp);
 }
 
 void SubmodularFlow::PushRelabelInit()
@@ -107,6 +111,7 @@ void SubmodularFlow::PushRelabelInit()
     }
     dis[s] = m_num_nodes + 2; // n = m_num_nodes + 2
 
+    // Adding extra layers
     for (int i = 0; i < 2 * (m_num_nodes + 2); ++i) {
         Layer layer;
         layers.push_back(layer);
@@ -255,7 +260,8 @@ void SubmodularFlow::Relabel(NodeId i) {
         }
     }
     // if (dis[i] < dis[s])
-        add_to_active_list(i, layers[dis[i]]);
+    // Adding all active vertices back for now.
+    add_to_active_list(i, layers[dis[i]]);
 }
 
 ///////////////    end of push relabel    ///////////////////
