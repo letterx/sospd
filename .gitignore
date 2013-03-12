@@ -27,3 +27,7 @@ unit-test
 higher-order-experiment
 svm_sos_classify
 svm_sos_learn
+
+# Generated test files
+*.model
+*.predictions
