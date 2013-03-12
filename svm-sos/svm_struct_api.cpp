@@ -224,6 +224,8 @@ LABEL       find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y,
 
   /* insert your code for computing the label ybar here */
 
+  ASSERT(false /* Unimplemented! */);
+
   return(ybar);
 }
 
@@ -252,11 +254,20 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
      Psi(x,ybar)>Psi(x,y)-1. If the function cannot find a label, it
      shall return an empty label as recognized by the function
      empty_label(y). */
-  LABEL ybar;
+    LABEL ybar;
 
-  /* insert your code for computing the label ybar here */
+    /* insert your code for computing the label ybar here */
+    CRF crf;
+    data(sm)->InitializeCRF(crf, *data(x));
+    for (auto fgp : data(sm)->m_features) {
+        fgp->AddToCRF(crf, *data(x), sm->w);
+    }
+    data(sm)->AddLossToCRF(crf, *data(x), *data(y));
+    crf.Solve();
+    ybar.data = data(sm)->ExtractLabel(crf);
 
-  return(ybar);
+
+    return(ybar);
 }
 
 int         empty_label(LABEL y)

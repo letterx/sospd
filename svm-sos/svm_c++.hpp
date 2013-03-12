@@ -30,6 +30,7 @@ class PatternData {
 
 class LabelData {
     public:
+        LabelData() = default;
         LabelData(const std::vector<int>& gt)
             : m_gt(gt) { }
         std::vector<int> m_gt;
@@ -64,6 +65,7 @@ class ModelData {
             return n;
         }
         void InitializeCRF(CRF& crf, const PatternData& p) const;
+        void AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const;
         LabelData* ExtractLabel(const CRF& crf) const;
         std::vector<std::shared_ptr<FG>> m_features;
     private:
