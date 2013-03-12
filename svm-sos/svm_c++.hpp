@@ -6,6 +6,7 @@ extern "C" {
 #include "svm_struct/svm_struct_common.h"
 }
 #include <vector>
+#include "submodular-flow.hpp"
 
 class PatternData {
     public:

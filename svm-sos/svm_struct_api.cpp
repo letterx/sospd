@@ -36,7 +36,6 @@ extern "C" {
 #include <opencv2/highgui/highgui.hpp>
 
 #include "svm_c++.hpp"
-#include "submodular-flow.hpp"
 
 PatternData* data(PATTERN& p) { return (PatternData*)p.data; }
 PATTERN MakePattern(PatternData* d) {
