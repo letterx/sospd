@@ -4,9 +4,9 @@
 #		make 'SFLAGS=-mno-cygwin'
 
 #Use the following to compile under unix or cygwin
-CC = gcc
-CXX = g++
-LD = g++
+CC ?= gcc
+CXX ?= g++
+LD = $(CXX)
 
 CFLAGS =   $(SFLAGS) -g -fomit-frame-pointer -ffast-math -Wall -std=c++11 -I../submodular-flow/
 LDFLAGS =  $(SFLAGS) -g -lm -Wall -lopencv_core -lopencv_highgui -L../lib -lsubmodular-flow -lboost_serialization
