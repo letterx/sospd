@@ -23,9 +23,9 @@
 # include "svm_light/svm_common.h"
 # include "svm_light/svm_learn.h"
 
-# define INST_NAME          "Generic and empty API"
-# define INST_VERSION       "V0.00"
-# define INST_VERSION_DATE  "??.??.??"
+# define INST_NAME          "Sum-of-Submodular SVM API"
+# define INST_VERSION       "V0.10"
+# define INST_VERSION_DATE  "03.12.13"
 
 /* default precision for solving the optimization problem */
 # define DEFAULT_EPS         0.1 
