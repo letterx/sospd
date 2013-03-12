@@ -53,7 +53,7 @@ typedef SubmodularFlow CRF;
 template <typename PatternData, typename LabelData, typename CRF>
 class FeatureGroup {
     public:
-        virtual const size_t NumFeatures() const = 0;
+        virtual size_t NumFeatures() const = 0;
         virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const = 0;
         virtual void AddToCRF(CRF& c, const PatternData& p, double* w) const = 0;
 };
@@ -62,12 +62,9 @@ typedef FeatureGroup<PatternData, LabelData, CRF> FG;
 
 class ModelData {
     public:
-        long NumFeatures() const {
-            long n = 0;
-            for (auto fgp : m_features)
-                n += fgp->NumFeatures();
-            return n;
-        }
+        ModelData();
+
+        long NumFeatures() const;
         void InitializeCRF(CRF& crf, const PatternData& p) const;
         void AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const;
         LabelData* ExtractLabel(const CRF& crf) const;

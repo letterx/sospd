@@ -18,6 +18,30 @@ double LabelData::Loss(const LabelData& l) const {
     return loss;
 }
 
+class DummyFeature : public FG {
+    virtual size_t NumFeatures() const { return 1; }
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+        std::vector<FVAL> psi = { 1.0 };
+        return psi;
+    }
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
+
+    }
+};
+
+ModelData::ModelData() {
+    m_features.push_back(std::shared_ptr<FG>(new DummyFeature));
+
+}
+
+long ModelData::NumFeatures() const {
+    long n = 0;
+    for (auto fgp : m_features) {
+        n += fgp->NumFeatures();
+    }
+    return n;
+}
+
 void ModelData::InitializeCRF(CRF& crf, const PatternData& p) const {
 
 }
