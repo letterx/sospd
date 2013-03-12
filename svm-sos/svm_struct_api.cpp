@@ -17,24 +17,12 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <memory>
 #include <stdio.h>
 #include <string.h>
 extern "C" {
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"
 }
-#include <boost/serialization/vector.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
 #include "svm_c++.hpp"
 
 PatternData* data(PATTERN& p) { return (PatternData*)p.data; }
@@ -197,15 +185,14 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
     LABEL y;
 
     CRF crf;
+    data(sm)->InitializeCRF(crf, *data(x));
     for (auto fgp : data(sm)->m_features) {
-        fgp->AddToCRF(crf, *data(x));
+        fgp->AddToCRF(crf, *data(x), sm->w);
     }
+    crf.Solve();
+    y.data = data(sm)->ExtractLabel(crf);
 
-    // FIXME: Finish filling this out
-    
-
-
-  return(y);
+    return(y);
 }
 
 LABEL       find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, 

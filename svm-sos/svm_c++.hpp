@@ -5,7 +5,18 @@ extern "C" {
 #include "svm_light/svm_common.h"
 #include "svm_struct/svm_struct_common.h"
 }
+#include <iostream>
+#include <fstream>
+#include <string>
 #include <vector>
+#include <memory>
+#include <boost/serialization/vector.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 #include "submodular-flow.hpp"
 
 class PatternData {
@@ -39,7 +50,7 @@ class FeatureGroup {
     public:
         virtual const size_t NumFeatures() const = 0;
         virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const = 0;
-        virtual void AddToCRF(CRF& c, const PatternData& p) const = 0;
+        virtual void AddToCRF(CRF& c, const PatternData& p, double* w) const = 0;
 };
 
 typedef FeatureGroup<PatternData, LabelData, CRF> FG;
@@ -52,6 +63,8 @@ class ModelData {
                 n += fgp->NumFeatures();
             return n;
         }
+        void InitializeCRF(CRF& crf, const PatternData& p) const;
+        LabelData* ExtractLabel(const CRF& crf) const;
         std::vector<std::shared_ptr<FG>> m_features;
     private:
         friend class boost::serialization::access;

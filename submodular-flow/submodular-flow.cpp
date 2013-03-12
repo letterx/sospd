@@ -304,6 +304,11 @@ void SubmodularFlow::ComputeMinCut() {
     }
 }
 
+void SubmodularFlow::Solve() {
+    PushRelabel();
+    ComputeMinCut();
+}
+
 REAL SubmodularFlow::ComputeEnergy() const {
     return ComputeEnergy(m_labels);
 }

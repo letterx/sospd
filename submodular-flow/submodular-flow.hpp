@@ -47,6 +47,8 @@ class SubmodularFlow {
         void PushRelabel();
         // After computing the max flow, extract the min cut
         void ComputeMinCut();
+        // Do both the above
+        void Solve();
 
         // Compute the total energy across all cliques of the current labeling
         REAL ComputeEnergy() const;

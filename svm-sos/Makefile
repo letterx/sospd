@@ -43,11 +43,11 @@ svm_struct_clean:
 #----  SVM sos API  ----#
 #-------------------------#
 
-svm_sos_classify: svm_light_hideo_noexe svm_struct_noexe svm_struct_api.o svm_struct/svm_struct_classify.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o 
-	$(LD) svm_struct_api.o svm_struct/svm_struct_classify.o svm_light/svm_common.o svm_struct/svm_struct_common.o -o svm_sos_classify $(LIBS) $(LDFLAGS)
+svm_sos_classify: svm_light_hideo_noexe svm_struct_noexe svm_struct_api.o svm_struct/svm_struct_classify.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o svm_c++.o
+	$(LD) svm_struct_api.o svm_struct/svm_struct_classify.o svm_light/svm_common.o svm_struct/svm_struct_common.o svm_c++.o -o svm_sos_classify $(LIBS) $(LDFLAGS)
 
-svm_sos_learn: svm_light_hideo_noexe svm_struct_noexe svm_struct_api.o svm_struct_learn_custom.o svm_struct/svm_struct_learn.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o
-	$(LD) svm_struct/svm_struct_learn.o svm_struct_learn_custom.o svm_struct_api.o svm_light/svm_hideo.o svm_light/svm_learn.o svm_light/svm_common.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o -o svm_sos_learn $(LIBS) $(LDFLAGS)
+svm_sos_learn: svm_light_hideo_noexe svm_struct_noexe svm_struct_api.o svm_struct_learn_custom.o svm_struct/svm_struct_learn.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o svm_c++.o
+	$(LD) svm_struct/svm_struct_learn.o svm_struct_learn_custom.o svm_struct_api.o svm_light/svm_hideo.o svm_light/svm_learn.o svm_light/svm_common.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o svm_c++.o -o svm_sos_learn $(LIBS) $(LDFLAGS)
 
 
 svm_struct_api.o: svm_struct_api.cpp svm_struct_api.h svm_struct_api_types.h svm_struct/svm_struct_common.h
@@ -55,3 +55,6 @@ svm_struct_api.o: svm_struct_api.cpp svm_struct_api.h svm_struct_api_types.h svm
 
 svm_struct_learn_custom.o: svm_struct_learn_custom.cpp svm_struct_api.h svm_light/svm_common.h svm_struct_api_types.h svm_struct/svm_struct_common.h
 	$(CXX) -c $(CFLAGS) svm_struct_learn_custom.cpp -o svm_struct_learn_custom.o
+
+svm_c++.o: svm_c++.cpp svm_c++.hpp
+	$(CXX) -c $(CFLAGS) svm_c++.cpp -o svm_c++.o
