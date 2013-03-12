@@ -308,16 +308,18 @@ SVECTOR     *psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
 
     std::vector<WORD> words;
     FNUM fnum = 1;
+    WORD w;
     for (auto fgp : data(sm)->m_features) {
         std::vector<FVAL> values = fgp->Psi(*data(x), *data(y));
         ASSERT(values.size() == fgp->NumFeatures());
         for (FVAL v : values) {
-            WORD w;
             w.wnum = fnum++;
             w.weight = v;
             words.push_back(w);
         }
     }
+    w.wnum = 0;
+    words.push_back(w);
 
     fvec = create_svector(words.data(), nullptr, 1.0);
 
@@ -386,7 +388,7 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
 			       STRUCT_LEARN_PARM *sparm)
 {
   /* Writes structural model sm to file file. */
-    std::ofstream ofs;
+    std::ofstream ofs(file);
     boost::archive::text_oarchive oa(ofs);
     oa << sm->sizePsi;
     for (long i = 0; i < sm->sizePsi; ++i) {
@@ -401,7 +403,7 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
   /* Reads structural model sm from file file. This function is used
      only in the prediction module, not in the learning module. */
     STRUCTMODEL sm;
-    std::ifstream ifs;
+    std::ifstream ifs(file);
     boost::archive::text_iarchive ia(ifs);
     ia >> sm.sizePsi;
     for (long i = 0; i < sm.sizePsi; ++i) {
