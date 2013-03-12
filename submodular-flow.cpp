@@ -83,13 +83,12 @@ void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
 // Inefficient but doing the remove manually since
 // I don't have a perfect understanding/translation of the boost code.
 void SubmodularFlow::remove_from_active_list(NodeId u) {
-/*    std::list<NodeId> temp;
+    std::list<NodeId> temp;
     for (NodeId i : layers[dis[u]].active_vertices) {
         if (u != i) temp.push_back(i);
     }
     std::swap(layers[dis[u]].active_vertices, temp);
-*/
-    layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
+    //layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
 }
 
 void SubmodularFlow::PushRelabelInit()
@@ -97,6 +96,8 @@ void SubmodularFlow::PushRelabelInit()
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
     max_active = 0; min_active = m_num_nodes + 2; // original nodes + source and sink
+    work_since_last_update = 0;
+    num_edges = 2 * m_num_nodes; // source sink edges
 
     dis.clear(); excess.clear(); current_arc_index.clear();
     m_arc_list.clear(); layers.clear();
@@ -113,7 +114,7 @@ void SubmodularFlow::PushRelabelInit()
     }
     dis[s] = m_num_nodes + 2;
 
-    // Adding extra layers
+    // adding extra layers
     for (int i = 0; i < (m_num_nodes + 2); ++i) {
         Layer layer;
         layers.push_back(layer);
@@ -156,6 +157,8 @@ void SubmodularFlow::PushRelabelInit()
     // Arcs between nodes of clique
     for (int cid = 0; cid < m_num_cliques; ++cid) {
         CliquePtr cp = m_cliques[cid];
+        int size = cp->Nodes().size();
+        num_edges += size*size;
         for (NodeId i : cp->Nodes()) {
             for (NodeId j : cp->Nodes()) {
                 if (i == j) continue;
@@ -183,6 +186,10 @@ void SubmodularFlow::PushRelabelStep()
             Push(*arc);
         else
             Relabel(i);
+        if (work_since_last_update * 1 > 6*(m_num_nodes + 2) + num_edges) {
+            SubmodularFlow::ComputeMinCut();
+            work_since_last_update = 0;
+        }
     }
 }
 
@@ -193,12 +200,14 @@ bool SubmodularFlow::PushRelabelNotDone()
 
 void SubmodularFlow::PushRelabel()
 {
+    flow_done = false;
     PushRelabelInit();
 
     // find active i w/ largest distance
     while (PushRelabelNotDone()) {
         PushRelabelStep();
     }
+    flow_done = true;
 }
 
 REAL SubmodularFlow::ResCap(Arc arc) {
@@ -257,8 +266,10 @@ void SubmodularFlow::Push(Arc arc) {
 }
 
 void SubmodularFlow::Relabel(NodeId i) {
+    work_since_last_update += 12; // constant beta in boost
     dis[i] = std::numeric_limits<int>::max();
     for(Arc arc : m_arc_list[i]) {
+        ++work_since_last_update;
         if (ResCap(arc) > 0) {
             dis[i] = std::min (dis[i], dis[arc.j] + 1);
         }
@@ -272,8 +283,9 @@ void SubmodularFlow::Relabel(NodeId i) {
 
 void SubmodularFlow::ComputeMinCut() {
     for (NodeId i = 0; i < m_num_nodes; ++i) {
-        dis[i] = std::numeric_limits<int>::max();
-        m_labels[i] = 1;
+        dis[i] = m_num_nodes + 3;
+        if (flow_done)
+            m_labels[i] = 1;
     }
     dis[t] = 0;
     // curr is the current level of nodes to be visited;
@@ -295,8 +307,9 @@ void SubmodularFlow::ComputeMinCut() {
                 arc.i = arc.j;
                 arc.j = u;
                 if (ResCap(arc) > 0 && arc.i != s && arc.i != t
-                        && dis[arc.i] == std::numeric_limits<int>::max()) {
-                    m_labels[arc.i] = 0;
+                        && dis[arc.i] == 3 + m_num_nodes) { //std::numeric_limits<int>::max()) {
+                    if (flow_done)
+                        m_labels[arc.i] = 0;
                     next.push(arc.i);
                     dis[arc.i] = level;
                 }
@@ -304,8 +317,8 @@ void SubmodularFlow::ComputeMinCut() {
         }
         ++level;
     }
-    for (int label : m_labels)
-        std::cout << label << std::endl;
+    // for (int label : m_labels)
+    //    std::cout << label << std::endl;
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {

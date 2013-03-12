@@ -128,6 +128,9 @@ class SubmodularFlow {
         std::vector<REAL> excess;
         std::vector<int> current_arc_index;
         std::vector< std::vector<Arc> > m_arc_list;
+        long work_since_last_update;
+        long num_edges;
+        bool flow_done = true;
 
         void add_to_active_list(NodeId u, Layer& layer);
         void remove_from_active_list(NodeId u);
