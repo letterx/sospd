@@ -33,6 +33,10 @@ class LabelData {
         LabelData() = default;
         LabelData(const std::vector<int>& gt)
             : m_gt(gt) { }
+        bool operator==(const LabelData& l) const;
+        double Loss(const LabelData& l) const;
+
+
         std::vector<int> m_gt;
 
     private:
