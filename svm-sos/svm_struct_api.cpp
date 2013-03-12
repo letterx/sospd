@@ -24,6 +24,7 @@ extern "C" {
 #include "svm_struct_api.h"
 }
 #include "svm_c++.hpp"
+#include "image_manip.hpp"
 
 PatternData* data(PATTERN& p) { return (PatternData*)p.data; }
 PATTERN MakePattern(PatternData* d) {
@@ -81,13 +82,13 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
 
   do {
       std::getline(main_file, images_dir);
-  } while (images_dir[0] != '#');
+  } while (images_dir[0] == '#');
   do {
       std::getline(main_file, trimap_dir);
-  } while (trimap_dir[0] != '#');
+  } while (trimap_dir[0] == '#');
   do {
       std::getline(main_file, gt_dir);
-  } while (gt_dir[0] != '#');
+  } while (gt_dir[0] == '#');
 
   std::vector<cv::Mat> images;
   std::vector<cv::Mat> trimaps;
@@ -97,9 +98,13 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
       std::getline(main_file, line);
       if (!line.empty() && line[0] != '#') {
           n++;
-          images.push_back(cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR));
-          trimaps.push_back(cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR));
-          gts.push_back(cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE));
+          cv::Mat image = cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR);
+          cv::Mat trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR);
+          cv::Mat gt = cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
+          ValidateExample(image, trimap, gt);
+          images.push_back(image);
+          trimaps.push_back(trimap);
+          gts.push_back(gt);
       }
   }
   main_file.close();
