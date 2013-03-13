@@ -11,8 +11,9 @@ LD = gcc
 #Uncomment the following line to make CYGWIN produce stand-alone Windows executables
 #SFLAGS= -mno-cygwin
 
-CFLAGS=  $(SFLAGS) -g                     # release C-Compiler flags
-LFLAGS=  $(SFLAGS) -g                     # release linker flags
+OPT ?= -g
+CFLAGS=  $(SFLAGS) $(OPT)                     # release C-Compiler flags
+LFLAGS=  $(SFLAGS) $(OPT)                     # release linker flags
 #CFLAGS= $(SFLAGS) -pg -Wall -pedantic      # debugging C-Compiler flags
 #LFLAGS= $(SFLAGS) -pg                      # debugging linker flags
 LIBS=-L. -lm                               # used libraries

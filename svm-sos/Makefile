@@ -8,8 +8,9 @@ CC ?= gcc
 CXX ?= g++
 LD = $(CXX)
 
-CFLAGS =   $(SFLAGS) -g -fomit-frame-pointer -ffast-math -Wall -std=c++11 -I../submodular-flow/
-LDFLAGS =  $(SFLAGS) -g -lm -Wall -lopencv_core -lopencv_highgui -L../lib -lsubmodular-flow -lboost_serialization
+OPT ?= -g
+CFLAGS =   $(SFLAGS) $(OPT) -fomit-frame-pointer -ffast-math -Wall -std=c++11 -I../submodular-flow/
+LDFLAGS =  $(SFLAGS) $(OPT) -lm -Wall -lopencv_core -lopencv_highgui -L../lib -lsubmodular-flow -lboost_serialization
 #CFLAGS =  $(SFLAGS) -pg -Wall
 #LDFLAGS = $(SFLAGS) -pg -lm -Wall 
 
