@@ -7,6 +7,52 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/serialization/split_free.hpp>
 
+template <typename Fn>
+inline void ImageIterate(cv::Mat& im, Fn f) {
+    cv::MatIterator_<unsigned char> iter, end;
+    for (iter = im.begin<unsigned char>(), end = im.end<unsigned char>();
+            iter != end; ++iter) {
+        f(*iter);
+    }
+}
+
+template <typename Fn>
+inline void ImageCIterate(cv::Mat& im, Fn f) {
+    cv::MatConstIterator_<unsigned char> iter, end;
+    for (iter = im.begin<unsigned char>, end = im.end<unsigned char>;
+            iter != end; ++iter) {
+        f(*iter);
+    }
+}
+
+template <typename Fn>
+inline void ImageIterate(cv::Mat& im1, cv::Mat& im2, Fn f) {
+    cv::MatIterator_<unsigned char> it1, end1;
+    cv::MatIterator_<unsigned char> it2, end2;
+    it1 = im1.begin<unsigned char>();
+    end1 = im1.end<unsigned char>();
+    it2 = im2.begin<unsigned char>();
+    end2 = im2.end<unsigned char>();
+    for (; it1 != end1; ++it1, ++it2) {
+        f(*it1, *it2);
+    }
+    ASSERT(it2 == end2);
+}
+
+template <typename Fn>
+inline void ImageCIterate(const cv::Mat& im1, const cv::Mat& im2, Fn f) {
+    cv::MatConstIterator_<unsigned char> it1, end1;
+    cv::MatConstIterator_<unsigned char> it2, end2;
+    it1 = im1.begin<unsigned char>();
+    end1 = im1.end<unsigned char>();
+    it2 = im2.begin<unsigned char>();
+    end2 = im2.end<unsigned char>();
+    for (; it1 != end1; ++it1, ++it2) {
+        f(*it1, *it2);
+    }
+    ASSERT(it2 == end2);
+}
+
 inline void ValidateExample(const cv::Mat& im, const cv::Mat& tri, const cv::Mat& gt) {
     ASSERT(im.data != NULL);
     ASSERT(im.depth() == CV_8U);
