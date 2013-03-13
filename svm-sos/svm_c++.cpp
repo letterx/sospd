@@ -3,9 +3,15 @@
 
 PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv::Mat& trimap) 
     : m_name(name), 
-    m_image(image)
+    m_image(image),
+    m_bgdModel(),
+    m_bgdGMM(m_bgdModel),
+    m_fgdModel(),
+    m_fgdGMM(m_fgdModel)
 {
     ConvertToMask(trimap, m_tri);
+
+    learnGMMs(m_image, m_tri, m_bgdGMM, m_fgdGMM);
 }
 
 LabelData::LabelData(const std::string& name, const cv::Mat& gt)
@@ -77,10 +83,10 @@ void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l)
 
 LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
     LabelData* lp = new LabelData;
-    //lp->m_gt.create(x.m_image.rows, x.m_image.cols, CV_8UC1);
-    //ImageIterate(lp->m_gt, [](unsigned char& c) { c = 0; });
-    x.m_tri.copyTo(lp->m_gt);
-    cv::Mat bgdModel, fgdModel;
-    cv::grabCut(x.m_image, lp->m_gt, cv::Rect(), bgdModel, fgdModel, 1, cv::GC_INIT_WITH_MASK);
+    lp->m_gt.create(x.m_image.rows, x.m_image.cols, CV_8UC1);
+    ImageIterate(lp->m_gt, [](unsigned char& c) { c = 0; });
+    //x.m_tri.copyTo(lp->m_gt);
+    //cv::Mat bgdModel, fgdModel;
+    //cv::grabCut(x.m_image, lp->m_gt, cv::Rect(), bgdModel, fgdModel, 10, cv::GC_INIT_WITH_MASK);
     return lp;
 }

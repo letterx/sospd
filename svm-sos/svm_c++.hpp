@@ -18,6 +18,7 @@ extern "C" {
 #include <opencv2/highgui/highgui.hpp>
 
 #include "submodular-flow.hpp"
+#include "gmm.hpp"
 
 class PatternData {
     public:
@@ -25,6 +26,10 @@ class PatternData {
         std::string m_name;
         cv::Mat m_image;
         cv::Mat m_tri;
+        cv::Mat m_bgdModel;
+        GMM m_bgdGMM;
+        cv::Mat m_fgdModel;
+        GMM m_fgdGMM;
 };
 
 

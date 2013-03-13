@@ -43,8 +43,7 @@
 #define _GMM_HPP_
 
 #include <limits>
-
-using namespace cv;
+#include <opencv2/core/core.hpp>
 
 /*
 This is implementation of image segmentation algorithm GrabCut described in
@@ -58,20 +57,20 @@ Carsten Rother, Vladimir Kolmogorov, Andrew Blake.
 class GMM
 {
 public:
-    static const int componentsCount = 5;
+    static const int componentsCount = 3;
 
-    GMM( Mat& _model );
-    double operator()( const Vec3d color ) const;
-    double operator()( int ci, const Vec3d color ) const;
-    int whichComponent( const Vec3d color ) const;
+    GMM( cv::Mat& _model );
+    double operator()( const cv::Vec3d color ) const;
+    double operator()( int ci, const cv::Vec3d color ) const;
+    int whichComponent( const cv::Vec3d color ) const;
 
     void initLearning();
-    void addSample( int ci, const Vec3d color );
+    void addSample( int ci, const cv::Vec3d color );
     void endLearning();
 
 private:
     void calcInverseCovAndDeterm( int ci );
-    Mat model;
+    cv::Mat model;
     double* coefs;
     double* mean;
     double* cov;
@@ -85,6 +84,10 @@ private:
     int totalSampleCount;
 };
 
+
+void learnGMMs( const cv::Mat& img, const cv::Mat& mask, GMM& bgdGMM, GMM& fgdGMM );
+
+#if 0
 /*
   Calculate beta - parameter of GrabCut algorithm.
   beta = 1/(2*avg(sqr(||color[i] - color[j]||)))
@@ -176,29 +179,6 @@ static void calcNWeights( const Mat& img, Mat& leftW, Mat& upleftW, Mat& upW, Ma
 }
 
 /*
-  Check size, type and element values of mask matrix.
- */
-static void checkMask( const Mat& img, const Mat& mask )
-{
-    if( mask.empty() )
-        CV_Error( CV_StsBadArg, "mask is empty" );
-    if( mask.type() != CV_8UC1 )
-        CV_Error( CV_StsBadArg, "mask must have CV_8UC1 type" );
-    if( mask.cols != img.cols || mask.rows != img.rows )
-        CV_Error( CV_StsBadArg, "mask must have as many rows and cols as img" );
-    for( int y = 0; y < mask.rows; y++ )
-    {
-        for( int x = 0; x < mask.cols; x++ )
-        {
-            uchar val = mask.at<uchar>(y,x);
-            if( val!=GC_BGD && val!=GC_FGD && val!=GC_PR_BGD && val!=GC_PR_FGD )
-                CV_Error( CV_StsBadArg, "mask element value must be equel"
-                    "GC_BGD or GC_FGD or GC_PR_BGD or GC_PR_FGD" );
-        }
-    }
-}
-
-/*
   Initialize mask using rectangular.
 */
 static void initMaskWithRect( Mat& mask, Size imgSize, Rect rect )
@@ -212,91 +192,6 @@ static void initMaskWithRect( Mat& mask, Size imgSize, Rect rect )
     rect.height = min(rect.height, imgSize.height-rect.y);
 
     (mask(rect)).setTo( Scalar(GC_PR_FGD) );
-}
-
-/*
-  Initialize GMM background and foreground models using kmeans algorithm.
-*/
-static void initGMMs( const Mat& img, const Mat& mask, GMM& bgdGMM, GMM& fgdGMM )
-{
-    const int kMeansItCount = 10;
-    const int kMeansType = KMEANS_PP_CENTERS;
-
-    Mat bgdLabels, fgdLabels;
-    vector<Vec3f> bgdSamples, fgdSamples;
-    Point p;
-    for( p.y = 0; p.y < img.rows; p.y++ )
-    {
-        for( p.x = 0; p.x < img.cols; p.x++ )
-        {
-            if( mask.at<uchar>(p) == GC_BGD || mask.at<uchar>(p) == GC_PR_BGD )
-                bgdSamples.push_back( (Vec3f)img.at<Vec3b>(p) );
-            else // GC_FGD | GC_PR_FGD
-                fgdSamples.push_back( (Vec3f)img.at<Vec3b>(p) );
-        }
-    }
-    CV_Assert( !bgdSamples.empty() && !fgdSamples.empty() );
-    Mat _bgdSamples( (int)bgdSamples.size(), 3, CV_32FC1, &bgdSamples[0][0] );
-    kmeans( _bgdSamples, GMM::componentsCount, bgdLabels,
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType );
-    Mat _fgdSamples( (int)fgdSamples.size(), 3, CV_32FC1, &fgdSamples[0][0] );
-    kmeans( _fgdSamples, GMM::componentsCount, fgdLabels,
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType );
-
-    bgdGMM.initLearning();
-    for( int i = 0; i < (int)bgdSamples.size(); i++ )
-        bgdGMM.addSample( bgdLabels.at<int>(i,0), bgdSamples[i] );
-    bgdGMM.endLearning();
-
-    fgdGMM.initLearning();
-    for( int i = 0; i < (int)fgdSamples.size(); i++ )
-        fgdGMM.addSample( fgdLabels.at<int>(i,0), fgdSamples[i] );
-    fgdGMM.endLearning();
-}
-
-/*
-  Assign GMMs components for each pixel.
-*/
-static void assignGMMsComponents( const Mat& img, const Mat& mask, const GMM& bgdGMM, const GMM& fgdGMM, Mat& compIdxs )
-{
-    Point p;
-    for( p.y = 0; p.y < img.rows; p.y++ )
-    {
-        for( p.x = 0; p.x < img.cols; p.x++ )
-        {
-            Vec3d color = img.at<Vec3b>(p);
-            compIdxs.at<int>(p) = mask.at<uchar>(p) == GC_BGD || mask.at<uchar>(p) == GC_PR_BGD ?
-                bgdGMM.whichComponent(color) : fgdGMM.whichComponent(color);
-        }
-    }
-}
-
-/*
-  Learn GMMs parameters.
-*/
-static void learnGMMs( const Mat& img, const Mat& mask, const Mat& compIdxs, GMM& bgdGMM, GMM& fgdGMM )
-{
-    bgdGMM.initLearning();
-    fgdGMM.initLearning();
-    Point p;
-    for( int ci = 0; ci < GMM::componentsCount; ci++ )
-    {
-        for( p.y = 0; p.y < img.rows; p.y++ )
-        {
-            for( p.x = 0; p.x < img.cols; p.x++ )
-            {
-                if( compIdxs.at<int>(p) == ci )
-                {
-                    if( mask.at<uchar>(p) == GC_BGD || mask.at<uchar>(p) == GC_PR_BGD )
-                        bgdGMM.addSample( ci, img.at<Vec3b>(p) );
-                    else
-                        fgdGMM.addSample( ci, img.at<Vec3b>(p) );
-                }
-            }
-        }
-    }
-    bgdGMM.endLearning();
-    fgdGMM.endLearning();
 }
 
 /*
@@ -433,5 +328,5 @@ void cv::grabCut( InputArray _img, InputOutputArray _mask, Rect rect,
     }
 }
 
-
+#endif
 #endif
