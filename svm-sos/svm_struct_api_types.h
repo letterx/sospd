@@ -32,7 +32,7 @@
 /* default loss rescaling method: 1=slack_rescaling, 2=margin_rescaling */
 # define DEFAULT_RESCALING   2
 /* default loss function: */
-# define DEFAULT_LOSS_FCT    0
+# define DEFAULT_LOSS_FCT    1
 /* default optimization algorithm to use: */
 # define DEFAULT_ALG_TYPE    3
 /* store Psi(x,y) (for ALG_TYPE 1) instead of recomputing it every time: */

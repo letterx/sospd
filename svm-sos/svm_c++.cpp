@@ -35,9 +35,9 @@ double LabelData::Loss(const LabelData& l) const {
     i2 = l.m_gt.begin<unsigned char>();
     for (; i1 != e1; ++i1, ++i2) {
         if ((*i1 == cv::GC_BGD || *i1 == cv::GC_PR_BGD) && (*i2 == cv::GC_FGD || *i2 == cv::GC_PR_FGD)) {
-            loss++;
+            loss += 1.0;
         } else if ((*i1 == cv::GC_FGD || *i1 == cv::GC_PR_FGD) && (*i2 == cv::GC_BGD || *i2 == cv::GC_PR_BGD)) {
-            loss++;
+            loss += 1.0;
         }
     }
     return loss;
