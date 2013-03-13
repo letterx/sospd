@@ -1,13 +1,15 @@
 #include "svm_c++.hpp"
 #include "image_manip.hpp"
 
-PatternData::PatternData(const cv::Mat& image, const cv::Mat& trimap) 
-    : m_image(image)
+PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv::Mat& trimap) 
+    : m_name(name), 
+    m_image(image)
 {
     ConvertToMask(trimap, m_tri);
 }
 
-LabelData::LabelData(const cv::Mat& gt)
+LabelData::LabelData(const std::string& name, const cv::Mat& gt)
+    : m_name(name)
 { 
     ConvertGreyToMask(gt, m_gt);
 }

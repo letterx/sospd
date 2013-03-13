@@ -21,7 +21,8 @@ extern "C" {
 
 class PatternData {
     public:
-        PatternData(const cv::Mat& im, const cv::Mat& tri);
+        PatternData(const std::string& name, const cv::Mat& im, const cv::Mat& tri);
+        std::string m_name;
         cv::Mat m_image;
         cv::Mat m_tri;
 };
@@ -30,10 +31,11 @@ class PatternData {
 class LabelData {
     public:
         LabelData() = default;
-        LabelData(const cv::Mat& gt);
+        LabelData(const std::string& name, const cv::Mat& gt);
         bool operator==(const LabelData& l) const;
         double Loss(const LabelData& l) const;
 
+        std::string m_name;
         cv::Mat m_gt;
 
     private:
