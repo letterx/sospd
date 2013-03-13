@@ -77,8 +77,10 @@ void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l)
 
 LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
     LabelData* lp = new LabelData;
-    lp->m_gt.create(x.m_image.rows, x.m_image.cols, CV_8UC1);
-    ImageIterate(lp->m_gt, [](unsigned char& c) { c = 0; });
-
+    //lp->m_gt.create(x.m_image.rows, x.m_image.cols, CV_8UC1);
+    //ImageIterate(lp->m_gt, [](unsigned char& c) { c = 0; });
+    x.m_tri.copyTo(lp->m_gt);
+    cv::Mat bgdModel, fgdModel;
+    cv::grabCut(x.m_image, lp->m_gt, cv::Rect(), bgdModel, fgdModel, 1, cv::GC_INIT_WITH_MASK);
     return lp;
 }

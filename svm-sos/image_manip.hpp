@@ -81,12 +81,17 @@ inline void ConvertToMask(const cv::Mat& trimap, cv::Mat& out) {
     out_it = out.begin<unsigned char>();
     out_end = out.end<unsigned char>();
     for (; in_it != in_end; ++in_it, ++out_it) {
-        if (*in_it == cv::Vec3b(0xdb, 0x0, 0x0))
+        if (*in_it == cv::Vec3b(0x00, 0x0, 0xdb))
             *out_it = cv::GC_BGD;
-        else if (*in_it == cv::Vec3b(0xff, 0xff, 0xcf))
+        else if (*in_it == cv::Vec3b(0xcf, 0xff, 0xff))
             *out_it = cv::GC_FGD;
-        else
+        else if (*in_it == cv::Vec3b(0x0, 0x0, 0x0))
             *out_it = cv::GC_PR_BGD;
+        else {
+            std::cout << "Unknown color: " << *in_it << "\n";
+            exit(1);
+        }
+
     }
 }
 
