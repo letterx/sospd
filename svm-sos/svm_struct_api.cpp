@@ -197,7 +197,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
         fgp->AddToCRF(crf, *data(x), sm->w);
     }
     crf.Solve();
-    y.data = data(sm)->ExtractLabel(crf);
+    y.data = data(sm)->ExtractLabel(crf, *data(x));
 
     return(y);
 }
@@ -271,7 +271,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     }
     data(sm)->AddLossToCRF(crf, *data(x), *data(y));
     crf.Solve();
-    ybar.data = data(sm)->ExtractLabel(crf);
+    ybar.data = data(sm)->ExtractLabel(crf, *data(x));
 
 
     return(ybar);

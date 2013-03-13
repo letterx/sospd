@@ -64,7 +64,7 @@ class ModelData {
         long NumFeatures() const;
         void InitializeCRF(CRF& crf, const PatternData& p) const;
         void AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const;
-        LabelData* ExtractLabel(const CRF& crf) const;
+        LabelData* ExtractLabel(const CRF& crf, const PatternData& x) const;
         std::vector<std::shared_ptr<FG>> m_features;
     private:
         friend class boost::serialization::access;

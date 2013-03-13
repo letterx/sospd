@@ -1,6 +1,7 @@
 #ifndef _IMAGE_MANIP_HPP_
 #define _IMAGE_MANIP_HPP_
 
+#include <sstream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -18,6 +19,11 @@ inline void ValidateExample(const cv::Mat& im, const cv::Mat& tri, const cv::Mat
     ASSERT(gt.data != NULL);
     ASSERT(gt.depth() == CV_8U);
     ASSERT(im.channels() == 3);
+
+    ASSERT(im.rows == tri.rows);
+    ASSERT(im.rows == gt.rows);
+    ASSERT(im.cols == tri.cols);
+    ASSERT(im.cols == gt.cols);
 }
 
 inline void ConvertToMask(const cv::Mat& trimap, cv::Mat& out) {
@@ -61,12 +67,27 @@ namespace boost {
 namespace serialization {
 template <typename Archive>
 void save(Archive& ar, const cv::Mat& im, const unsigned int version) {
-    ar << im;
+    ar & im.rows;
+    ar & im.cols;
+    int channels = im.channels();
+    ar & channels;
+    unsigned char* data = im.data;
+    for (int i = 0; i < im.rows*im.cols*im.channels(); ++i) {
+        ar & data[i];
+    }
 }
 
 template <typename Archive>
 void load(Archive& ar, cv::Mat& im, const unsigned int version) {
-    ar >> im;
+    int rows, cols, channels;
+    ar & rows;
+    ar & cols;
+    ar & channels;
+    im.create(rows, cols*channels, CV_8UC1);
+    unsigned char* data = im.data;
+    for (int i = 0; i < rows*cols*channels; ++i) {
+        ar & data[i];
+    }
 }
 
 template <typename Archive>
