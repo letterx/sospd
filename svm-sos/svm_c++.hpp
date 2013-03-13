@@ -21,23 +21,20 @@ extern "C" {
 
 class PatternData {
     public:
-        PatternData(const cv::Mat& im, const cv::Mat& tri)
-            : m_image(im), m_trimap(tri) { }
+        PatternData(const cv::Mat& im, const cv::Mat& tri);
         cv::Mat m_image;
-        cv::Mat m_trimap;
+        cv::Mat m_tri;
 };
 
 
 class LabelData {
     public:
         LabelData() = default;
-        LabelData(const std::vector<int>& gt)
-            : m_gt(gt) { }
+        LabelData(const cv::Mat& gt);
         bool operator==(const LabelData& l) const;
         double Loss(const LabelData& l) const;
 
-
-        std::vector<int> m_gt;
+        cv::Mat m_gt;
 
     private:
         friend class boost::serialization::access;

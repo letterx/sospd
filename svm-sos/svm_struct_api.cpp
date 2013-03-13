@@ -90,29 +90,31 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
       std::getline(main_file, gt_dir);
   } while (gt_dir[0] == '#');
 
-  std::vector<cv::Mat> images;
-  std::vector<cv::Mat> trimaps;
-  std::vector<cv::Mat> gts;
+  std::vector<PatternData*> patterns;
+  std::vector<LabelData*> labels;
 
   while (main_file.good()) {
       std::getline(main_file, line);
       if (!line.empty() && line[0] != '#') {
           n++;
+          if (n % 10 == 0) {
+              std::cout << ".";
+              std::cout.flush();
+          }
           cv::Mat image = cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR);
           cv::Mat trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR);
           cv::Mat gt = cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
           ValidateExample(image, trimap, gt);
-          images.push_back(image);
-          trimaps.push_back(trimap);
-          gts.push_back(gt);
+          patterns.push_back(new PatternData(image, trimap));
+          labels.push_back(new LabelData(gt));
       }
   }
   main_file.close();
 
   examples=(EXAMPLE *)my_malloc(sizeof(EXAMPLE)*n);
   for (size_t i = 0; i < n; ++i) {
-      examples[i].x = MakePattern(new PatternData(images[i], trimaps[i]));
-      examples[i].y = MakeLabel(new LabelData(gts[i]));
+      examples[i].x = MakePattern(patterns[i]);
+      examples[i].y = MakeLabel(labels[i]);
   }
 
   std::cout << " (" << n << " examples)... ";
