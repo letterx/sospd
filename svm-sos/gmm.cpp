@@ -266,6 +266,8 @@ static void assignGMMsComponents( const Mat& img, const Mat& mask, const GMM& bg
                 comp = bgdGMM.whichComponent(color);
             else if (mask.at<uchar>(p) == cv::GC_FGD)
                 comp = fgdGMM.whichComponent(color);
+            else
+                comp = 0;
             compIdxs.at<int>(p) = comp;
         }
     }

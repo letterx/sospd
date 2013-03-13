@@ -60,6 +60,34 @@ class DummyFeature : public FG {
     }
 };
 
+class GMMFeature : public FG {
+    virtual size_t NumFeatures() const { return 3; }
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+        std::vector<FVAL> psi = {0.0, 0.0, 0.0};
+        ImageCIterate3_1(p.m_image, l.m_gt, 
+            [&](const cv::Vec3b& color, const unsigned char& label) {
+                if (label == cv::GC_BGD || label == cv::GC_PR_BGD) {
+                    psi[0] += -log(p.m_bgdGMM(color));
+                } else if (label == cv::GC_FGD || label == cv::GC_PR_FGD) {
+                    psi[0] += -log(p.m_fgdGMM(color));
+                } else {
+                    ASSERT(false /* should never reach here? */);
+                }
+            });
+        ImageCIterate(p.m_tri,
+            [&](const unsigned char& label) {
+                if (label == cv::GC_BGD) psi[1] += 1.0;
+                if (label == cv::GC_FGD) psi[2] += 1.0;
+            });
+        return psi;
+    }
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
+
+    }
+};
+
+                
+
 ModelData::ModelData() {
     m_features.push_back(std::shared_ptr<FG>(new DummyFeature));
 

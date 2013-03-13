@@ -17,9 +17,9 @@ inline void ImageIterate(cv::Mat& im, Fn f) {
 }
 
 template <typename Fn>
-inline void ImageCIterate(cv::Mat& im, Fn f) {
+inline void ImageCIterate(const cv::Mat& im, Fn f) {
     cv::MatConstIterator_<unsigned char> iter, end;
-    for (iter = im.begin<unsigned char>, end = im.end<unsigned char>;
+    for (iter = im.begin<unsigned char>(), end = im.end<unsigned char>();
             iter != end; ++iter) {
         f(*iter);
     }
@@ -45,6 +45,20 @@ inline void ImageCIterate(const cv::Mat& im1, const cv::Mat& im2, Fn f) {
     cv::MatConstIterator_<unsigned char> it2, end2;
     it1 = im1.begin<unsigned char>();
     end1 = im1.end<unsigned char>();
+    it2 = im2.begin<unsigned char>();
+    end2 = im2.end<unsigned char>();
+    for (; it1 != end1; ++it1, ++it2) {
+        f(*it1, *it2);
+    }
+    ASSERT(it2 == end2);
+}
+
+template <typename Fn>
+inline void ImageCIterate3_1(const cv::Mat& im1, const cv::Mat& im2, Fn f) {
+    cv::MatConstIterator_<cv::Vec3b> it1, end1;
+    cv::MatConstIterator_<unsigned char> it2, end2;
+    it1 = im1.begin<cv::Vec3b>();
+    end1 = im1.end<cv::Vec3b>();
     it2 = im2.begin<unsigned char>();
     end2 = im2.end<unsigned char>();
     for (; it1 != end1; ++it1, ++it2) {

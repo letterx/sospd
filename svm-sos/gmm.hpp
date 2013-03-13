@@ -57,7 +57,7 @@ Carsten Rother, Vladimir Kolmogorov, Andrew Blake.
 class GMM
 {
 public:
-    static const int componentsCount = 3;
+    static const int componentsCount = 5;
 
     GMM( cv::Mat& _model );
     double operator()( const cv::Vec3d color ) const;
