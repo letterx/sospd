@@ -82,7 +82,18 @@ class GMMFeature : public FG {
         return psi;
     }
     virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
-
+        cv::Point pt;
+        for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
+            for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
+                const cv::Vec3b& color = p.m_image.at<cv::Vec3b>(pt);
+                CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
+                double E0 = w[0]*-log(p.m_bgdGMM(color));
+                double E1 = w[0]*-log(p.m_fgdGMM(color));
+                if (p.m_tri.at<unsigned char>(pt) == cv::GC_BGD) E1 += w[1];
+                if (p.m_tri.at<unsigned char>(pt) == cv::GC_FGD) E0 += w[2];
+                crf.AddUnaryTerm(id, E0, E1);
+            }
+        }
     }
 };
 

@@ -193,8 +193,10 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
 
     CRF crf;
     data(sm)->InitializeCRF(crf, *data(x));
+    size_t feature_base = 0;
     for (auto fgp : data(sm)->m_features) {
-        fgp->AddToCRF(crf, *data(x), sm->w);
+        fgp->AddToCRF(crf, *data(x), sm->w + feature_base);
+        feature_base += fgp->NumFeatures();
     }
     crf.Solve();
     y.data = data(sm)->ExtractLabel(crf, *data(x));
@@ -266,8 +268,10 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     /* insert your code for computing the label ybar here */
     CRF crf;
     data(sm)->InitializeCRF(crf, *data(x));
+    size_t feature_base = 0;
     for (auto fgp : data(sm)->m_features) {
-        fgp->AddToCRF(crf, *data(x), sm->w);
+        fgp->AddToCRF(crf, *data(x), sm->w + feature_base);
+        feature_base += fgp->NumFeatures();
     }
     data(sm)->AddLossToCRF(crf, *data(x), *data(y));
     crf.Solve();
