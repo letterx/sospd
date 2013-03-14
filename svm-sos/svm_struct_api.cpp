@@ -177,7 +177,7 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
         }
         w.wnum = 0;
         words.push_back(w);
-        c.lhs[i] = create_example(i, 0, 1000000+i, 1, create_svector(words.data(), NULL, 1.0));
+        c.lhs[i] = create_example(i, 0, sample.n+2+i, 1, create_svector(words.data(), NULL, 1.0));
         c.rhs[i] = rhs;
         i++;
     }

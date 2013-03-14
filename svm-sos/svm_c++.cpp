@@ -2,6 +2,28 @@
 #include "svm_c++.hpp"
 #include "image_manip.hpp"
 
+constexpr double LOSS_SCALE = 100000.0;
+inline double LabelDiff(unsigned char l1, unsigned char l2) {
+    if (l1 == cv::GC_BGD || l1 == cv::GC_PR_BGD) {
+        if (l2 == cv::GC_FGD || l2 == cv::GC_PR_FGD)
+            return 1.0;
+        else if (l2 == -1)
+            return 0.5;
+        else 
+            return 0.0;
+    } else if (l1 == cv::GC_FGD || l1 == cv::GC_PR_FGD) {
+        if (l2 == cv::GC_BGD || l2 == cv::GC_PR_BGD)
+            return 1.0;
+        else if (l2 == -1)
+            return 0.5;
+        else 
+            return 0.0;
+    } else if (l1 == l2)
+        return 0.0;
+    else
+        return 0.5;
+}
+
 PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv::Mat& trimap) 
     : m_name(name), 
     m_image(image),
@@ -23,6 +45,7 @@ PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv
             cv::Vec3d c2 = color2;
             cv::Vec3d diff = c1-c2;
             d1 = exp(-m_beta*diff.dot(diff));
+            //d1 = abs(diff[0]) + abs(diff[1]) + abs(diff[2]);
     };
     ImageIterate(m_image, m_downW, cv::Point(0.0, 1.0), calcExpDiff);
     ImageIterate(m_image, m_rightW, cv::Point(1.0, 0.0), calcExpDiff);
@@ -54,14 +77,10 @@ double LabelData::Loss(const LabelData& l) const {
     double loss = 0;
     ImageCIterate(m_gt, l.m_gt, 
             [&](const unsigned char& c1, const unsigned char& c2) {
-                if ((c1 == cv::GC_BGD || c1 == cv::GC_PR_BGD) && (c2 == cv::GC_FGD || c2 == cv::GC_PR_FGD)) {
-                    loss += 1.0;
-                } else if ((c1 == cv::GC_FGD || c1 == cv::GC_PR_FGD) && (c2 == cv::GC_BGD || c2 == cv::GC_PR_BGD)) {
-                    loss += 1.0;
-                }
+                loss += LabelDiff(c1, c2);
             });
     loss /= (m_gt.rows*m_gt.cols);
-    return loss;
+    return loss*LOSS_SCALE;
 }
 
 class DummyFeature : public FG {
@@ -79,21 +98,14 @@ class PairwiseFeature : public FG {
     public:
     typedef FG::Constr Constr;
     static constexpr double scale = 0.01;
-    virtual size_t NumFeatures() const { return 2; }
+    virtual size_t NumFeatures() const { return 1; }
     virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
-        std::vector<FVAL> psi = {0.0, 0.0};
+        std::vector<FVAL> psi = {0.0};
         auto constPairwise = [&](const unsigned char& l1, const unsigned char& l2) {
-            if (l1 != l2) psi[0] += scale;
+            psi[0] += scale*LabelDiff(l1, l2);
         };
         ImageIterate(l.m_gt, cv::Point(1.0, 0.0), constPairwise);
         ImageIterate(l.m_gt, cv::Point(0.0, 1.0), constPairwise);
-        std::function<void(const double&, const double&, const unsigned char&, const unsigned char&)>
-            gradientPairwise = [&](const double& d1, const double& d2, const unsigned char& l1, const unsigned char& l2)
-            {
-                if (l1 != l2) psi[1] += d1;
-            };
-        ImageIterate(p.m_downW, l.m_gt, cv::Point(0.0, 1.0), gradientPairwise);
-        ImageIterate(p.m_rightW, l.m_gt, cv::Point(1.0, 0.0), gradientPairwise);
 
         for (auto& v : psi)
             v = -v;
@@ -105,11 +117,39 @@ class PairwiseFeature : public FG {
         };
         ImageIteri(p.m_image, cv::Point(1.0, 0.0), constPairwise);
         ImageIteri(p.m_image, cv::Point(0.0, 1.0), constPairwise);
+    }
+    virtual Constr CollectConstrs(size_t feature_base) const {
+        Constr ret;
+        std::pair<std::vector<std::pair<size_t, double>>, double> c = {{{feature_base, 1.0}}, 0.0};
+        ret.push_back(c);
+        return ret;
+    }
+};
+
+class ContrastPairwiseFeature : public FG {
+    public:
+    typedef FG::Constr Constr;
+    virtual size_t NumFeatures() const { return 1; }
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+        std::vector<FVAL> psi = {0.0};
+        std::function<void(const double&, const double&, const unsigned char&, const unsigned char&)>
+            gradientPairwise = [&](const double& d1, const double& d2, const unsigned char& l1, const unsigned char& l2)
+            {
+                psi[0] += d1*LabelDiff(l1, l2);
+            };
+        ImageIterate(p.m_downW, l.m_gt, cv::Point(0.0, 1.0), gradientPairwise);
+        ImageIterate(p.m_rightW, l.m_gt, cv::Point(1.0, 0.0), gradientPairwise);
+
+        for (auto& v : psi)
+            v = -v;
+        return psi;
+    }
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
         cv::Mat gradWeight;
         std::function<void(const cv::Point&, const cv::Point&)> gradientPairwise = 
             [&](const cv::Point& p1, const cv::Point& p2)
             {
-                REAL weight = doubleToREAL(w[1]*gradWeight.at<double>(p1));
+                REAL weight = doubleToREAL(w[0]*gradWeight.at<double>(p1));
                 CRF::NodeId i1 = p1.y*p.m_image.cols + p1.x;
                 CRF::NodeId i2 = p2.y*p.m_image.cols + p2.x;
                 crf.AddPairwiseTerm(i1, i2, 0, weight, weight, 0);
@@ -123,11 +163,9 @@ class PairwiseFeature : public FG {
         Constr ret;
         std::pair<std::vector<std::pair<size_t, double>>, double> c = {{{feature_base, 1.0}}, 0.0};
         ret.push_back(c);
-        c = {{{feature_base+1, 1.0}}, 0.0};
         return ret;
     }
 };
-
 
 
 class GMMFeature : public FG {
@@ -136,29 +174,22 @@ class GMMFeature : public FG {
         std::vector<FVAL> psi = {0.0, 0.0, 0.0};
         ImageCIterate3_1(p.m_image, l.m_gt, 
             [&](const cv::Vec3b& color, const unsigned char& label) {
-                double prob;
-                if (label == cv::GC_BGD || label == cv::GC_PR_BGD) {
-                    prob = p.m_bgdGMM(color);
-                } else if (label == cv::GC_FGD || label == cv::GC_PR_FGD) {
-                    prob = p.m_fgdGMM(color);
-                } else {
-                    ASSERT(false /* should never reach here? */);
-                    prob = 0;
-                }
-                if (prob < 0.0000001) prob = 0.0000001;
-                psi[0] += -log(prob)*0.001;
+                double bgd_prob = p.m_bgdGMM(color);
+                double fgd_prob = p.m_fgdGMM(color);
+                if (bgd_prob < 0.0000001) bgd_prob = 0.0000001;
+                if (fgd_prob < 0.0000001) fgd_prob = 0.0000001;
+                psi[0] += -log(bgd_prob)*0.001*LabelDiff(label, cv::GC_FGD);
+                psi[0] += -log(fgd_prob)*0.001*LabelDiff(label, cv::GC_BGD);
                 ASSERT(!std::isnan(psi[0]));
                 ASSERT(std::isfinite(psi[0]));
                 ASSERT(std::isnormal(psi[0]));
             });
         ImageCIterate(p.m_tri, l.m_gt,
             [&](const unsigned char& tri_label, const unsigned char& label) {
-                if (tri_label == cv::GC_BGD 
-                    && (label == cv::GC_FGD || label == cv::GC_PR_FGD)) 
-                    psi[1] += 1.0;
-                if (tri_label == cv::GC_FGD
-                    && (label == cv::GC_BGD || label == cv::GC_PR_BGD))
-                    psi[2] += 1.0;
+                if (tri_label == cv::GC_BGD)
+                    psi[1] += LabelDiff(label, cv::GC_BGD);
+                if (tri_label == cv::GC_FGD)
+                    psi[2] += LabelDiff(label, cv::GC_FGD);
             });
         for (auto& v : psi)
             v = -v;
@@ -170,8 +201,12 @@ class GMMFeature : public FG {
             for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
                 const cv::Vec3b& color = p.m_image.at<cv::Vec3b>(pt);
                 CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
-                double E0 = w[0]*-log(p.m_bgdGMM(color))*0.001;
-                double E1 = w[0]*-log(p.m_fgdGMM(color))*0.001;
+                double bgd_prob = p.m_bgdGMM(color);
+                double fgd_prob = p.m_fgdGMM(color);
+                if (bgd_prob < 0.0000001) bgd_prob = 0.0000001;
+                if (fgd_prob < 0.0000001) fgd_prob = 0.0000001;
+                double E0 = w[0]*-log(bgd_prob)*0.001;
+                double E1 = w[0]*-log(fgd_prob)*0.001;
                 if (p.m_tri.at<unsigned char>(pt) == cv::GC_BGD) E1 += w[1];
                 if (p.m_tri.at<unsigned char>(pt) == cv::GC_FGD) E0 += w[2];
                 crf.AddUnaryTerm(id, doubleToREAL(E0), doubleToREAL(E1));
@@ -185,6 +220,7 @@ class GMMFeature : public FG {
 ModelData::ModelData() {
     m_features.push_back(std::shared_ptr<FG>(new GMMFeature));
     m_features.push_back(std::shared_ptr<FG>(new PairwiseFeature));
+    m_features.push_back(std::shared_ptr<FG>(new ContrastPairwiseFeature));
 
 }
 
@@ -202,7 +238,7 @@ void ModelData::InitializeCRF(CRF& crf, const PatternData& p) const {
 }
 
 void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const {
-    double mult = 1.0/(p.m_image.rows*p.m_image.cols);
+    double mult = LOSS_SCALE/(p.m_image.rows*p.m_image.cols);
     cv::Point pt;
     for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
         for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
@@ -222,9 +258,10 @@ LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
     CRF::NodeId id = 0;
     ImageIterate(lp->m_gt, 
         [&](unsigned char& c) { 
-            ASSERT(crf.GetLabel(id) >= 0);
+            //ASSERT(crf.GetLabel(id) >= 0);
             if (crf.GetLabel(id) == 0) c = cv::GC_BGD;
-            else c = cv::GC_FGD;
+            else if (crf.GetLabel(id) == 1) c = cv::GC_FGD;
+            else c = -1;
             id++;
         });
     //x.m_tri.copyTo(lp->m_gt);
