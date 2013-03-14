@@ -100,7 +100,7 @@ class GMMFeature : public FG {
                 
 
 ModelData::ModelData() {
-    m_features.push_back(std::shared_ptr<FG>(new DummyFeature));
+    m_features.push_back(std::shared_ptr<FG>(new GMMFeature));
 
 }
 
