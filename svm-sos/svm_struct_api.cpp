@@ -489,10 +489,9 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
     ar & *data(sm);
 
     for(int i = 1; i < model->sv_num; i++) {
-        double factor;
         long kernel_id;
         size_t num_words;
-        ar & factor;
+        ar & model->alpha[i];
         ar & kernel_id;
         ar & num_words;
         std::vector<WORD> words;

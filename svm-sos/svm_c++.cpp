@@ -151,10 +151,10 @@ LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
     CRF::NodeId id = 0;
     ImageIterate(lp->m_gt, 
         [&](unsigned char& c) { 
+            ASSERT(crf.GetLabel(id) >= 0);
             if (crf.GetLabel(id) == 0) c = cv::GC_BGD;
             else c = cv::GC_FGD;
             id++;
-            ASSERT(crf.GetLabel(id) >= 0);
         });
     //x.m_tri.copyTo(lp->m_gt);
     //cv::Mat bgdModel, fgdModel;
