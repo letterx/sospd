@@ -2,7 +2,8 @@ CXX ?= g++
 AR = ar
 DEFS = 
 INCLUDES = -I./submodular-flow/ -I./higher-order-energy/include -I./higher-order-energy/qpbo
-CXX_FLAGS = -g -Wall -std=c++11 $(INCLUDES)
+OPT ?= -O3
+CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = 
 LIBS = 
 TEST_DIR = ./test

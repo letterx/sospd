@@ -18,6 +18,7 @@ extern "C" {
 #include <opencv2/highgui/highgui.hpp>
 
 #include "submodular-flow.hpp"
+#include "QPBO.h"
 #include "gmm.hpp"
 
 class PatternData {
@@ -52,7 +53,7 @@ class LabelData {
 };
 
 
-typedef SubmodularFlow CRF;
+typedef QPBO<REAL> CRF;
 
 template <typename PatternData, typename LabelData, typename CRF>
 class FeatureGroup {

@@ -191,7 +191,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
      recognized by the function empty_label(y). */
     LABEL y;
 
-    CRF crf;
+    CRF crf(0, 0);
     data(sm)->InitializeCRF(crf, *data(x));
     size_t feature_base = 0;
     for (auto fgp : data(sm)->m_features) {
@@ -266,7 +266,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     LABEL ybar;
 
     /* insert your code for computing the label ybar here */
-    CRF crf;
+    CRF crf(0, 0);
     data(sm)->InitializeCRF(crf, *data(x));
     size_t feature_base = 0;
     for (auto fgp : data(sm)->m_features) {

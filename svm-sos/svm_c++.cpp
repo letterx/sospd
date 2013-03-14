@@ -113,6 +113,7 @@ long ModelData::NumFeatures() const {
 }
 
 void ModelData::InitializeCRF(CRF& crf, const PatternData& p) const {
+    crf.AddNode(p.m_image.rows*p.m_image.cols);
 
 }
 
@@ -123,7 +124,13 @@ void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l)
 LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
     LabelData* lp = new LabelData;
     lp->m_gt.create(x.m_image.rows, x.m_image.cols, CV_8UC1);
-    ImageIterate(lp->m_gt, [](unsigned char& c) { c = 0; });
+    CRF::NodeId id = 0;
+    ImageIterate(lp->m_gt, 
+        [&](unsigned char& c) { 
+            if (crf.GetLabel(id) == 0) c = cv::GC_BGD;
+            else c = cv::GC_FGD;
+            id++;
+        });
     //x.m_tri.copyTo(lp->m_gt);
     //cv::Mat bgdModel, fgdModel;
     //cv::grabCut(x.m_image, lp->m_gt, cv::Rect(), bgdModel, fgdModel, 10, cv::GC_INIT_WITH_MASK);
