@@ -132,8 +132,8 @@ void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l)
             CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
             double E0 = 0;
             double E1 = 0;
-            if (l.m_gt.at<unsigned char>(pt) == cv::GC_BGD) E1 += 1.0;
-            if (l.m_gt.at<unsigned char>(pt) == cv::GC_FGD) E0 += 1.0;
+            if (l.m_gt.at<unsigned char>(pt) == cv::GC_BGD) E1 -= 1.0;
+            if (l.m_gt.at<unsigned char>(pt) == cv::GC_FGD) E0 -= 1.0;
             crf.AddUnaryTerm(id, doubleToREAL(E0), doubleToREAL(E1));
         }
     }

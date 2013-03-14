@@ -125,7 +125,12 @@ inline void ConvertGreyToMask(const cv::Mat& gt, cv::Mat& out) {
         else
             *out_it = cv::GC_PR_BGD;
     }
+}
 
+inline void ShowImage(const cv::Mat& im) {
+    cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
+    cv::imshow("Display window", im*(255/3));
+    cv::waitKey(0);
 }
 
 namespace boost {
