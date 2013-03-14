@@ -31,3 +31,4 @@ svm_sos_learn
 # Generated test files
 *.model
 *.predictions
+nohup.out
