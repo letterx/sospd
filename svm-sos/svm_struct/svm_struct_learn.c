@@ -381,8 +381,8 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
 
     } while(((totconstraints - old_totconstraints) > tolerance) || dont_stop);
 
-  } while((epsilon > sparm->epsilon) 
-	  || finalize_iteration(ceps,0,sample,sm,cset,alpha,sparm));  
+  } while(finalize_iteration(ceps,0,sample,sm,cset,alpha,sparm)
+          || (epsilon > sparm->epsilon) );  
 
   if(struct_verbosity>=1) {
     /**** compute sum of slacks ****/
@@ -829,8 +829,8 @@ void svm_learn_struct_joint(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
 
       rt_total+=MAX(get_runtime()-rt1,0);
 
-  } while(cached_constraint || (ceps > sparm->epsilon) || 
-	  finalize_iteration(ceps,cached_constraint,sample,sm,cset,alpha,sparm)
+  } while(finalize_iteration(ceps,cached_constraint,sample,sm,cset,alpha,sparm) ||
+          cached_constraint || (ceps > sparm->epsilon) 	  
 	 );
   
 

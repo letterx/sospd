@@ -1,3 +1,4 @@
+#include <cmath>
 #include "svm_c++.hpp"
 #include "image_manip.hpp"
 
@@ -45,7 +46,7 @@ double LabelData::Loss(const LabelData& l) const {
                     loss += 1.0;
                 }
             });
-    loss /= (m_gt.rows*m_gt.cols);
+    //loss /= (m_gt.rows*m_gt.cols);
     return loss;
 }
 
@@ -66,13 +67,20 @@ class GMMFeature : public FG {
         std::vector<FVAL> psi = {0.0, 0.0, 0.0};
         ImageCIterate3_1(p.m_image, l.m_gt, 
             [&](const cv::Vec3b& color, const unsigned char& label) {
+                double prob;
                 if (label == cv::GC_BGD || label == cv::GC_PR_BGD) {
-                    psi[0] += -log(p.m_bgdGMM(color));
+                    prob = p.m_bgdGMM(color);
                 } else if (label == cv::GC_FGD || label == cv::GC_PR_FGD) {
-                    psi[0] += -log(p.m_fgdGMM(color));
+                    prob = p.m_fgdGMM(color);
                 } else {
                     ASSERT(false /* should never reach here? */);
+                    prob = 0;
                 }
+                if (prob < 0.0000001) prob = 0.0000001;
+                psi[0] += -log(prob)*0.001;
+                ASSERT(!std::isnan(psi[0]));
+                ASSERT(std::isfinite(psi[0]));
+                ASSERT(std::isnormal(psi[0]));
             });
         ImageCIterate(p.m_tri,
             [&](const unsigned char& label) {
@@ -87,11 +95,11 @@ class GMMFeature : public FG {
             for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
                 const cv::Vec3b& color = p.m_image.at<cv::Vec3b>(pt);
                 CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
-                double E0 = w[0]*-log(p.m_bgdGMM(color));
-                double E1 = w[0]*-log(p.m_fgdGMM(color));
+                double E0 = w[0]*-log(p.m_bgdGMM(color))*0.001;
+                double E1 = w[0]*-log(p.m_fgdGMM(color))*0.001;
                 if (p.m_tri.at<unsigned char>(pt) == cv::GC_BGD) E1 += w[1];
                 if (p.m_tri.at<unsigned char>(pt) == cv::GC_FGD) E0 += w[2];
-                crf.AddUnaryTerm(id, E0, E1);
+                crf.AddUnaryTerm(id, doubleToREAL(E0), doubleToREAL(E1));
             }
         }
     }
@@ -118,7 +126,17 @@ void ModelData::InitializeCRF(CRF& crf, const PatternData& p) const {
 }
 
 void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const {
-
+    cv::Point pt;
+    for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
+        for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
+            CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
+            double E0 = 0;
+            double E1 = 0;
+            if (l.m_gt.at<unsigned char>(pt) == cv::GC_BGD) E1 += 1.0;
+            if (l.m_gt.at<unsigned char>(pt) == cv::GC_FGD) E0 += 1.0;
+            crf.AddUnaryTerm(id, doubleToREAL(E0), doubleToREAL(E1));
+        }
+    }
 }
 
 LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {

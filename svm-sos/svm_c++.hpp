@@ -21,6 +21,8 @@ extern "C" {
 #include "QPBO.h"
 #include "gmm.hpp"
 
+inline REAL doubleToREAL(double d) { return (REAL)(d * 10000.0); }
+
 class PatternData {
     public:
         PatternData(const std::string& name, const cv::Mat& im, const cv::Mat& tri);

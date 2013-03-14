@@ -195,7 +195,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
     data(sm)->InitializeCRF(crf, *data(x));
     size_t feature_base = 0;
     for (auto fgp : data(sm)->m_features) {
-        fgp->AddToCRF(crf, *data(x), sm->w + feature_base);
+        fgp->AddToCRF(crf, *data(x), sm->w + feature_base + 1);
         feature_base += fgp->NumFeatures();
     }
     crf.Solve();
@@ -270,7 +270,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     data(sm)->InitializeCRF(crf, *data(x));
     size_t feature_base = 0;
     for (auto fgp : data(sm)->m_features) {
-        fgp->AddToCRF(crf, *data(x), sm->w + feature_base);
+        fgp->AddToCRF(crf, *data(x), sm->w + feature_base + 1);
         feature_base += fgp->NumFeatures();
     }
     data(sm)->AddLossToCRF(crf, *data(x), *data(y));
@@ -359,6 +359,7 @@ int         finalize_iteration(double ceps, int cached_constraint,
 			       STRUCT_LEARN_PARM *sparm)
 {
   /* This function is called just before the end of each cutting plane iteration. ceps is the amount by which the most violated constraint found in the current iteration was violated. cached_constraint is true if the added constraint was constructed from the cache. If the return value is FALSE, then the algorithm is allowed to terminate. If it is TRUE, the algorithm will keep iterating even if the desired precision sparm->epsilon is already reached. */
+    std::cout << "sm->w = " << sm->w[0] << ", " << sm->w[1] << ", " << sm->w[2] << ", " << sm->w[3] << "\n";
   return(0);
 }
 
