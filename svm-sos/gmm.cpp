@@ -308,3 +308,46 @@ void learnGMMs(const Mat& img, const Mat& mask, GMM& bgdGMM, GMM& fgdGMM) {
     assignGMMsComponents(img, mask, bgdGMM, fgdGMM, compIdxs);
     learnGMMs(img, mask, compIdxs, bgdGMM, fgdGMM);
 }
+
+/*
+  Calculate beta - parameter of GrabCut algorithm.
+  beta = 1/(2*avg(sqr(||color[i] - color[j]||)))
+*/
+double calcBeta( const Mat& img )
+{
+    double beta = 0;
+    for( int y = 0; y < img.rows; y++ )
+    {
+        for( int x = 0; x < img.cols; x++ )
+        {
+            Vec3d color = img.at<Vec3b>(y,x);
+            if( x>0 ) // left
+            {
+                Vec3d diff = color - (Vec3d)img.at<Vec3b>(y,x-1);
+                beta += diff.dot(diff);
+            }
+            if( y>0 && x>0 ) // upleft
+            {
+                Vec3d diff = color - (Vec3d)img.at<Vec3b>(y-1,x-1);
+                beta += diff.dot(diff);
+            }
+            if( y>0 ) // up
+            {
+                Vec3d diff = color - (Vec3d)img.at<Vec3b>(y-1,x);
+                beta += diff.dot(diff);
+            }
+            if( y>0 && x<img.cols-1) // upright
+            {
+                Vec3d diff = color - (Vec3d)img.at<Vec3b>(y-1,x+1);
+                beta += diff.dot(diff);
+            }
+        }
+    }
+    if( beta <= std::numeric_limits<double>::epsilon() )
+        beta = 0;
+    else
+        beta = 1.f / (2 * beta/(4*img.cols*img.rows - 3*img.cols - 3*img.rows + 2) );
+
+    return beta;
+}
+

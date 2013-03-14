@@ -78,6 +78,30 @@ inline void ImageIterate(const cv::Mat& im, const cv::Point& offset, Fn f) {
     }
 }
 
+template <typename Arg1, typename Arg2>
+inline void ImageIterate(const cv::Mat& im, cv::Mat& out, const cv::Point& offset, 
+        const std::function<void(const Arg1&, const Arg1&, Arg2&, Arg2&)>& f) {
+    ASSERT(offset.x >= 0 && offset.y >= 0);
+    cv::Point p;
+    for (p.y = 0; p.y + offset.y < im.rows; ++p.y) {
+        for (p.x = 0; p.x + offset.x < im.cols; ++p.x) {
+            f(im.at<Arg1>(p), im.at<Arg1>(p+offset), out.at<Arg2>(p), out.at<Arg2>(p+offset));
+        }
+    }
+}
+
+template <typename Arg1, typename Arg2>
+inline void ImageIterate(const cv::Mat& im, const cv::Mat& out, const cv::Point& offset, 
+        const std::function<void(const Arg1&, const Arg1&, const Arg2&, const Arg2&)>& f) {
+    ASSERT(offset.x >= 0 && offset.y >= 0);
+    cv::Point p;
+    for (p.y = 0; p.y + offset.y < im.rows; ++p.y) {
+        for (p.x = 0; p.x + offset.x < im.cols; ++p.x) {
+            f(im.at<Arg1>(p), im.at<Arg1>(p+offset), out.at<Arg2>(p), out.at<Arg2>(p+offset));
+        }
+    }
+}
+
 template <typename Fn>
 inline void ImageIteri(const cv::Mat& im, const cv::Point& offset, Fn f) {
     ASSERT(offset.x >= 0 && offset.y >= 0);
@@ -88,6 +112,18 @@ inline void ImageIteri(const cv::Mat& im, const cv::Point& offset, Fn f) {
         }
     }
 }
+
+template <typename Fn>
+inline void ImageIterp(const cv::Mat& im, const cv::Point& offset, Fn f) {
+    ASSERT(offset.x >= 0 && offset.y >= 0);
+    cv::Point p;
+    for (p.y = 0; p.y + offset.y < im.rows; ++p.y) {
+        for (p.x = 0; p.x + offset.x < im.cols; ++p.x) {
+            f(p, p+offset);
+        }
+    }
+}
+
 
 
 inline void ValidateExample(const cv::Mat& im, const cv::Mat& tri, const cv::Mat& gt) {
