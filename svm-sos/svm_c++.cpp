@@ -82,11 +82,17 @@ class GMMFeature : public FG {
                 ASSERT(std::isfinite(psi[0]));
                 ASSERT(std::isnormal(psi[0]));
             });
-        ImageCIterate(p.m_tri,
-            [&](const unsigned char& label) {
-                if (label == cv::GC_BGD) psi[1] += 1.0;
-                if (label == cv::GC_FGD) psi[2] += 1.0;
+        ImageCIterate(p.m_tri, l.m_gt,
+            [&](const unsigned char& tri_label, const unsigned char& label) {
+                if (tri_label == cv::GC_BGD 
+                    && (label == cv::GC_FGD || label == cv::GC_PR_FGD)) 
+                    psi[1] += 1.0;
+                if (tri_label == cv::GC_FGD
+                    && (label == cv::GC_BGD || label == cv::GC_PR_BGD))
+                    psi[2] += 1.0;
             });
+        for (auto& v : psi)
+            v = -v;
         return psi;
     }
     virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
@@ -148,6 +154,7 @@ LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
             if (crf.GetLabel(id) == 0) c = cv::GC_BGD;
             else c = cv::GC_FGD;
             id++;
+            ASSERT(crf.GetLabel(id) >= 0);
         });
     //x.m_tri.copyTo(lp->m_gt);
     //cv::Mat bgdModel, fgdModel;
