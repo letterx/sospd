@@ -101,7 +101,7 @@ typedef struct struct_learn_parm {
 				  functions via -l command line
 				  option */
   /* further parameters that are passed to init_struct_model() */
-  int add_your_variables_here;
+  int grabcut_classify; // zero if normal classify, number of iterations otherwise
 } STRUCT_LEARN_PARM;
 
 typedef struct struct_test_stats {

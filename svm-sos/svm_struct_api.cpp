@@ -26,6 +26,8 @@ extern "C" {
 #include "svm_c++.hpp"
 #include "image_manip.hpp"
 
+static bool global_show_images = false;
+
 PatternData* data(PATTERN& p) { return (PatternData*)p.data; }
 PATTERN MakePattern(PatternData* d) {
     PATTERN p;
@@ -195,15 +197,23 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
      recognized by the function empty_label(y). */
     LABEL y;
 
-    CRF crf(0, 0);
-    data(sm)->InitializeCRF(crf, *data(x));
-    size_t feature_base = 1;
-    for (auto fgp : data(sm)->m_features) {
-        fgp->AddToCRF(crf, *data(x), sm->w + feature_base );
-        feature_base += fgp->NumFeatures();
+    if (sparm->grabcut_classify) {
+        y.data = new LabelData;
+        data(x)->m_tri.copyTo(data(y)->m_gt);
+        cv::Mat bgdModel;
+        cv::Mat fgdModel;
+        cv::grabCut(data(x)->m_image, data(y)->m_gt, cv::Rect(), bgdModel, fgdModel, sparm->grabcut_classify);
+    } else {
+        CRF crf(0, 0);
+        data(sm)->InitializeCRF(crf, *data(x));
+        size_t feature_base = 1;
+        for (auto fgp : data(sm)->m_features) {
+            fgp->AddToCRF(crf, *data(x), sm->w + feature_base );
+            feature_base += fgp->NumFeatures();
+        }
+        crf.Solve();
+        y.data = data(sm)->ExtractLabel(crf, *data(x));
     }
-    crf.Solve();
-    y.data = data(sm)->ExtractLabel(crf, *data(x));
 
     return(y);
 }
@@ -525,7 +535,8 @@ void        write_label(FILE *fp, LABEL y)
     boost::archive::text_oarchive oa(os);
     oa << *data(y);
     fwrite(os.str().c_str(), sizeof(char), os.str().size()+1, fp);
-    ShowImage(data(y)->m_gt);
+    if (global_show_images)
+        ShowImage(data(y)->m_gt);
 } 
 
 void        free_pattern(PATTERN x) {
@@ -570,6 +581,8 @@ void         parse_struct_parameters(STRUCT_LEARN_PARM *sparm)
   /* Parses the command line parameters that start with -- */
   int i;
 
+  sparm->grabcut_classify = 0;
+
   for(i=0;(i<sparm->custom_argc) && ((sparm->custom_argv[i])[0] == '-');i++) {
     switch ((sparm->custom_argv[i])[2]) 
       { 
@@ -586,6 +599,8 @@ void        print_struct_help_classify()
 {
   /* Prints a help text that is appended to the common help text of
      svm_struct_classify. */
+  printf("         --g n_iters -> use opencv's grabcut for classification instead\n");
+  printf("         --s bool    -> show images at end of classify\n");
   printf("         --* string -> custom parameters that can be adapted for struct\n");
   printf("                       learning. The * can be replaced by any character\n");
   printf("                       and there can be multiple options starting with --.\n");
@@ -597,10 +612,14 @@ void         parse_struct_parameters_classify(STRUCT_LEARN_PARM *sparm)
      classification module */
   int i;
 
+  sparm->grabcut_classify = 0;
+
   for(i=0;(i<sparm->custom_argc) && ((sparm->custom_argv[i])[0] == '-');i++) {
     switch ((sparm->custom_argv[i])[2]) 
       { 
       /* case 'x': i++; strcpy(xvalue,sparm->custom_argv[i]); break; */
+      case 'g': i++; sparm->grabcut_classify=atol(sparm->custom_argv[i]); break;
+      case 's': i++; global_show_images=atol(sparm->custom_argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",sparm->custom_argv[i]);
 	       exit(0);
       }
