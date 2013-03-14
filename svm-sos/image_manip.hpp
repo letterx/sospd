@@ -67,6 +67,29 @@ inline void ImageCIterate3_1(const cv::Mat& im1, const cv::Mat& im2, Fn f) {
     ASSERT(it2 == end2);
 }
 
+template <typename Fn>
+inline void ImageIterate(const cv::Mat& im, const cv::Point& offset, Fn f) {
+    ASSERT(offset.x >= 0 && offset.y >= 0);
+    cv::Point p;
+    for (p.y = 0; p.y + offset.y < im.rows; ++p.y) {
+        for (p.x = 0; p.x + offset.x < im.cols; ++p.x) {
+            f(im.at<unsigned char>(p), im.at<unsigned char>(p+offset));
+        }
+    }
+}
+
+template <typename Fn>
+inline void ImageIteri(const cv::Mat& im, const cv::Point& offset, Fn f) {
+    ASSERT(offset.x >= 0 && offset.y >= 0);
+    cv::Point p;
+    for (p.y = 0; p.y + offset.y < im.rows; ++p.y) {
+        for (p.x = 0; p.x + offset.x < im.cols; ++p.x) {
+            f(p.y*im.cols + p.x, (p.y + offset.y)*im.cols + p.x + offset.x);
+        }
+    }
+}
+
+
 inline void ValidateExample(const cv::Mat& im, const cv::Mat& tri, const cv::Mat& gt) {
     ASSERT(im.data != NULL);
     ASSERT(im.depth() == CV_8U);

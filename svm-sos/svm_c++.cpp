@@ -46,7 +46,7 @@ double LabelData::Loss(const LabelData& l) const {
                     loss += 1.0;
                 }
             });
-    //loss /= (m_gt.rows*m_gt.cols);
+    loss /= (m_gt.rows*m_gt.cols);
     return loss;
 }
 
@@ -60,6 +60,39 @@ class DummyFeature : public FG {
 
     }
 };
+
+class PairwiseFeature : public FG {
+    public:
+    typedef FG::Constr Constr;
+    static constexpr double scale = 0.01;
+    virtual size_t NumFeatures() const { return 1; }
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+        std::vector<FVAL> psi = {0.0};
+        auto fn = [&](const unsigned char& l1, const unsigned char& l2) {
+            if (l1 != l2) psi[0] += scale;
+        };
+        ImageIterate(l.m_gt, cv::Point(1.0, 0.0), fn);
+        ImageIterate(l.m_gt, cv::Point(0.0, 1.0), fn);
+        for (auto& v : psi)
+            v = -v;
+        return psi;
+    }
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
+        auto fn = [&](long l1, long l2) {
+            crf.AddPairwiseTerm(l1, l2, 0, scale*w[0], scale*w[0], 0);
+        };
+        ImageIteri(p.m_image, cv::Point(1.0, 0.0), fn);
+        ImageIteri(p.m_image, cv::Point(0.0, 1.0), fn);
+    }
+    virtual Constr CollectConstrs(size_t feature_base) const {
+        Constr ret;
+        std::pair<std::vector<std::pair<size_t, double>>, double> c = {{{feature_base, 1.0}}, 0.0};
+        ret.push_back(c);
+        return ret;
+    }
+};
+
+
 
 class GMMFeature : public FG {
     virtual size_t NumFeatures() const { return 3; }
@@ -115,6 +148,7 @@ class GMMFeature : public FG {
 
 ModelData::ModelData() {
     m_features.push_back(std::shared_ptr<FG>(new GMMFeature));
+    m_features.push_back(std::shared_ptr<FG>(new PairwiseFeature));
 
 }
 
@@ -132,14 +166,15 @@ void ModelData::InitializeCRF(CRF& crf, const PatternData& p) const {
 }
 
 void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const {
+    double mult = 1.0/(p.m_image.rows*p.m_image.cols);
     cv::Point pt;
     for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
         for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
             CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
             double E0 = 0;
             double E1 = 0;
-            if (l.m_gt.at<unsigned char>(pt) == cv::GC_BGD) E1 -= 1.0;
-            if (l.m_gt.at<unsigned char>(pt) == cv::GC_FGD) E0 -= 1.0;
+            if (l.m_gt.at<unsigned char>(pt) == cv::GC_BGD) E1 -= 1.0*mult;
+            if (l.m_gt.at<unsigned char>(pt) == cv::GC_FGD) E0 -= 1.0*mult;
             crf.AddUnaryTerm(id, doubleToREAL(E0), doubleToREAL(E1));
         }
     }

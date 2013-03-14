@@ -21,7 +21,7 @@ extern "C" {
 #include "QPBO.h"
 #include "gmm.hpp"
 
-inline REAL doubleToREAL(double d) { return (REAL)(d * 10000.0); }
+inline REAL doubleToREAL(double d) { return (REAL)(d * 500000.0); }
 
 class PatternData {
     public:
@@ -63,6 +63,8 @@ class FeatureGroup {
         virtual size_t NumFeatures() const = 0;
         virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const = 0;
         virtual void AddToCRF(CRF& c, const PatternData& p, double* w) const = 0;
+        typedef std::vector<std::pair<std::vector<std::pair<size_t, double>>, double>> Constr;
+        virtual Constr CollectConstrs(size_t base) const { return Constr(); }
 };
 
 typedef FeatureGroup<PatternData, LabelData, CRF> FG;

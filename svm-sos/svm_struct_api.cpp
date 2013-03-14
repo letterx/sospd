@@ -149,33 +149,37 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
      is an array of feature vectors, rhs is an array of doubles. m is
      the number of constraints. The function returns the initial
      set of constraints. */
-  CONSTSET c;
-  long     sizePsi=sm->sizePsi;
-  long     i;
-  WORD     words[2];
+    CONSTSET c;
 
-  if(1) { /* normal case: start with empty set of constraints */
-    c.lhs=NULL;
-    c.rhs=NULL;
-    c.m=0;
-  }
-#if 0
-  else { /* add constraints so that all learned weights are
-            positive. WARNING: Currently, they are positive only up to
-            precision epsilon set by -e. */
-    c.lhs=my_malloc(sizeof(DOC *)*sizePsi);
-    c.rhs=my_malloc(sizeof(double)*sizePsi);
-    for(i=0; i<sizePsi; i++) {
-      words[0].wnum=i+1;
-      words[0].weight=1.0;
-      words[1].wnum=0;
-      /* the following slackid is a hack. we will run into problems,
-         if we have move than 1000000 slack sets (ie examples) */
-      c.lhs[i]=create_example(i,0,1000000+i,1,create_svector(words,"",1.0));
-      c.rhs[i]=0.0;
+    FG::Constr constrs;
+    size_t feature_base = 1; 
+    for (auto fgp : data(sm)->m_features) {
+        FG::Constr new_constrs = fgp->CollectConstrs(feature_base);
+        constrs.insert(constrs.end(), new_constrs.begin(), new_constrs.end());
     }
-  }
-#endif
+    c.m = constrs.size();
+    if (c.m == 0)
+        return c;
+    c.lhs = (DOC**)my_malloc(sizeof(DOC*)*(constrs.size()));
+    c.rhs = (double*)my_malloc(sizeof(double)*(constrs.size()));
+    size_t i = 0;
+    for (auto constr : constrs) {
+        auto lhs = constr.first;
+        auto rhs = constr.second;
+        std::vector<WORD> words;
+        WORD w;
+        for (auto p : lhs) {
+            w.wnum = p.first;
+            w.weight = p.second;
+            words.push_back(w);
+        }
+        w.wnum = 0;
+        words.push_back(w);
+        c.lhs[i] = create_example(i, 0, 1000000+i, 1, create_svector(words.data(), NULL, 1.0));
+        c.rhs[i] = rhs;
+        i++;
+    }
+
   return(c);
 }
 
