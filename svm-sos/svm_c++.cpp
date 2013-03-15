@@ -269,3 +269,28 @@ LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
     //cv::grabCut(x.m_image, lp->m_gt, cv::Rect(), bgdModel, fgdModel, 10, cv::GC_INIT_WITH_MASK);
     return lp;
 }
+
+LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm) const {
+    CRF crf(0, 0);
+    InitializeCRF(crf, x);
+    size_t feature_base = 1;
+    for (auto fgp : m_features) {
+        fgp->AddToCRF(crf, x, sm->w + feature_base );
+        feature_base += fgp->NumFeatures();
+    }
+    crf.Solve();
+    return ExtractLabel(crf, x);
+}
+
+LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm) const {
+    CRF crf(0, 0);
+    InitializeCRF(crf, x);
+    size_t feature_base = 1;
+    for (auto fgp : m_features) {
+        fgp->AddToCRF(crf, x, sm->w + feature_base );
+        feature_base += fgp->NumFeatures();
+    }
+    AddLossToCRF(crf, x, y);
+    crf.Solve();
+    return ExtractLabel(crf, x);
+}

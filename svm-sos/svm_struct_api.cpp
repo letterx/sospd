@@ -204,15 +204,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
         cv::Mat fgdModel;
         cv::grabCut(data(x)->m_image, data(y)->m_gt, cv::Rect(), bgdModel, fgdModel, sparm->grabcut_classify);
     } else {
-        CRF crf(0, 0);
-        data(sm)->InitializeCRF(crf, *data(x));
-        size_t feature_base = 1;
-        for (auto fgp : data(sm)->m_features) {
-            fgp->AddToCRF(crf, *data(x), sm->w + feature_base );
-            feature_base += fgp->NumFeatures();
-        }
-        crf.Solve();
-        y.data = data(sm)->ExtractLabel(crf, *data(x));
+        y.data = data(sm)->Classify(*data(x), sm);
     }
 
     return(y);
@@ -280,17 +272,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     LABEL ybar;
 
     /* insert your code for computing the label ybar here */
-    CRF crf(0, 0);
-    data(sm)->InitializeCRF(crf, *data(x));
-    size_t feature_base = 1;
-    for (auto fgp : data(sm)->m_features) {
-        fgp->AddToCRF(crf, *data(x), sm->w + feature_base );
-        feature_base += fgp->NumFeatures();
-    }
-    data(sm)->AddLossToCRF(crf, *data(x), *data(y));
-    crf.Solve();
-    ybar.data = data(sm)->ExtractLabel(crf, *data(x));
-
+    ybar.data = data(sm)->FindMostViolatedConstraint(*data(x), *data(y), sm);
 
     return(ybar);
 }
