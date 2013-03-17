@@ -101,8 +101,10 @@ class SubmodularFeature : public FG {
     typedef uint32_t Assgn;
     static constexpr Assgn clique_size = 4;
     static constexpr double scale = 1;
-    virtual size_t NumFeatures() const { return 1 << clique_size; }
+    virtual size_t NumFeatures() const { return (1 << clique_size) - 2; }
     virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+        Assgn all_zeros = 0;
+        Assgn all_ones = (1 << clique_size) - 1;
         std::vector<FVAL> psi(NumFeatures(), 0);
         PatchFn f = [&](const std::vector<unsigned char>& labels) 
         {
@@ -111,7 +113,8 @@ class SubmodularFeature : public FG {
                 if (labels[i] == cv::GC_FGD || labels[i] == cv::GC_PR_FGD)
                     a |= 1 << i;
             }
-            psi[a] += scale;
+            if (a != all_zeros && a != all_ones)
+                psi[a] += scale;
         };
         ImageIteratePatch(l.m_gt, cv::Point(1.0, 1.0), f);
 
@@ -120,9 +123,9 @@ class SubmodularFeature : public FG {
         return psi;
     }
     virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
-        std::vector<REAL> costTable(NumFeatures(), 0);
+        std::vector<REAL> costTable(NumFeatures()+2, 0);
         for (size_t i = 0; i < NumFeatures(); ++i) {
-            costTable[i] = doubleToREAL(scale*w[i]);
+            costTable[i+1] = doubleToREAL(scale*w[i]);
         }
         typedef std::function<void(const std::vector<CRF::NodeId>&)> Fn;
         Fn f = [&](const std::vector<CRF::NodeId>& vars)
@@ -137,20 +140,23 @@ class SubmodularFeature : public FG {
         typedef std::vector<std::pair<size_t, double>> LHS;
         typedef double RHS;
         Constr ret;
-        Assgn max_assgn = NumFeatures();
+        Assgn max_assgn = (1 << clique_size) - 1;
+        Assgn all_zeros = 0;
+        Assgn all_ones = (1 << clique_size) - 1;
         for (Assgn s = 0; s < max_assgn; ++s) {
             for (size_t i = 0; i < clique_size; ++i) {
                 Assgn si = s | (1 << i);
                 if (si != s) {
                     for (size_t j = 0; j < clique_size; ++j) {
-                        Assgn t = s | (1 << i);
+                        Assgn t = s | (1 << j);
                         if (t != s && j != i) {
                             Assgn ti = t | (1 << i);
                             // Decreasing marginal costs, so we require
                             // f(ti) - f(t) <= f(si) - f(s)
                             // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-                            LHS lhs = {{feature_base+si, 1.0}, {feature_base+s, -1.0},
-                                       {feature_base+ti, -1.0}, {feature_base+t, 1.0}};
+                            LHS lhs = {{feature_base+si-1, 1.0}, {feature_base+t-1, 1.0}};
+                            if (s != all_zeros) lhs.push_back(std::make_pair(feature_base+s-1, -1.0));
+                            if (ti != all_ones) lhs.push_back(std::make_pair(feature_base+ti-1, -1.0));
                             RHS rhs = 0;
                             ret.push_back(std::make_pair(lhs, rhs));
                         }
@@ -169,7 +175,7 @@ class SubmodularFeature : public FG {
                 Assgn si = s | (1 << i);
                 if (si != s) {
                     for (size_t j = 0; j < clique_size; ++j) {
-                        Assgn t = s | (1 << i);
+                        Assgn t = s | (1 << j);
                         if (t != s && j != i) {
                             Assgn ti = t | (1 << i);
                             num_constraints++;
