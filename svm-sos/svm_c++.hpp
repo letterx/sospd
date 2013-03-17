@@ -18,6 +18,7 @@ extern "C" {
 #include <opencv2/highgui/highgui.hpp>
 
 #include "submodular-flow.hpp"
+#include "higher-order-energy.hpp"
 #include "QPBO.h"
 #include "gmm.hpp"
 
@@ -58,7 +59,8 @@ class LabelData {
 };
 
 
-typedef QPBO<REAL> CRF;
+//typedef SubmodularFlow CRF;
+typedef SubmodularFlow CRF;
 
 template <typename PatternData, typename LabelData, typename CRF>
 class FeatureGroup {
@@ -68,12 +70,14 @@ class FeatureGroup {
         virtual void AddToCRF(CRF& c, const PatternData& p, double* w) const = 0;
         typedef std::vector<std::pair<std::vector<std::pair<size_t, double>>, double>> Constr;
         virtual Constr CollectConstrs(size_t base) const { return Constr(); }
+        virtual double MaxViolation(size_t base, double* w) const { return 0.0; }
 };
 
 typedef FeatureGroup<PatternData, LabelData, CRF> FG;
 
 class ModelData {
     public:
+        typedef QPBO<REAL> QR;
         ModelData();
 
         long NumFeatures() const;

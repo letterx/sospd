@@ -90,6 +90,68 @@ inline void ImageIterate(const cv::Mat& im, cv::Mat& out, const cv::Point& offse
     }
 }
 
+template <typename Arg>
+inline void ImageIteratePatch(const cv::Mat& im, const cv::Point& offset,
+        const std::function<void(const std::vector<Arg>&)> fn) {
+    ASSERT(offset.x >= 0 && offset.y >= 0);
+    cv::Point base;
+    cv::Point p;
+    std::vector<Arg> args;
+    args.reserve(offset.x*offset.y);
+    for (base.y = 0; base.y + offset.y < im.rows; ++base.y) {
+        for (base.x = 0; base.x + offset.x < im.cols; ++base.x) {
+            args.clear();
+            for (p = base; p.y <= base.y + offset.y; ++p.y) {
+                for (p.x = base.x; p.x <= base.x + offset.x; ++p.x) {
+                    args.push_back(im.at<Arg>(p));
+                }
+            }
+            fn(args);
+        }
+    }
+}
+
+template <typename Fn>
+inline void ImageIterpPatch(const cv::Mat& im, const cv::Point& offset, Fn f) {
+    ASSERT(offset.x >= 0 && offset.y >= 0);
+    cv::Point base;
+    cv::Point p;
+    std::vector<cv::Point> args;
+    args.reserve(offset.x*offset.y);
+    for (base.y = 0; base.y + offset.y < im.rows; ++base.y) {
+        for (base.x = 0; base.x + offset.x < im.cols; ++base.x) {
+            args.clear();
+            for (p = base; p.y <= base.y + offset.y; ++p.y) {
+                for (p.x = base.x; p.x <= base.x + offset.x; ++p.x) {
+                    args.push_back(p);
+                }
+            }
+            f(args);
+        }
+    }
+}
+
+template <typename Arg>
+inline void ImageIteriPatch(const cv::Mat& im, const cv::Point& offset, 
+        const std::function<void(const std::vector<Arg>&)>& f) {
+    ASSERT(offset.x >= 0 && offset.y >= 0);
+    cv::Point base;
+    cv::Point p;
+    std::vector<Arg> args;
+    args.reserve(offset.x*offset.y);
+    for (base.y = 0; base.y + offset.y < im.rows; ++base.y) {
+        for (base.x = 0; base.x + offset.x < im.cols; ++base.x) {
+            args.clear();
+            for (p = base; p.y <= base.y + offset.y; ++p.y) {
+                for (p.x = base.x; p.x <= base.x + offset.x; ++p.x) {
+                    args.push_back(p.y*im.cols + p.x);
+                }
+            }
+            f(args);
+        }
+    }
+}
+
 template <typename Arg1, typename Arg2>
 inline void ImageIterate(const cv::Mat& im, const cv::Mat& out, const cv::Point& offset, 
         const std::function<void(const Arg1&, const Arg1&, const Arg2&, const Arg2&)>& f) {

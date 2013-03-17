@@ -7,14 +7,14 @@ inline double LabelDiff(unsigned char l1, unsigned char l2) {
     if (l1 == cv::GC_BGD || l1 == cv::GC_PR_BGD) {
         if (l2 == cv::GC_FGD || l2 == cv::GC_PR_FGD)
             return 1.0;
-        else if (l2 == -1)
+        else if (l2 == (unsigned char)-1)
             return 0.5;
         else 
             return 0.0;
     } else if (l1 == cv::GC_FGD || l1 == cv::GC_PR_FGD) {
         if (l2 == cv::GC_BGD || l2 == cv::GC_PR_BGD)
             return 1.0;
-        else if (l2 == -1)
+        else if (l2 == (unsigned char)-1)
             return 0.5;
         else 
             return 0.0;
@@ -94,6 +94,101 @@ class DummyFeature : public FG {
     }
 };
 
+class SubmodularFeature : public FG {
+    public: 
+    typedef FG::Constr Constr;
+    typedef std::function<void(const std::vector<unsigned char>&)> PatchFn;
+    typedef uint32_t Assgn;
+    static constexpr Assgn clique_size = 4;
+    static constexpr double scale = 1;
+    virtual size_t NumFeatures() const { return 1 << clique_size; }
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+        std::vector<FVAL> psi(NumFeatures(), 0);
+        PatchFn f = [&](const std::vector<unsigned char>& labels) 
+        {
+            Assgn a = 0;
+            for (size_t i = 0; i < clique_size; ++i) {
+                if (labels[i] == cv::GC_FGD || labels[i] == cv::GC_PR_FGD)
+                    a |= 1 << i;
+            }
+            psi[a] += scale;
+        };
+        ImageIteratePatch(l.m_gt, cv::Point(1.0, 1.0), f);
+
+        for (auto& v : psi)
+            v = -v;
+        return psi;
+    }
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
+        std::vector<REAL> costTable(NumFeatures(), 0);
+        for (size_t i = 0; i < NumFeatures(); ++i) {
+            costTable[i] = doubleToREAL(scale*w[i]);
+        }
+        typedef std::function<void(const std::vector<CRF::NodeId>&)> Fn;
+        Fn f = [&](const std::vector<CRF::NodeId>& vars)
+        {
+            ASSERT(vars.size() == clique_size);
+            crf.AddClique(vars, costTable);
+        };
+        ImageIteriPatch(p.m_image, cv::Point(1.0, 1.0), f);
+    }
+    virtual Constr CollectConstrs(size_t feature_base) const {
+        std::cout << "Adding submodular constraints\n";
+        typedef std::vector<std::pair<size_t, double>> LHS;
+        typedef double RHS;
+        Constr ret;
+        Assgn max_assgn = NumFeatures();
+        for (Assgn s = 0; s < max_assgn; ++s) {
+            for (size_t i = 0; i < clique_size; ++i) {
+                Assgn si = s | (1 << i);
+                if (si != s) {
+                    for (size_t j = 0; j < clique_size; ++j) {
+                        Assgn t = s | (1 << i);
+                        if (t != s && j != i) {
+                            Assgn ti = t | (1 << i);
+                            // Decreasing marginal costs, so we require
+                            // f(ti) - f(t) <= f(si) - f(s)
+                            // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
+                            LHS lhs = {{feature_base+si, 1.0}, {feature_base+s, -1.0},
+                                       {feature_base+ti, -1.0}, {feature_base+t, 1.0}};
+                            RHS rhs = 0;
+                            ret.push_back(std::make_pair(lhs, rhs));
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+    virtual double MaxViolation(size_t base, double* w) const {
+        size_t num_constraints = 0;
+        double max_violation = 0;
+        Assgn max_assgn = NumFeatures();
+        for (Assgn s = 0; s < max_assgn; ++s) {
+            for (size_t i = 0; i < clique_size; ++i) {
+                Assgn si = s | (1 << i);
+                if (si != s) {
+                    for (size_t j = 0; j < clique_size; ++j) {
+                        Assgn t = s | (1 << i);
+                        if (t != s && j != i) {
+                            Assgn ti = t | (1 << i);
+                            num_constraints++;
+                            // Decreasing marginal costs, so we require
+                            // f(ti) - f(t) <= f(si) - f(s)
+                            // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
+                            double violation = w[base+si] - w[base+s] - w[base+ti] + w[base+t];
+                            if (violation > max_violation) max_violation = violation;
+                        }
+                    }
+                }
+            }
+        }
+        std::cout << "Num constraints: " << num_constraints <<"\n";
+        return max_violation;
+    }
+};
+
+/*
 class PairwiseFeature : public FG {
     public:
     typedef FG::Constr Constr;
@@ -166,6 +261,7 @@ class ContrastPairwiseFeature : public FG {
         return ret;
     }
 };
+*/
 
 
 class GMMFeature : public FG {
@@ -219,8 +315,9 @@ class GMMFeature : public FG {
 
 ModelData::ModelData() {
     m_features.push_back(std::shared_ptr<FG>(new GMMFeature));
-    m_features.push_back(std::shared_ptr<FG>(new PairwiseFeature));
-    m_features.push_back(std::shared_ptr<FG>(new ContrastPairwiseFeature));
+    //m_features.push_back(std::shared_ptr<FG>(new PairwiseFeature));
+    //m_features.push_back(std::shared_ptr<FG>(new ContrastPairwiseFeature));
+    m_features.push_back(std::shared_ptr<FG>(new SubmodularFeature));
 
 }
 
@@ -271,11 +368,13 @@ LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
 }
 
 LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm) const {
-    CRF crf(0, 0);
+    std::cout << "Classify\n";
+    CRF crf;
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
         fgp->AddToCRF(crf, x, sm->w + feature_base );
+        std::cout << "Max Violation: " << fgp->MaxViolation(feature_base, sm->w) << "\n";
         feature_base += fgp->NumFeatures();
     }
     crf.Solve();
@@ -283,14 +382,19 @@ LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm) const {
 }
 
 LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm) const {
-    CRF crf(0, 0);
+    std::cout << "FindMostViolatedConstraint\n";
+    CRF crf;
     InitializeCRF(crf, x);
     size_t feature_base = 1;
+    std::cout << "Adding Features\n";
     for (auto fgp : m_features) {
         fgp->AddToCRF(crf, x, sm->w + feature_base );
+        std::cout << "Max Violation: " << fgp->MaxViolation(feature_base, sm->w) << "\n";
         feature_base += fgp->NumFeatures();
     }
     AddLossToCRF(crf, x, y);
+    std::cout << "Solving\n";
     crf.Solve();
+    std::cout << "Done!\n";
     return ExtractLabel(crf, x);
 }
