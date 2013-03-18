@@ -100,7 +100,7 @@ class SubmodularFeature : public FG {
     typedef std::function<void(const std::vector<unsigned char>&)> PatchFn;
     typedef uint32_t Assgn;
     static constexpr Assgn clique_size = 4;
-    static constexpr double scale = 1;
+    static constexpr double scale = 0.01;
     virtual size_t NumFeatures() const { return (1 << clique_size) - 2; }
     virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
         Assgn all_zeros = 0;
@@ -170,6 +170,8 @@ class SubmodularFeature : public FG {
         size_t num_constraints = 0;
         double max_violation = 0;
         Assgn max_assgn = NumFeatures();
+        Assgn all_zeros = 0;
+        Assgn all_ones = (1 << clique_size) - 1;
         for (Assgn s = 0; s < max_assgn; ++s) {
             for (size_t i = 0; i < clique_size; ++i) {
                 Assgn si = s | (1 << i);
@@ -182,7 +184,9 @@ class SubmodularFeature : public FG {
                             // Decreasing marginal costs, so we require
                             // f(ti) - f(t) <= f(si) - f(s)
                             // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-                            double violation = w[base+si] - w[base+s] - w[base+ti] + w[base+t];
+                            double violation = w[base+si-1] + w[base+t-1];
+                            if (s != all_zeros) violation -= w[base+s-1];
+                            if (ti != all_ones) violation -= w[base+ti-1];
                             if (violation > max_violation) max_violation = violation;
                         }
                     }
