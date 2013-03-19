@@ -116,11 +116,17 @@ void SubmodularFlow::PushRelabelInit()
 
     // saturate arcs out of s.
     for (NodeId i = 0; i < m_num_nodes; ++i) {
+        REAL min_cap = std::min(m_c_si[i], m_c_it[i]);
+        excess[s] -= m_c_si[i];
+        excess[t] += min_cap;
         m_phi_si[i] = m_c_si[i];
-        if (m_c_si[i] > 0) {
-            excess[s] -= m_c_si[i];
-            excess[i] += m_c_si[i];
-	        add_to_active_list(i, layers[0]);
+        m_phi_it[i] = min_cap;
+        if (m_c_si[i] > min_cap) {
+            excess[i] += m_c_si[i] - min_cap;
+            dis[i] = 2;
+	        add_to_active_list(i, layers[2]);
+        } else { 
+            dis[i] = 1;
         }
     }
 
