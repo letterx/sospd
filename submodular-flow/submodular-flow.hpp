@@ -81,6 +81,8 @@ class SubmodularFlow {
             // all 0 labeling have energy 0. Subtracts a linear function from
             // the energy, so we may need to change c_si, c_it
             virtual void NormalizeEnergy(SubmodularFlow& sf) = 0;
+            // Push delta units of flow from u to v
+            virtual void Push(size_t u_idx, size_t v_idx, REAL delta) = 0;
 
             const std::vector<NodeId>& Nodes() const { return m_nodes; }
             size_t Size() const { return m_nodes.size(); }
@@ -195,15 +197,18 @@ class EnergyTableClique : public SubmodularFlow::Clique {
         EnergyTableClique(const std::vector<NodeId>& nodes,
                           const std::vector<REAL>& energy)
             : SubmodularFlow::Clique(nodes),
-            m_energy(energy)
+            m_energy(energy),
+            m_alpha_energy(energy)
         { ASSERT(nodes.size() <= 31); }
 
         virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
         virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
         virtual void NormalizeEnergy(SubmodularFlow& sf);
+        virtual void Push(size_t u_idx, size_t v_idx, REAL delta);
 
     protected:
         std::vector<REAL> m_energy;
+        std::vector<REAL> m_alpha_energy;
 };
 
 #endif

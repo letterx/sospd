@@ -250,11 +250,7 @@ void SubmodularFlow::Push(Arc arc) {
         delta = std::min(excess[arc.i], ResCap(arc));
         //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
         Clique& c = *m_cliques[arc.c];
-        std::vector<REAL>& alpha_ci = c.AlphaCi();
-        ASSERT(arc.i_idx >= 0 && arc.i_idx < alpha_ci.size());
-        ASSERT(arc.j_idx >= 0 && arc.j_idx < alpha_ci.size());
-        alpha_ci[arc.i_idx] += delta;
-        alpha_ci[arc.j_idx] -= delta;
+        c.Push(arc.i_idx, arc.j_idx, delta);
         c.Time()++;
     }
     ASSERT(delta > 0);
@@ -359,6 +355,7 @@ void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
         for (size_t i = 0; i < n; ++i) {
             if (!(a & (1 << i))) m_energy[a] += marginals[i];
         }
+        m_alpha_energy[a] = m_energy[a];
     }
 
     sf.AddConstantTerm(constant_term);
@@ -387,14 +384,26 @@ REAL EnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
     Assignment num_assgns = 1 << n;
     for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
         if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
-            REAL alpha_C = 0;
-            for (size_t i = 0; i < n; ++i) {
-                if (assgn & (1 << i)) alpha_C += this->m_alpha_Ci[i];
-            }
-            // then assgn is a set separating u from v
-            REAL energy = m_energy[assgn] - alpha_C;
+            REAL energy = m_alpha_energy[assgn];
             if (energy < min_energy) min_energy = energy;
         }
     }
     return min_energy;
+}
+
+void EnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
+    ASSERT(u_idx >= 0 && u_idx < this->m_nodes.size());
+    ASSERT(v_idx >= 0 && v_idx < this->m_nodes.size());
+    m_alpha_Ci[u_idx] += delta;
+    m_alpha_Ci[v_idx] -= delta;
+    const size_t n = this->m_nodes.size();
+    Assignment num_assgns = 1 << n;
+    for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
+        if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
+            m_alpha_energy[assgn] -= delta;
+        } else if ((!(assgn & (1 << u_idx))) && (assgn & (1 << v_idx))) {
+            m_alpha_energy[assgn] += delta;
+        }
+        ASSERT(m_alpha_energy[assgn] >= 0);
+    }
 }
