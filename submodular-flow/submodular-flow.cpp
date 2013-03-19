@@ -97,6 +97,7 @@ void SubmodularFlow::PushRelabelInit()
 
     // init data structures
     for (int i = 0; i < m_num_nodes + 2; ++i) {
+        layer_list_ptr.push_back(list_iterator());
         dis.push_back(0);
         excess.push_back(0);
         current_arc_index.push_back(0);

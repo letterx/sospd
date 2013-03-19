@@ -121,7 +121,7 @@ class SubmodularFlow {
         LayerArray layers;
         int max_active, min_active;
         typedef typename std::list<NodeId>::iterator list_iterator;
-        std::map<NodeId, typename std::list<NodeId>::iterator> layer_list_ptr;
+        std::vector<list_iterator> layer_list_ptr;
 
         // Data needed during push-relabel
         NodeId s,t;
