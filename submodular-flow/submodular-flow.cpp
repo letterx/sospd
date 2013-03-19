@@ -83,11 +83,7 @@ void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
 // Inefficient but doing the remove manually since
 // I don't have a perfect understanding/translation of the boost code.
 void SubmodularFlow::remove_from_active_list(NodeId u) {
-    std::list<NodeId> temp;
-    for (NodeId i : layers[dis[u]].active_vertices) {
-        if (u != i) temp.push_back(i);
-    }
-    std::swap(layers[dis[u]].active_vertices, temp);
+    layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
 }
 
 void SubmodularFlow::PushRelabelInit()
@@ -242,13 +238,13 @@ void SubmodularFlow::Push(Arc arc) {
         alpha_ci[c.GetIndex(arc.i)] += delta;
         alpha_ci[c.GetIndex(arc.j)] -= delta;
     }
+    ASSERT(delta > 0);
     // Update (residual capacities) and excesses
-    excess[arc.i] -= delta;
-    excess[arc.j] += delta;
-    if (excess[arc.j] > 0 && arc.j != s && arc.j != t) {
-        remove_from_active_list(arc.j);
+    if (excess[arc.j] == 0 && arc.j != s && arc.j != t) {
         add_to_active_list(arc.j, layers[dis[arc.j]]);
     }
+    excess[arc.i] -= delta;
+    excess[arc.j] += delta;
     if (excess[arc.i] > 0) {
         add_to_active_list(arc.i, layers[dis[arc.i]]);
     }
