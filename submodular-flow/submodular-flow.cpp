@@ -238,6 +238,8 @@ void SubmodularFlow::Push(Arc arc) {
         //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
         Clique& c = *m_cliques[arc.c];
         std::vector<REAL>& alpha_ci = c.AlphaCi();
+        ASSERT(arc.i_idx >= 0 && arc.i_idx < alpha_ci.size());
+        ASSERT(arc.j_idx >= 0 && arc.j_idx < alpha_ci.size());
         alpha_ci[arc.i_idx] += delta;
         alpha_ci[arc.j_idx] -= delta;
     }
@@ -292,6 +294,7 @@ void SubmodularFlow::ComputeMinCut() {
             for (Arc arc : m_arc_list[u]) {
                 arc.i = arc.j;
                 arc.j = u;
+                std::swap(arc.i_idx, arc.j_idx);
                 if (ResCap(arc) > 0 && arc.i != s && arc.i != t
                         && dis[arc.i] == std::numeric_limits<int>::max()) {
                     m_labels[arc.i] = 0;
@@ -363,6 +366,8 @@ REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
 
 REAL EnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
     const size_t n = this->m_nodes.size();
+    ASSERT(u_idx < n);
+    ASSERT(v_idx < n);
 
     REAL min_energy = std::numeric_limits<REAL>::max();
     Assignment num_assgns = 1 << n;
