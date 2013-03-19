@@ -19,6 +19,8 @@ class SubmodularFlow {
 	        NodeId i, j;
             size_t i_idx, j_idx;
 	        CliqueId c; // if this is a clique edge; -1 otherwise
+            REAL cached_cap; // Is the true capacity if cached_time == c.m_time
+            int64_t cache_time;
         };
         typedef arc Arc;
 
@@ -66,7 +68,8 @@ class SubmodularFlow {
             public:
             Clique(const std::vector<NodeId>& nodes)
                 : m_nodes(nodes),
-                m_alpha_Ci(nodes.size(), 0)
+                m_alpha_Ci(nodes.size(), 0),
+                m_time(0)
             { }
             ~Clique() = default;
 
@@ -94,10 +97,13 @@ class SubmodularFlow {
                 }
                 return e;
             }
+            int64_t& Time() { return m_time; }
+            int64_t Time() const { return m_time; }
 
             protected:
             std::vector<NodeId> m_nodes; // The list of nodes in the clique
             std::vector<REAL> m_alpha_Ci; // The reparameterization variables for this clique
+            int64_t m_time;
 
             // Prohibit copying and moving clique functions, to prevent slicing
             // of derived class data

@@ -127,6 +127,8 @@ void SubmodularFlow::PushRelabelInit()
     // initialize arc lists
     Arc arc;
     arc.i_idx = arc.j_idx = 0;
+    arc.cached_cap = 0;
+    arc.cache_time = -1;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         // arcs from source
         arc.i = s;
@@ -208,8 +210,12 @@ REAL SubmodularFlow::ResCap(Arc arc) {
         return m_phi_it[arc.j];
     } else if (arc.j == t) {
         return m_c_it[arc.i] - m_phi_it[arc.i];
-    } else {
-        return m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx);
+    } else { // Is a clique-arc
+        if (arc.cache_time != m_cliques[arc.c]->Time()) {
+            arc.cached_cap = m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx);
+            arc.cache_time = m_cliques[arc.c]->Time();
+        }
+        return arc.cached_cap;
     }
 }
 
@@ -235,7 +241,7 @@ void SubmodularFlow::Push(Arc arc) {
         delta = std::min(excess[arc.i], m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
-        delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx));
+        delta = std::min(excess[arc.i], ResCap(arc));
         //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
         Clique& c = *m_cliques[arc.c];
         std::vector<REAL>& alpha_ci = c.AlphaCi();
@@ -243,6 +249,7 @@ void SubmodularFlow::Push(Arc arc) {
         ASSERT(arc.j_idx >= 0 && arc.j_idx < alpha_ci.size());
         alpha_ci[arc.i_idx] += delta;
         alpha_ci[arc.j_idx] -= delta;
+        c.Time()++;
     }
     ASSERT(delta > 0);
     // Update (residual capacities) and excesses
