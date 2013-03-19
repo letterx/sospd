@@ -125,6 +125,7 @@ void SubmodularFlow::PushRelabelInit()
 
     // initialize arc lists
     Arc arc;
+    arc.i_idx = arc.j_idx = 0;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         // arcs from source
         arc.i = s;
@@ -156,6 +157,8 @@ void SubmodularFlow::PushRelabelInit()
                 arc.i = i;
                 arc.j = j;
                 arc.c = cid;
+                arc.i_idx = cp->GetIndex(i);
+                arc.j_idx = cp->GetIndex(j);
                 m_arc_list[i].push_back(arc);
             }
         }
@@ -205,7 +208,7 @@ REAL SubmodularFlow::ResCap(Arc arc) {
     } else if (arc.j == t) {
         return m_c_it[arc.i] - m_phi_it[arc.i];
     } else {
-        return m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j);
+        return m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx);
     }
 }
 
@@ -231,12 +234,12 @@ void SubmodularFlow::Push(Arc arc) {
         delta = std::min(excess[arc.i], m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
-        delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j));
+        delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx));
         //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
         Clique& c = *m_cliques[arc.c];
         std::vector<REAL>& alpha_ci = c.AlphaCi();
-        alpha_ci[c.GetIndex(arc.i)] += delta;
-        alpha_ci[c.GetIndex(arc.j)] -= delta;
+        alpha_ci[arc.i_idx] += delta;
+        alpha_ci[arc.j_idx] -= delta;
     }
     ASSERT(delta > 0);
     // Update (residual capacities) and excesses
@@ -253,10 +256,11 @@ void SubmodularFlow::Push(Arc arc) {
 void SubmodularFlow::Relabel(NodeId i) {
     dis[i] = std::numeric_limits<int>::max();
     for(Arc arc : m_arc_list[i]) {
-        if (ResCap(arc) > 0) {
-            dis[i] = std::min (dis[i], dis[arc.j] + 1);
+        if (dis[arc.j] + 1 < dis[i] && ResCap(arc) > 0) {
+            dis[i] = dis[arc.j] + 1;
         }
     }
+    ASSERT(dis[i] < std::numeric_limits<int>::max());
     // if (dis[i] < dis[s])
     // Adding all active vertices back for now.
     add_to_active_list(i, layers[dis[i]]);
@@ -357,10 +361,7 @@ REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
     return m_energy[assgn];
 }
 
-REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
-    // This is not the most efficient way to do things, but it works
-    const size_t u_idx = GetIndex(u);
-    const size_t v_idx = GetIndex(v);
+REAL EnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
     const size_t n = this->m_nodes.size();
 
     REAL min_energy = std::numeric_limits<REAL>::max();

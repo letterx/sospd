@@ -17,6 +17,7 @@ class SubmodularFlow {
         typedef std::vector<CliquePtr> CliqueVec;
         struct arc {
 	        NodeId i, j;
+            size_t i_idx, j_idx;
 	        CliqueId c; // if this is a clique edge; -1 otherwise
         };
         typedef arc Arc;
@@ -72,7 +73,7 @@ class SubmodularFlow {
             // Returns the energy of the given labeling for this clique function
             virtual REAL ComputeEnergy(const std::vector<int>& labels) const = 0;
             // Returns the exchange capacity between nodes u and v
-            virtual REAL ExchangeCapacity(NodeId u, NodeId v) const = 0;
+            virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const = 0;
             // Normalizes energy so that it is always >= 0, and the all 1 and
             // all 0 labeling have energy 0. Subtracts a linear function from
             // the energy, so we may need to change c_si, c_it
@@ -192,7 +193,7 @@ class EnergyTableClique : public SubmodularFlow::Clique {
         { ASSERT(nodes.size() <= 31); }
 
         virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
-        virtual REAL ExchangeCapacity(NodeId u, NodeId v) const;
+        virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
         virtual void NormalizeEnergy(SubmodularFlow& sf);
 
     protected:
