@@ -74,6 +74,8 @@ void SubmodularFlow::AddClique(const std::vector<NodeId>& nodes, const std::vect
 //////// Push Relabel methods ///////////
 
 void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
+    //std::cout << "YOLO " << layer.active_vertices.size() << std::endl;
+    //layer.active_vertices.insert(u);
     layer.active_vertices.push_front(u);
     max_active = std::max BOOST_PREVENT_MACRO_SUBSTITUTION(dis[u], max_active);
     min_active = std::min BOOST_PREVENT_MACRO_SUBSTITUTION(dis[u], min_active);
@@ -83,16 +85,21 @@ void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
 // Inefficient but doing the remove manually since
 // I don't have a perfect understanding/translation of the boost code.
 void SubmodularFlow::remove_from_active_list(NodeId u) {
-    std::list<NodeId> temp;
+    /* std::list<NodeId> temp;
     for (NodeId i : layers[dis[u]].active_vertices) {
         if (u != i) temp.push_back(i);
     }
     std::swap(layers[dis[u]].active_vertices, temp);
-    //layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
+    */
+    //layers[dis[u]].active_vertices.erase(u);
+    layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
 }
 
 void SubmodularFlow::PushRelabelInit()
 {
+    //layer_list_ptr_data(m_num_nodes+2, layers.front().inactive_vertices.end());
+    //layer_list_ptr(layer_list_ptr_data.begin(), idx);
+
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
     max_active = 0; min_active = m_num_nodes + 2; // original nodes + source and sink
@@ -111,6 +118,7 @@ void SubmodularFlow::PushRelabelInit()
         m_arc_list.push_back(arc_list);
         Layer layer;
         layers.push_back(layer);
+        layer_list_ptr.push_back(layer.active_vertices.begin());
     }
     dis[s] = m_num_nodes + 2;
 
@@ -175,6 +183,7 @@ void SubmodularFlow::PushRelabelStep()
 {
     Layer& layer = layers[max_active];
     list_iterator u_iter = layer.active_vertices.begin();
+    //std::unordered_set<NodeId>::iterator u_iter = layer.active_vertices.begin();
 
     if (u_iter == layer.active_vertices.end())
         --max_active;
@@ -257,7 +266,8 @@ void SubmodularFlow::Push(Arc arc) {
     excess[arc.i] -= delta;
     excess[arc.j] += delta;
     if (excess[arc.j] > 0 && arc.j != s && arc.j != t) {
-        remove_from_active_list(arc.j);
+        if (excess[arc.j] - delta > 0)
+            remove_from_active_list(arc.j);
         add_to_active_list(arc.j, layers[dis[arc.j]]);
     }
     if (excess[arc.i] > 0) {

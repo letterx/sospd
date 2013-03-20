@@ -4,7 +4,6 @@
 #include "sos-common.hpp"
 #include "boost/optional/optional.hpp"
 #include <list>
-#include <map>
 
 typedef int64_t REAL;
 
@@ -108,7 +107,7 @@ class SubmodularFlow {
         // Layers store vertices by distance.
         struct preflow_layer {
             std::list<NodeId> active_vertices;
-            // std::list<NodeId> inactive_vertices;
+            //std::list<NodeId> inactive_vertices;
         };
 
         typedef preflow_layer Layer;
@@ -119,8 +118,7 @@ class SubmodularFlow {
         int max_active, min_active;
         typedef typename std::list<NodeId>::iterator list_iterator;
 
-        std::map<NodeId, typename std::list<NodeId>::iterator> layer_list_ptr;
-        //iterator_property_map<typename std::vector< list_iterator >::iterator, VertexIndexMap> layer_list_ptr;
+        std::vector<list_iterator> layer_list_ptr;
 
         // Data needed during push-relabel
         NodeId s,t;
