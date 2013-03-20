@@ -184,6 +184,12 @@ void SubmodularFlow::PushRelabelStep()
     else {
         NodeId i = *u_iter;
         remove_from_active_list(i);
+        Discharge(i);
+    }
+}
+
+void SubmodularFlow::Discharge(NodeId i) {
+    while (excess[i] > 0) {
         auto arc = FindPushableEdge(i);
         if (arc)
             Push(*arc);
@@ -275,9 +281,6 @@ void SubmodularFlow::Push(Arc& arc) {
     }
     excess[arc.i] -= delta;
     excess[arc.j] += delta;
-    if (excess[arc.i] > 0) {
-        add_to_active_list(arc.i, layers[dis[arc.i]]);
-    }
 }
 
 void SubmodularFlow::Relabel(NodeId i) {
@@ -290,7 +293,6 @@ void SubmodularFlow::Relabel(NodeId i) {
     ASSERT(dis[i] < std::numeric_limits<int>::max());
     // if (dis[i] < dis[s])
     // Adding all active vertices back for now.
-    add_to_active_list(i, layers[dis[i]]);
 }
 
 ///////////////    end of push relabel    ///////////////////

@@ -145,6 +145,7 @@ class SubmodularFlow {
         Arc* FindPushableEdge(NodeId i);
         void Push(Arc& arc);
         void Relabel(NodeId i);
+        void Discharge(NodeId i);
 
         typedef std::vector<CliqueId> NeighborList;
 
