@@ -92,7 +92,7 @@ void SubmodularFlow::PushRelabelInit()
     s = m_num_nodes; t = m_num_nodes + 1;
     max_active = 0; min_active = m_num_nodes + 2; // n
 
-    dis.clear(); excess.clear(); current_arc_index.clear();
+    dis.clear(); excess.clear(); current_arc.clear();
     m_arc_list.clear(); layers.clear();
 
     // init data structures
@@ -100,7 +100,6 @@ void SubmodularFlow::PushRelabelInit()
         layer_list_ptr.push_back(list_iterator());
         dis.push_back(0);
         excess.push_back(0);
-        current_arc_index.push_back(0);
         std::vector<Arc> arc_list;
         m_arc_list.push_back(arc_list);
         Layer layer;
@@ -171,6 +170,9 @@ void SubmodularFlow::PushRelabelInit()
                 m_arc_list[i].push_back(arc);
             }
         }
+    }
+    for (int i = 0; i < m_num_nodes + 2; ++i) {
+        current_arc.push_back(m_arc_list[i].begin());
     }
 }
 
@@ -252,10 +254,12 @@ bool SubmodularFlow::NonzeroCap(Arc& arc) {
 
 SubmodularFlow::Arc* SubmodularFlow::FindPushableEdge(NodeId i) {
     // Use current arc?
-    for (Arc& arc : m_arc_list[i]) {
+    while (current_arc[i] != m_arc_list[i].end()) {
+        Arc& arc = *current_arc[i];
         if (dis[i] == dis[arc.j] + 1 && NonzeroCap(arc)) {
 	        return &arc;
         }
+        current_arc[i]++;
     }
     return nullptr;
 }
@@ -285,13 +289,18 @@ void SubmodularFlow::Push(Arc& arc) {
     }
     excess[arc.i] -= delta;
     excess[arc.j] += delta;
+    if (excess[arc.i] == 0)
+        current_arc[arc.i]++;
 }
 
 void SubmodularFlow::Relabel(NodeId i) {
+    current_arc[i] = m_arc_list[i].begin();
     dis[i] = std::numeric_limits<int>::max();
+    int target = dis[i] - 1;
     for(Arc& arc : m_arc_list[i]) {
-        if (dis[arc.j] + 1 < dis[i] && NonzeroCap(arc)) {
+        if (dis[arc.j] < target && NonzeroCap(arc)) {
             dis[i] = dis[arc.j] + 1;
+            target = dis[i] - 1;
         }
     }
     ASSERT(dis[i] < std::numeric_limits<int>::max());

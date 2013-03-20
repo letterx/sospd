@@ -135,8 +135,9 @@ class SubmodularFlow {
         NodeId s,t;
         std::vector<int> dis;
         std::vector<REAL> excess;
-        std::vector<int> current_arc_index;
-        std::vector< std::vector<Arc> > m_arc_list;
+        typedef std::vector<Arc> ArcList;
+        std::vector<typename ArcList::iterator> current_arc;
+        std::vector< ArcList > m_arc_list;
 
         void add_to_active_list(NodeId u, Layer& layer);
         void remove_from_active_list(NodeId u);
