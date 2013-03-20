@@ -77,6 +77,7 @@ class SubmodularFlow {
             virtual REAL ComputeEnergy(const std::vector<int>& labels) const = 0;
             // Returns the exchange capacity between nodes u and v
             virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const = 0;
+            virtual bool NonzeroCapacity(size_t u_idx, size_t v_idx) const = 0;
             // Normalizes energy so that it is always >= 0, and the all 1 and
             // all 0 labeling have energy 0. Subtracts a linear function from
             // the energy, so we may need to change c_si, c_it
@@ -91,7 +92,6 @@ class SubmodularFlow {
             size_t GetIndex(NodeId i) const {
                 return std::find(this->m_nodes.begin(), this->m_nodes.end(), i) - this->m_nodes.begin();
             }
-            // Returns the energy of the given labeling, minus alphas for i in S
             REAL ComputeEnergyAlpha(const std::vector<int>& labels) const {
                 REAL e = ComputeEnergy(labels);
                 for (size_t idx = 0; idx < m_nodes.size(); ++idx) {
@@ -140,9 +140,10 @@ class SubmodularFlow {
 
         void add_to_active_list(NodeId u, Layer& layer);
         void remove_from_active_list(NodeId u);
-        REAL ResCap(Arc arc);
-        boost::optional<Arc> FindPushableEdge(NodeId i);
-        void Push(Arc arc);
+        REAL ResCap(Arc& arc);
+        bool NonzeroCap(Arc& arc);
+        Arc* FindPushableEdge(NodeId i);
+        void Push(Arc& arc);
         void Relabel(NodeId i);
 
         typedef std::vector<CliqueId> NeighborList;
@@ -198,17 +199,23 @@ class EnergyTableClique : public SubmodularFlow::Clique {
                           const std::vector<REAL>& energy)
             : SubmodularFlow::Clique(nodes),
             m_energy(energy),
-            m_alpha_energy(energy)
-        { ASSERT(nodes.size() <= 31); }
+            m_alpha_energy(energy),
+            m_min_tight_set(nodes.size(), (1 << nodes.size()) - 1)
+        { 
+            ASSERT(nodes.size() <= 31); 
+        }
 
         virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
         virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
+        virtual bool NonzeroCapacity(size_t u_idx, size_t v_idx) const;
         virtual void NormalizeEnergy(SubmodularFlow& sf);
         virtual void Push(size_t u_idx, size_t v_idx, REAL delta);
+        void ComputeMinTightSets();
 
     protected:
         std::vector<REAL> m_energy;
         std::vector<REAL> m_alpha_energy;
+        std::vector<Assignment> m_min_tight_set;
 };
 
 #endif

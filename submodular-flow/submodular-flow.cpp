@@ -184,7 +184,7 @@ void SubmodularFlow::PushRelabelStep()
     else {
         NodeId i = *u_iter;
         remove_from_active_list(i);
-        boost::optional<Arc> arc = FindPushableEdge(i);
+        auto arc = FindPushableEdge(i);
         if (arc)
             Push(*arc);
         else
@@ -207,7 +207,7 @@ void SubmodularFlow::PushRelabel()
     }
 }
 
-REAL SubmodularFlow::ResCap(Arc arc) {
+REAL SubmodularFlow::ResCap(Arc& arc) {
     if (arc.i == s) {
         return m_c_si[arc.j] - m_phi_it[arc.j];
     } else if (arc.j == s) {
@@ -225,17 +225,32 @@ REAL SubmodularFlow::ResCap(Arc arc) {
     }
 }
 
-boost::optional<SubmodularFlow::Arc> SubmodularFlow::FindPushableEdge(NodeId i) {
-    // Use current arc?
-    for (Arc arc : m_arc_list[i]) {
-        if (dis[i] == dis[arc.j] + 1 && ResCap(arc) > 0) {
-	        return boost::optional<SubmodularFlow::Arc>(arc);
-        }
+bool SubmodularFlow::NonzeroCap(Arc& arc) {
+    if (arc.i == s) {
+        return (m_c_si[arc.j] - m_phi_it[arc.j]) != 0;
+    } else if (arc.j == s) {
+        return m_phi_si[arc.i] != 0;
+    } else if (arc.i == t) {
+        return m_phi_it[arc.j] != 0;
+    } else if (arc.j == t) {
+        return (m_c_it[arc.i] - m_phi_it[arc.i]) != 0;
+    } else { // Is a clique-arc
+        return m_cliques[arc.c]->NonzeroCapacity(arc.i_idx, arc.j_idx);
     }
-    return boost::optional<SubmodularFlow::Arc>();
 }
 
-void SubmodularFlow::Push(Arc arc) {
+
+SubmodularFlow::Arc* SubmodularFlow::FindPushableEdge(NodeId i) {
+    // Use current arc?
+    for (Arc& arc : m_arc_list[i]) {
+        if (dis[i] == dis[arc.j] + 1 && NonzeroCap(arc)) {
+	        return &arc;
+        }
+    }
+    return nullptr;
+}
+
+void SubmodularFlow::Push(Arc& arc) {
     REAL delta; // amount to push
 
     ASSERT(arc.i != s && arc.i != t);
@@ -268,7 +283,7 @@ void SubmodularFlow::Push(Arc arc) {
 void SubmodularFlow::Relabel(NodeId i) {
     dis[i] = std::numeric_limits<int>::max();
     for(Arc arc : m_arc_list[i]) {
-        if (dis[arc.j] + 1 < dis[i] && ResCap(arc) > 0) {
+        if (dis[arc.j] + 1 < dis[i] && NonzeroCap(arc)) {
             dis[i] = dis[arc.j] + 1;
         }
     }
@@ -305,7 +320,7 @@ void SubmodularFlow::ComputeMinCut() {
                 arc.i = arc.j;
                 arc.j = u;
                 std::swap(arc.i_idx, arc.j_idx);
-                if (ResCap(arc) > 0 && arc.i != s && arc.i != t
+                if (NonzeroCap(arc) && arc.i != s && arc.i != t
                         && dis[arc.i] == std::numeric_limits<int>::max()) {
                     m_labels[arc.i] = 0;
                     next.push(arc.i);
@@ -357,6 +372,7 @@ void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
         }
         m_alpha_energy[a] = m_energy[a];
     }
+    ComputeMinTightSets();
 
     sf.AddConstantTerm(constant_term);
     for (size_t i = 0; i < n; ++i) {
@@ -404,6 +420,27 @@ void EnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
         } else if ((!(assgn & (1 << u_idx))) && (assgn & (1 << v_idx))) {
             m_alpha_energy[assgn] += delta;
         }
-        ASSERT(m_alpha_energy[assgn] >= 0);
     }
+    ComputeMinTightSets();
+}
+
+void EnergyTableClique::ComputeMinTightSets() {
+    size_t n = this->m_nodes.size();
+    Assignment num_assgns = 1 << n;
+    for (auto& a : m_min_tight_set)
+        a = num_assgns - 1;
+    for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
+        ASSERT(m_alpha_energy[assgn] >= 0);
+        if (m_alpha_energy[assgn] == 0) {
+            for (size_t i = 0; i < n; ++i) {
+                if ((assgn & (1 << i)) != 0 && (assgn & m_min_tight_set[i]) != m_min_tight_set[i])
+                    m_min_tight_set[i] = assgn;
+            }
+        }
+    }
+}
+
+bool EnergyTableClique::NonzeroCapacity(size_t u_idx, size_t v_idx) const {
+    Assignment min_set = m_min_tight_set[u_idx];
+    return (min_set & (1 << v_idx)) != 0;
 }
