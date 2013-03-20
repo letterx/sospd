@@ -441,10 +441,10 @@ void EnergyTableClique::ComputeMinTightSets() {
     const Assignment bound = num_assgns-1;
     for (auto& a : m_min_tight_set)
         a = bound;
-    for (Assignment assgn = 1; assgn < bound; ++assgn) {
+    for (Assignment assgn = bound-1; assgn >= 1; --assgn) {
         if (m_alpha_energy[assgn] == 0) {
             for (size_t i = 0; i < n; ++i) {
-                if ((assgn & (1 << i)) != 0 && (assgn & m_min_tight_set[i]) != m_min_tight_set[i])
+                if ((assgn & (1 << i)) != 0)
                     m_min_tight_set[i] = assgn;
             }
         }
