@@ -417,13 +417,21 @@ void EnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
     const size_t n = this->m_nodes.size();
     Assignment num_assgns = 1 << n;
     const Assignment bound = num_assgns-1;
-    for (Assignment assgn = 1; assgn < bound; ++assgn) {
-        if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
-            m_alpha_energy[assgn] -= delta;
-        } else if ((!(assgn & (1 << u_idx))) && (assgn & (1 << v_idx))) {
-            m_alpha_energy[assgn] += delta;
-        }
-    }
+    const Assignment u_mask = 1 << u_idx;
+    const Assignment v_mask = 1 << v_idx;
+    const Assignment uv_mask = u_mask | v_mask;
+    const Assignment subset_mask = bound & ~uv_mask;
+    // Terrible bit-hacks to optimize the living hell out of this function
+    // Iterate over all assignments without u_idx or v_idx set
+    Assignment assgn = subset_mask;
+    do {
+        Assignment u_sep = assgn | u_mask;
+        Assignment v_sep = assgn | v_mask;
+        m_alpha_energy[u_sep] -= delta;
+        m_alpha_energy[v_sep] += delta;
+        assgn = ((assgn - 1) & subset_mask);
+    } while (assgn != subset_mask);
+
     ComputeMinTightSets();
 }
 
