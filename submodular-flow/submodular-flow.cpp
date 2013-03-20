@@ -404,12 +404,21 @@ REAL EnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
 
     REAL min_energy = std::numeric_limits<REAL>::max();
     Assignment num_assgns = 1 << n;
-    for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
-        if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
-            REAL energy = m_alpha_energy[assgn];
-            if (energy < min_energy) min_energy = energy;
-        }
-    }
+    const Assignment bound = num_assgns-1;
+    const Assignment u_mask = 1 << u_idx;
+    const Assignment v_mask = 1 << v_idx;
+    const Assignment uv_mask = u_mask | v_mask;
+    const Assignment subset_mask = bound & ~uv_mask;
+    // Terrible bit-hacks to optimize the living hell out of this function
+    // Iterate over all assignments without u_idx or v_idx set
+    Assignment assgn = subset_mask;
+    do {
+        Assignment u_sep = assgn | u_mask;
+        REAL energy = m_alpha_energy[u_sep];
+        if (energy < min_energy) min_energy = energy;
+        assgn = ((assgn - 1) & subset_mask);
+    } while (assgn != subset_mask);
+
     return min_energy;
 }
 
