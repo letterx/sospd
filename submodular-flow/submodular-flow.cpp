@@ -416,7 +416,8 @@ void EnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
     m_alpha_Ci[v_idx] -= delta;
     const size_t n = this->m_nodes.size();
     Assignment num_assgns = 1 << n;
-    for (Assignment assgn = 1; assgn < num_assgns-1; ++assgn) {
+    const Assignment bound = num_assgns-1;
+    for (Assignment assgn = 1; assgn < bound; ++assgn) {
         if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
             m_alpha_energy[assgn] -= delta;
         } else if ((!(assgn & (1 << u_idx))) && (assgn & (1 << v_idx))) {
@@ -429,9 +430,10 @@ void EnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
 void EnergyTableClique::ComputeMinTightSets() {
     size_t n = this->m_nodes.size();
     Assignment num_assgns = 1 << n;
+    const Assignment bound = num_assgns-1;
     for (auto& a : m_min_tight_set)
-        a = num_assgns - 1;
-    for (Assignment assgn = 1; assgn < num_assgns-1; ++assgn) {
+        a = bound;
+    for (Assignment assgn = 1; assgn < bound; ++assgn) {
         if (m_alpha_energy[assgn] == 0) {
             for (size_t i = 0; i < n; ++i) {
                 if ((assgn & (1 << i)) != 0 && (assgn & m_min_tight_set[i]) != m_min_tight_set[i])
