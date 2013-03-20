@@ -21,6 +21,7 @@
 # gprof files
 gmon*.out
 gprof*.out
+cachegrind*
 
 # Compiled Binaries
 unit-test

@@ -285,7 +285,7 @@ void SubmodularFlow::Push(Arc& arc) {
 
 void SubmodularFlow::Relabel(NodeId i) {
     dis[i] = std::numeric_limits<int>::max();
-    for(Arc arc : m_arc_list[i]) {
+    for(Arc& arc : m_arc_list[i]) {
         if (dis[arc.j] + 1 < dis[i] && NonzeroCap(arc)) {
             dis[i] = dis[arc.j] + 1;
         }
@@ -318,7 +318,7 @@ void SubmodularFlow::ComputeMinCut() {
         while (!curr.empty()) {
             NodeId u = curr.front();
             curr.pop();
-            for (Arc arc : m_arc_list[u]) {
+            for (Arc& arc : m_arc_list[u]) {
                 arc.i = arc.j;
                 arc.j = u;
                 std::swap(arc.i_idx, arc.j_idx);
