@@ -214,7 +214,13 @@ void SubmodularFlow::PushRelabel()
 }
 
 REAL SubmodularFlow::ResCap(Arc& arc) {
-    if (arc.i == s) {
+    if (arc.c >= 0) {
+        if (arc.cache_time != m_cliques[arc.c]->Time()) {
+            arc.cached_cap = m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx);
+            arc.cache_time = m_cliques[arc.c]->Time();
+        }
+        return arc.cached_cap;
+    } else if (arc.i == s) {
         return m_c_si[arc.j] - m_phi_it[arc.j];
     } else if (arc.j == s) {
         return m_phi_si[arc.i];
@@ -222,17 +228,15 @@ REAL SubmodularFlow::ResCap(Arc& arc) {
         return m_phi_it[arc.j];
     } else if (arc.j == t) {
         return m_c_it[arc.i] - m_phi_it[arc.i];
-    } else { // Is a clique-arc
-        if (arc.cache_time != m_cliques[arc.c]->Time()) {
-            arc.cached_cap = m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx);
-            arc.cache_time = m_cliques[arc.c]->Time();
-        }
-        return arc.cached_cap;
+    } else { 
+        ASSERT(false /* should not reach here */);
     }
 }
 
 bool SubmodularFlow::NonzeroCap(Arc& arc) {
-    if (arc.i == s) {
+    if (arc.c >= 0) {
+        return m_cliques[arc.c]->NonzeroCapacity(arc.i_idx, arc.j_idx);
+    } else if (arc.i == s) {
         return (m_c_si[arc.j] - m_phi_it[arc.j]) != 0;
     } else if (arc.j == s) {
         return m_phi_si[arc.i] != 0;
@@ -240,8 +244,8 @@ bool SubmodularFlow::NonzeroCap(Arc& arc) {
         return m_phi_it[arc.j] != 0;
     } else if (arc.j == t) {
         return (m_c_it[arc.i] - m_phi_it[arc.i]) != 0;
-    } else { // Is a clique-arc
-        return m_cliques[arc.c]->NonzeroCapacity(arc.i_idx, arc.j_idx);
+    } else { 
+        ASSERT(false /* should not reach here */);
     }
 }
 
