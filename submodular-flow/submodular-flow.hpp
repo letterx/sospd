@@ -162,6 +162,8 @@ class SubmodularFlow {
         CliqueVec m_cliques;
         std::vector<NeighborList> m_neighbors;
 
+        size_t m_num_clique_pushes;
+
     public:
         // Functions for reading out data, useful for testing
         NodeId GetS() const { return s; }
@@ -213,6 +215,7 @@ class EnergyTableClique : public SubmodularFlow::Clique {
         virtual void NormalizeEnergy(SubmodularFlow& sf);
         virtual void Push(size_t u_idx, size_t v_idx, REAL delta);
         void ComputeMinTightSets();
+        void EnforceSubmodularity();
 
     protected:
         std::vector<REAL> m_energy;

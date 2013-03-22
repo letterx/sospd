@@ -14,7 +14,8 @@ SubmodularFlow::SubmodularFlow()
     m_labels(),
     m_num_cliques(0),
     m_cliques(),
-    m_neighbors()
+    m_neighbors(),
+    m_num_clique_pushes(0)
 { }
 
 SubmodularFlow::NodeId SubmodularFlow::AddNode(int n) {
@@ -40,13 +41,13 @@ void SubmodularFlow::AddUnaryTerm(NodeId n, REAL E0, REAL E1) {
     // Reparametize so that E0, E1 >= 0
     if (E0 < 0) {
         AddConstantTerm(E0);
-        E0 = 0;
         E1 -= E0;
+        E0 = 0;
     }
     if (E1 < 0) {
         AddConstantTerm(E1);
-        E1 = 0;
         E0 -= E1;
+        E1 = 0;
     }
     m_c_si[n] += E0;
     m_c_it[n] += E1;
@@ -213,6 +214,7 @@ void SubmodularFlow::PushRelabel()
     while (PushRelabelNotDone()) {
         PushRelabelStep();
     }
+    std::cout << "Push Relabel: " << m_num_clique_pushes << " clique pushes\n";
 }
 
 REAL SubmodularFlow::ResCap(Arc& arc) {
@@ -276,6 +278,7 @@ void SubmodularFlow::Push(Arc& arc) {
         delta = std::min(excess[arc.i], m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
+        m_num_clique_pushes++;
         delta = std::min(excess[arc.i], ResCap(arc));
         //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
         Clique& c = *m_cliques[arc.c];
@@ -369,6 +372,7 @@ REAL SubmodularFlow::ComputeEnergy(const std::vector<int>& labels) const {
 }
 
 void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
+    EnforceSubmodularity();
     const size_t n = this->m_nodes.size();
     const Assignment num_assignments = 1 << n;
     const REAL constant_term = m_energy[num_assignments - 1];
@@ -385,6 +389,13 @@ void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
         for (size_t i = 0; i < n; ++i) {
             if (!(a & (1 << i))) m_energy[a] += marginals[i];
         }
+        ASSERT(m_energy[a] >= -1); // Tolerate epsilon violations
+        m_energy[a] = std::max(m_energy[a], (REAL)0);
+        /* FIXME: the above only works if the energy is actually submodular
+         * not epsilon-submodular. To make everything positive even if not,
+         * we truncate to zero.
+         */
+        //m_energy[a] = std::max(0, m_energy[a]);
         m_alpha_energy[a] = m_energy[a];
     }
     ComputeMinTightSets();
@@ -466,6 +477,8 @@ void EnergyTableClique::ComputeMinTightSets() {
     for (Assignment assgn = bound-1; assgn >= 1; --assgn) {
         if (m_alpha_energy[assgn] == 0) {
             for (size_t i = 0; i < n; ++i) {
+                ASSERT(m_alpha_energy[m_min_tight_set[i] & assgn] == 0);
+                ASSERT(m_alpha_energy[m_min_tight_set[i] | assgn] == 0);
                 if ((assgn & (1 << i)) != 0)
                     m_min_tight_set[i] = assgn;
             }
@@ -476,4 +489,30 @@ void EnergyTableClique::ComputeMinTightSets() {
 bool EnergyTableClique::NonzeroCapacity(size_t u_idx, size_t v_idx) const {
     Assignment min_set = m_min_tight_set[u_idx];
     return (min_set & (1 << v_idx)) != 0;
+}
+
+void EnergyTableClique::EnforceSubmodularity() {
+    const size_t n = this->m_nodes.size();
+    Assignment max_assgn = 1 << n;
+    for (Assignment s = 0; s < max_assgn; ++s) {
+        for (size_t i = 0; i < n; ++i) {
+            Assignment si = s | (1 << i);
+            if (si != s) {
+                for (size_t j = i+1; j < n; ++j) {
+                    Assignment t = s | (1 << j);
+                    if (t != s && j != i) {
+                        Assignment ti = t | (1 << i);
+                        // Decreasing marginal costs, so we require
+                        // f(ti) - f(t) <= f(si) - f(s)
+                        // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
+                        REAL violation = -m_energy[si] - m_energy[t] 
+                            + m_energy[s] + m_energy[ti];
+                        if (violation > 0) {
+                            m_energy[ti] -= violation;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

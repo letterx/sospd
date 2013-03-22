@@ -99,10 +99,9 @@ class SubmodularFeature : public FG {
     typedef FG::Constr Constr;
     typedef std::function<void(const std::vector<unsigned char>&)> PatchFn;
     typedef uint32_t Assgn;
-    static constexpr Assgn clique_size = 4;
+    static constexpr Assgn clique_size = 2;
     static constexpr double scale = 1.0;
     virtual size_t NumFeatures() const { return (1 << clique_size) - 2; }
-    mutable double w_all_ones;
     virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
         Assgn all_zeros = 0;
         Assgn all_ones = (1 << clique_size) - 1;
@@ -117,7 +116,7 @@ class SubmodularFeature : public FG {
             if (a != all_zeros && a != all_ones)
                 psi[a-1] += scale;
         };
-        ImageIteratePatch(l.m_gt, cv::Point(1.0, 1.0), f);
+        ImageIteratePatch(l.m_gt, cv::Point(0.0, 1.0), f);
 
         for (auto& v : psi)
             v = -v;
@@ -128,14 +127,13 @@ class SubmodularFeature : public FG {
         for (size_t i = 0; i < NumFeatures(); ++i) {
             costTable[i+1] = doubleToREAL(scale*w[i]);
         }
-        costTable[NumFeatures()+1] = doubleToREAL(scale*w_all_ones);
         typedef std::function<void(const std::vector<CRF::NodeId>&)> Fn;
         Fn f = [&](const std::vector<CRF::NodeId>& vars)
         {
             ASSERT(vars.size() == clique_size);
             crf.AddClique(vars, costTable);
         };
-        ImageIteriPatch(p.m_image, cv::Point(1.0, 1.0), f);
+        ImageIteriPatch(p.m_image, cv::Point(0.0, 1.0), f);
     }
     virtual Constr CollectConstrs(size_t feature_base) const {
         constexpr double constr_scale = 1.0;
@@ -191,7 +189,6 @@ class SubmodularFeature : public FG {
                             double violation = -w[base+si-1] - w[base+t-1];
                             if (s != all_zeros) violation += w[base+s-1];
                             if (ti != all_ones) violation += w[base+ti-1];
-                            else violation += w_all_ones;
                             if (violation > max_violation) max_violation = violation;
                             if (violation < min_violation) min_violation = violation;
                         }
