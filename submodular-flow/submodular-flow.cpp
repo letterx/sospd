@@ -371,9 +371,34 @@ REAL SubmodularFlow::ComputeEnergy(const std::vector<int>& labels) const {
     return total;
 }
 
+static void CheckSubmodular(size_t n, const std::vector<REAL>& m_energy) {
+    typedef int32_t Assignment;
+    Assignment max_assgn = 1 << n;
+    for (Assignment s = 0; s < max_assgn; ++s) {
+        for (size_t i = 0; i < n; ++i) {
+            Assignment si = s | (1 << i);
+            if (si != s) {
+                for (size_t j = i+1; j < n; ++j) {
+                    Assignment t = s | (1 << j);
+                    if (t != s && j != i) {
+                        Assignment ti = t | (1 << i);
+                        // Decreasing marginal costs, so we require
+                        // f(ti) - f(t) <= f(si) - f(s)
+                        // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
+                        REAL violation = -m_energy[si] - m_energy[t] 
+                            + m_energy[s] + m_energy[ti];
+                        ASSERT(violation <= 0);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
     EnforceSubmodularity();
     const size_t n = this->m_nodes.size();
+    CheckSubmodular(n, m_energy);
     const Assignment num_assignments = 1 << n;
     const REAL constant_term = m_energy[num_assignments - 1];
     std::vector<REAL> marginals;
@@ -389,8 +414,7 @@ void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
         for (size_t i = 0; i < n; ++i) {
             if (!(a & (1 << i))) m_energy[a] += marginals[i];
         }
-        ASSERT(m_energy[a] >= -1); // Tolerate epsilon violations
-        m_energy[a] = std::max(m_energy[a], (REAL)0);
+        ASSERT(m_energy[a] >= 0); 
         /* FIXME: the above only works if the energy is actually submodular
          * not epsilon-submodular. To make everything positive even if not,
          * we truncate to zero.
@@ -404,6 +428,9 @@ void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
     for (size_t i = 0; i < n; ++i) {
         sf.AddUnaryTerm(this->m_nodes[i], -marginals[i], 0);
     }
+
+    CheckSubmodular(n, m_energy);
+
 }
 
 REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
@@ -491,28 +518,45 @@ bool EnergyTableClique::NonzeroCapacity(size_t u_idx, size_t v_idx) const {
     return (min_set & (1 << v_idx)) != 0;
 }
 
+static inline int32_t NextPerm(uint32_t v) {
+    uint32_t t = v | (v - 1); // t gets v's least significant 0 bits set to 1
+    // Next set to 1 the most significant bit to change, 
+    // set to 0 the least significant ones, and add the necessary 1 bits.
+    return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(v) + 1));
+}
+
 void EnergyTableClique::EnforceSubmodularity() {
+    // Decreasing marginal costs, so we require
+    // f(ti) - f(t) <= f(si) - f(s)
+    // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
+    // must hold for all subsets s, and t where t = s+j, 
+    // si = s+i, ti = t+i
     const size_t n = this->m_nodes.size();
     Assignment max_assgn = 1 << n;
-    for (Assignment s = 0; s < max_assgn; ++s) {
-        for (size_t i = 0; i < n; ++i) {
-            Assignment si = s | (1 << i);
-            if (si != s) {
-                for (size_t j = i+1; j < n; ++j) {
-                    Assignment t = s | (1 << j);
-                    if (t != s && j != i) {
-                        Assignment ti = t | (1 << i);
-                        // Decreasing marginal costs, so we require
-                        // f(ti) - f(t) <= f(si) - f(s)
-                        // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-                        REAL violation = -m_energy[si] - m_energy[t] 
-                            + m_energy[s] + m_energy[ti];
-                        if (violation > 0) {
-                            m_energy[ti] -= violation;
+    // Need to iterate over all k bit subsets in increasing k
+    for (size_t k = 0; k < n; ++k) {
+        Assignment bound;
+        if (k == 0) bound = 0;
+        else bound = max_assgn - 1;
+        Assignment s = (1 << k) - 1;
+        do {
+            for (size_t i = 0; i < n; ++i) {
+                Assignment si = s | (1 << i);
+                if (si != s) {
+                    for (size_t j = i+1; j < n; ++j) {
+                        Assignment t = s | (1 << j);
+                        if (t != s && j != i) {
+                            Assignment ti = t | (1 << i);
+                            REAL violation = -m_energy[si] - m_energy[t] 
+                                + m_energy[s] + m_energy[ti];
+                            if (violation > 0) {
+                                m_energy[ti] -= violation;
+                            }
                         }
                     }
                 }
             }
-        }
+            s = NextPerm(s);
+        } while (s < bound);
     }
 }
