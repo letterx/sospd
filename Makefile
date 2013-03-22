@@ -1,7 +1,7 @@
 CXX ?= g++
 DEFS = 
 INCLUDES = -I. -I./higher-order-energy/include -I./higher-order-energy/qpbo
-CXX_FLAGS = -g -Wall -std=c++11 $(INCLUDES)
+CXX_FLAGS = -O3 -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = 
 LIBS = 
 TEST_DIR = ./test
