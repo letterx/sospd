@@ -153,11 +153,14 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
      set of constraints. */
     CONSTSET c;
 
+    constexpr double cost_scale = 10000.0;
+
     FG::Constr constrs;
     size_t feature_base = 1; 
     for (auto fgp : data(sm)->m_features) {
         FG::Constr new_constrs = fgp->CollectConstrs(feature_base);
         constrs.insert(constrs.end(), new_constrs.begin(), new_constrs.end());
+        feature_base += fgp->NumFeatures();
     }
     c.m = constrs.size();
     if (c.m == 0)
@@ -177,7 +180,7 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
         }
         w.wnum = 0;
         words.push_back(w);
-        c.lhs[i] = create_example(i, 0, sample.n+2+i, 1, create_svector(words.data(), NULL, 1.0));
+        c.lhs[i] = create_example(i, 0, sample.n+2+i, cost_scale, create_svector(words.data(), NULL, 1.0));
         c.rhs[i] = rhs;
         i++;
     }

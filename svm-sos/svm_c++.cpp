@@ -100,8 +100,9 @@ class SubmodularFeature : public FG {
     typedef std::function<void(const std::vector<unsigned char>&)> PatchFn;
     typedef uint32_t Assgn;
     static constexpr Assgn clique_size = 4;
-    static constexpr double scale = 0.01;
+    static constexpr double scale = 1.0;
     virtual size_t NumFeatures() const { return (1 << clique_size) - 2; }
+    mutable double w_all_ones;
     virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
         Assgn all_zeros = 0;
         Assgn all_ones = (1 << clique_size) - 1;
@@ -114,7 +115,7 @@ class SubmodularFeature : public FG {
                     a |= 1 << i;
             }
             if (a != all_zeros && a != all_ones)
-                psi[a] += scale;
+                psi[a-1] += scale;
         };
         ImageIteratePatch(l.m_gt, cv::Point(1.0, 1.0), f);
 
@@ -127,6 +128,7 @@ class SubmodularFeature : public FG {
         for (size_t i = 0; i < NumFeatures(); ++i) {
             costTable[i+1] = doubleToREAL(scale*w[i]);
         }
+        costTable[NumFeatures()+1] = doubleToREAL(scale*w_all_ones);
         typedef std::function<void(const std::vector<CRF::NodeId>&)> Fn;
         Fn f = [&](const std::vector<CRF::NodeId>& vars)
         {
@@ -136,6 +138,7 @@ class SubmodularFeature : public FG {
         ImageIteriPatch(p.m_image, cv::Point(1.0, 1.0), f);
     }
     virtual Constr CollectConstrs(size_t feature_base) const {
+        constexpr double constr_scale = 1.0;
         std::cout << "Adding submodular constraints\n";
         typedef std::vector<std::pair<size_t, double>> LHS;
         typedef double RHS;
@@ -147,16 +150,16 @@ class SubmodularFeature : public FG {
             for (size_t i = 0; i < clique_size; ++i) {
                 Assgn si = s | (1 << i);
                 if (si != s) {
-                    for (size_t j = 0; j < clique_size; ++j) {
+                    for (size_t j = i+1; j < clique_size; ++j) {
                         Assgn t = s | (1 << j);
                         if (t != s && j != i) {
                             Assgn ti = t | (1 << i);
                             // Decreasing marginal costs, so we require
                             // f(ti) - f(t) <= f(si) - f(s)
                             // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-                            LHS lhs = {{feature_base+si-1, 1.0}, {feature_base+t-1, 1.0}};
-                            if (s != all_zeros) lhs.push_back(std::make_pair(feature_base+s-1, -1.0));
-                            if (ti != all_ones) lhs.push_back(std::make_pair(feature_base+ti-1, -1.0));
+                            LHS lhs = {{feature_base+si-1, constr_scale}, {feature_base+t-1, constr_scale}};
+                            if (s != all_zeros) lhs.push_back(std::make_pair(feature_base+s-1, -constr_scale));
+                            if (ti != all_ones) lhs.push_back(std::make_pair(feature_base+ti-1, -constr_scale));
                             RHS rhs = 0;
                             ret.push_back(std::make_pair(lhs, rhs));
                         }
@@ -168,7 +171,8 @@ class SubmodularFeature : public FG {
     }
     virtual double MaxViolation(size_t base, double* w) const {
         size_t num_constraints = 0;
-        double max_violation = 0;
+        double max_violation = -std::numeric_limits<double>::max();
+        double min_violation = std::numeric_limits<double>::max();
         Assgn max_assgn = NumFeatures();
         Assgn all_zeros = 0;
         Assgn all_ones = (1 << clique_size) - 1;
@@ -176,7 +180,7 @@ class SubmodularFeature : public FG {
             for (size_t i = 0; i < clique_size; ++i) {
                 Assgn si = s | (1 << i);
                 if (si != s) {
-                    for (size_t j = 0; j < clique_size; ++j) {
+                    for (size_t j = i+1; j < clique_size; ++j) {
                         Assgn t = s | (1 << j);
                         if (t != s && j != i) {
                             Assgn ti = t | (1 << i);
@@ -184,16 +188,19 @@ class SubmodularFeature : public FG {
                             // Decreasing marginal costs, so we require
                             // f(ti) - f(t) <= f(si) - f(s)
                             // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-                            double violation = w[base+si-1] + w[base+t-1];
-                            if (s != all_zeros) violation -= w[base+s-1];
-                            if (ti != all_ones) violation -= w[base+ti-1];
+                            double violation = -w[base+si-1] - w[base+t-1];
+                            if (s != all_zeros) violation += w[base+s-1];
+                            if (ti != all_ones) violation += w[base+ti-1];
+                            else violation += w_all_ones;
                             if (violation > max_violation) max_violation = violation;
+                            if (violation < min_violation) min_violation = violation;
                         }
                     }
                 }
             }
         }
         std::cout << "Num constraints: " << num_constraints <<"\n";
+        std::cout << "Min violation: " << min_violation << "\n";
         return max_violation;
     }
 };
@@ -383,8 +390,8 @@ LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm) const {
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
-        fgp->AddToCRF(crf, x, sm->w + feature_base );
         std::cout << "Max Violation: " << fgp->MaxViolation(feature_base, sm->w) << "\n";
+        fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }
     crf.Solve();
@@ -398,8 +405,8 @@ LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const Lab
     size_t feature_base = 1;
     std::cout << "Adding Features\n";
     for (auto fgp : m_features) {
-        fgp->AddToCRF(crf, x, sm->w + feature_base );
         std::cout << "Max Violation: " << fgp->MaxViolation(feature_base, sm->w) << "\n";
+        fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }
     AddLossToCRF(crf, x, y);

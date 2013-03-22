@@ -110,4 +110,5 @@ typedef struct struct_test_stats {
      function eval_prediction and print_struct_testing_stats. */
 } STRUCT_TEST_STATS;
 
+#define CONSTRAINT_EPS 0.01
 #endif
