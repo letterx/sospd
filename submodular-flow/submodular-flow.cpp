@@ -14,7 +14,8 @@ SubmodularFlow::SubmodularFlow()
     m_labels(),
     m_num_cliques(0),
     m_cliques(),
-    m_neighbors()
+    m_neighbors(),
+    m_num_clique_pushes(0)
 { }
 
 SubmodularFlow::NodeId SubmodularFlow::AddNode(int n) {
@@ -40,13 +41,13 @@ void SubmodularFlow::AddUnaryTerm(NodeId n, REAL E0, REAL E1) {
     // Reparametize so that E0, E1 >= 0
     if (E0 < 0) {
         AddConstantTerm(E0);
-        E0 = 0;
         E1 -= E0;
+        E0 = 0;
     }
     if (E1 < 0) {
         AddConstantTerm(E1);
-        E1 = 0;
         E0 -= E1;
+        E1 = 0;
     }
     m_c_si[n] += E0;
     m_c_it[n] += E1;
@@ -106,23 +107,22 @@ void SubmodularFlow::PushRelabelInit()
     work_since_last_update = 0;
     num_edges = 2 * m_num_nodes; // source sink edges
 
-    dis.clear(); excess.clear(); current_arc_index.clear();
+    dis.clear(); excess.clear(); current_arc.clear();
     m_arc_list.clear(); layers.clear();
 
     // init data structures
     for (int i = 0; i < m_num_nodes + 2; ++i) {
+        layer_list_ptr.push_back(list_iterator());
         dis.push_back(0);
         excess.push_back(0);
-        current_arc_index.push_back(0);
         std::vector<Arc> arc_list;
         m_arc_list.push_back(arc_list);
         Layer layer;
         layers.push_back(layer);
-        layer_list_ptr.push_back(layer.active_vertices.begin());
     }
-    dis[s] = m_num_nodes + 2;
+    dis[s] = m_num_nodes + 2; // n = m_num_nodes + 2
 
-    // adding extra layers
+    // Adding extra layers
     for (int i = 0; i < (m_num_nodes + 2); ++i) {
         Layer layer;
         layers.push_back(layer);
@@ -130,16 +130,25 @@ void SubmodularFlow::PushRelabelInit()
 
     // saturate arcs out of s.
     for (NodeId i = 0; i < m_num_nodes; ++i) {
+        REAL min_cap = std::min(m_c_si[i], m_c_it[i]);
+        excess[s] -= m_c_si[i];
+        excess[t] += min_cap;
         m_phi_si[i] = m_c_si[i];
-        if (m_c_si[i] > 0) {
-            excess[s] -= m_c_si[i];
-            excess[i] += m_c_si[i];
-	        add_to_active_list(i, layers[0]);
+        m_phi_it[i] = min_cap;
+        if (m_c_si[i] > min_cap) {
+            excess[i] += m_c_si[i] - min_cap;
+            dis[i] = 2;
+	        add_to_active_list(i, layers[2]);
+        } else { 
+            dis[i] = 1;
         }
     }
 
     // initialize arc lists
     Arc arc;
+    arc.i_idx = arc.j_idx = 0;
+    arc.cached_cap = 0;
+    arc.cache_time = -1;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         // arcs from source
         arc.i = s;
@@ -166,16 +175,21 @@ void SubmodularFlow::PushRelabelInit()
     for (int cid = 0; cid < m_num_cliques; ++cid) {
         CliquePtr cp = m_cliques[cid];
         int size = cp->Nodes().size();
-        num_edges += size*size;
+        num_edges += size*(size-1);
         for (NodeId i : cp->Nodes()) {
             for (NodeId j : cp->Nodes()) {
                 if (i == j) continue;
                 arc.i = i;
                 arc.j = j;
                 arc.c = cid;
+                arc.i_idx = cp->GetIndex(i);
+                arc.j_idx = cp->GetIndex(j);
                 m_arc_list[i].push_back(arc);
             }
         }
+    }
+    for (int i = 0; i < m_num_nodes + 2; ++i) {
+        current_arc.push_back(m_arc_list[i].begin());
     }
 }
 
@@ -183,22 +197,27 @@ void SubmodularFlow::PushRelabelStep()
 {
     Layer& layer = layers[max_active];
     list_iterator u_iter = layer.active_vertices.begin();
-    //std::unordered_set<NodeId>::iterator u_iter = layer.active_vertices.begin();
 
     if (u_iter == layer.active_vertices.end())
         --max_active;
     else {
         NodeId i = *u_iter;
         remove_from_active_list(i);
-        boost::optional<Arc> arc = FindPushableEdge(i);
-        if (arc)
-            Push(*arc);
-        else
-            Relabel(i);
+        Discharge(i);
         if (work_since_last_update * 1 > 6*(m_num_nodes + 2) + num_edges) {
             SubmodularFlow::ComputeMinCut();
             work_since_last_update = 0;
         }
+    }
+}
+
+void SubmodularFlow::Discharge(NodeId i) {
+    while (excess[i] > 0) {
+        auto arc = FindPushableEdge(i);
+        if (arc)
+            Push(*arc);
+        else
+            Relabel(i);
     }
 }
 
@@ -216,11 +235,18 @@ void SubmodularFlow::PushRelabel()
     while (PushRelabelNotDone()) {
         PushRelabelStep();
     }
+    std::cout << "Push Relabel: " << m_num_clique_pushes << " clique pushes\n";
     flow_done = true;
 }
 
-REAL SubmodularFlow::ResCap(Arc arc) {
-    if (arc.i == s) {
+REAL SubmodularFlow::ResCap(Arc& arc) {
+    if (arc.c >= 0) {
+        if (arc.cache_time != m_cliques[arc.c]->Time()) {
+            arc.cached_cap = m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx);
+            arc.cache_time = m_cliques[arc.c]->Time();
+        }
+        return arc.cached_cap;
+    } else if (arc.i == s) {
         return m_c_si[arc.j] - m_phi_it[arc.j];
     } else if (arc.j == s) {
         return m_phi_si[arc.i];
@@ -228,22 +254,40 @@ REAL SubmodularFlow::ResCap(Arc arc) {
         return m_phi_it[arc.j];
     } else if (arc.j == t) {
         return m_c_it[arc.i] - m_phi_it[arc.i];
-    } else {
-        return m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j);
+    } else { 
+        ASSERT(false /* should not reach here */);
     }
 }
 
-boost::optional<SubmodularFlow::Arc> SubmodularFlow::FindPushableEdge(NodeId i) {
-    // Use current arc?
-    for (Arc arc : m_arc_list[i]) {
-        if (dis[i] == dis[arc.j] + 1 && ResCap(arc) > 0) {
-	        return boost::optional<SubmodularFlow::Arc>(arc);
+bool SubmodularFlow::NonzeroCap(Arc& arc) {
+    if (arc.c >= 0) {
+        return m_cliques[arc.c]->NonzeroCapacity(arc.i_idx, arc.j_idx);
+    } else if (arc.i == s) {
+        return (m_c_si[arc.j] - m_phi_it[arc.j]) != 0;
+    } else if (arc.j == s) {
+        return m_phi_si[arc.i] != 0;
+    } else if (arc.i == t) {
+        return m_phi_it[arc.j] != 0;
+    } else if (arc.j == t) {
+        return (m_c_it[arc.i] - m_phi_it[arc.i]) != 0;
+    } else { 
+        ASSERT(false /* should not reach here */);
+    }
+}
+
+
+SubmodularFlow::Arc* SubmodularFlow::FindPushableEdge(NodeId i) {
+    while (current_arc[i] != m_arc_list[i].end()) {
+        Arc& arc = *current_arc[i];
+        if (dis[i] == dis[arc.j] + 1 && NonzeroCap(arc)) {
+	        return &arc;
         }
+        current_arc[i]++;
     }
-    return boost::optional<SubmodularFlow::Arc>();
+    return nullptr;
 }
 
-void SubmodularFlow::Push(Arc arc) {
+void SubmodularFlow::Push(Arc& arc) {
     REAL delta; // amount to push
 
     ASSERT(arc.i != s && arc.i != t);
@@ -255,38 +299,37 @@ void SubmodularFlow::Push(Arc arc) {
         delta = std::min(excess[arc.i], m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
     } else { // Clique arc
-        delta = std::min(excess[arc.i], m_cliques[arc.c]->ExchangeCapacity(arc.i, arc.j));
-        // std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
+        m_num_clique_pushes++;
+        delta = std::min(excess[arc.i], ResCap(arc));
+        //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
         Clique& c = *m_cliques[arc.c];
-        std::vector<REAL>& alpha_ci = c.AlphaCi();
-        alpha_ci[c.GetIndex(arc.i)] += delta;
-        alpha_ci[c.GetIndex(arc.j)] -= delta;
+        c.Push(arc.i_idx, arc.j_idx, delta);
+        c.Time()++;
     }
+    ASSERT(delta > 0);
     // Update (residual capacities) and excesses
-    excess[arc.i] -= delta;
-    excess[arc.j] += delta;
-    if (excess[arc.j] > 0 && arc.j != s && arc.j != t) {
-        if (excess[arc.j] - delta > 0)
-            remove_from_active_list(arc.j);
+    if (excess[arc.j] == 0 && arc.j != s && arc.j != t) {
         add_to_active_list(arc.j, layers[dis[arc.j]]);
     }
-    if (excess[arc.i] > 0) {
-        add_to_active_list(arc.i, layers[dis[arc.i]]);
-    }
+    excess[arc.i] -= delta;
+    excess[arc.j] += delta;
+    if (excess[arc.i] == 0)
+        current_arc[arc.i]++;
 }
 
 void SubmodularFlow::Relabel(NodeId i) {
+    current_arc[i] = m_arc_list[i].begin();
     work_since_last_update += 12; // constant beta in boost
     dis[i] = std::numeric_limits<int>::max();
-    for(Arc arc : m_arc_list[i]) {
+    for(Arc& arc : m_arc_list[i]) {
         ++work_since_last_update;
-        if (ResCap(arc) > 0) {
-            dis[i] = std::min (dis[i], dis[arc.j] + 1);
+        if (dis[arc.j] < dis[i] - 1 && NonzeroCap(arc)) {
+            dis[i] = dis[arc.j] + 1;
         }
     }
+    ASSERT(dis[i] < std::numeric_limits<int>::max());
     // if (dis[i] < dis[s])
     // Adding all active vertices back for now.
-    add_to_active_list(i, layers[dis[i]]);
 }
 
 ///////////////    end of push relabel    ///////////////////
@@ -313,11 +356,12 @@ void SubmodularFlow::ComputeMinCut() {
         while (!curr.empty()) {
             NodeId u = curr.front();
             curr.pop();
-            for (Arc arc : m_arc_list[u]) {
+            for (Arc& arc : m_arc_list[u]) {
                 arc.i = arc.j;
                 arc.j = u;
-                if (ResCap(arc) > 0 && arc.i != s && arc.i != t
-                        && dis[arc.i] == 3 + m_num_nodes) { //std::numeric_limits<int>::max()) {
+                std::swap(arc.i_idx, arc.j_idx);
+                if (NonzeroCap(arc) && arc.i != s && arc.i != t
+                        && dis[arc.i] == m_num_nodes + 3) {
                     if (flow_done)
                         m_labels[arc.i] = 0;
                     next.push(arc.i);
@@ -327,8 +371,11 @@ void SubmodularFlow::ComputeMinCut() {
         }
         ++level;
     }
-    // for (int label : m_labels)
-    //    std::cout << label << std::endl;
+}
+
+void SubmodularFlow::Solve() {
+    PushRelabel();
+    ComputeMinCut();
 }
 
 REAL SubmodularFlow::ComputeEnergy() const {
@@ -347,8 +394,34 @@ REAL SubmodularFlow::ComputeEnergy(const std::vector<int>& labels) const {
     return total;
 }
 
+static void CheckSubmodular(size_t n, const std::vector<REAL>& m_energy) {
+    typedef int32_t Assignment;
+    Assignment max_assgn = 1 << n;
+    for (Assignment s = 0; s < max_assgn; ++s) {
+        for (size_t i = 0; i < n; ++i) {
+            Assignment si = s | (1 << i);
+            if (si != s) {
+                for (size_t j = i+1; j < n; ++j) {
+                    Assignment t = s | (1 << j);
+                    if (t != s && j != i) {
+                        Assignment ti = t | (1 << i);
+                        // Decreasing marginal costs, so we require
+                        // f(ti) - f(t) <= f(si) - f(s)
+                        // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
+                        REAL violation = -m_energy[si] - m_energy[t] 
+                            + m_energy[s] + m_energy[ti];
+                        ASSERT(violation <= 0);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
+    EnforceSubmodularity();
     const size_t n = this->m_nodes.size();
+    CheckSubmodular(n, m_energy);
     const Assignment num_assignments = 1 << n;
     const REAL constant_term = m_energy[num_assignments - 1];
     std::vector<REAL> marginals;
@@ -364,12 +437,23 @@ void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
         for (size_t i = 0; i < n; ++i) {
             if (!(a & (1 << i))) m_energy[a] += marginals[i];
         }
+        ASSERT(m_energy[a] >= 0); 
+        /* FIXME: the above only works if the energy is actually submodular
+         * not epsilon-submodular. To make everything positive even if not,
+         * we truncate to zero.
+         */
+        //m_energy[a] = std::max(0, m_energy[a]);
+        m_alpha_energy[a] = m_energy[a];
     }
+    ComputeMinTightSets();
 
     sf.AddConstantTerm(constant_term);
     for (size_t i = 0; i < n; ++i) {
         sf.AddUnaryTerm(this->m_nodes[i], -marginals[i], 0);
     }
+
+    CheckSubmodular(n, m_energy);
+
 }
 
 REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
@@ -383,23 +467,119 @@ REAL EnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
     return m_energy[assgn];
 }
 
-REAL EnergyTableClique::ExchangeCapacity(NodeId u, NodeId v) const {
-    // This is not the most efficient way to do things, but it works
-    const size_t u_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), u) - this->m_nodes.begin();
-    const size_t v_idx = std::find(this->m_nodes.begin(), this->m_nodes.end(), v) - this->m_nodes.begin();
+REAL EnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
+    const size_t n = this->m_nodes.size();
+    ASSERT(u_idx < n);
+    ASSERT(v_idx < n);
 
     REAL min_energy = std::numeric_limits<REAL>::max();
-    Assignment num_assgns = 1 << this->m_nodes.size();
-    for (Assignment assgn = 0; assgn < num_assgns; ++assgn) {
-        REAL alpha_C = 0;
-        for (size_t i = 0; i < this->m_alpha_Ci.size(); ++i) {
-            if (assgn & (1 << i)) alpha_C += this->m_alpha_Ci[i];
-        }
-        if (assgn & (1 << u_idx) && !(assgn & (1 << v_idx))) {
-            // then assgn is a set separating u from v
-            REAL energy = m_energy[assgn] - alpha_C;
-            if (energy < min_energy) min_energy = energy;
+    Assignment num_assgns = 1 << n;
+    const Assignment bound = num_assgns-1;
+    const Assignment u_mask = 1 << u_idx;
+    const Assignment v_mask = 1 << v_idx;
+    const Assignment uv_mask = u_mask | v_mask;
+    const Assignment subset_mask = bound & ~uv_mask;
+    // Terrible bit-hacks to optimize the living hell out of this function
+    // Iterate over all assignments without u_idx or v_idx set
+    Assignment assgn = subset_mask;
+    do {
+        Assignment u_sep = assgn | u_mask;
+        REAL energy = m_alpha_energy[u_sep];
+        if (energy < min_energy) min_energy = energy;
+        assgn = ((assgn - 1) & subset_mask);
+    } while (assgn != subset_mask);
+
+    return min_energy;
+}
+
+void EnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
+    ASSERT(u_idx >= 0 && u_idx < this->m_nodes.size());
+    ASSERT(v_idx >= 0 && v_idx < this->m_nodes.size());
+    m_alpha_Ci[u_idx] += delta;
+    m_alpha_Ci[v_idx] -= delta;
+    const size_t n = this->m_nodes.size();
+    Assignment num_assgns = 1 << n;
+    const Assignment bound = num_assgns-1;
+    const Assignment u_mask = 1 << u_idx;
+    const Assignment v_mask = 1 << v_idx;
+    const Assignment uv_mask = u_mask | v_mask;
+    const Assignment subset_mask = bound & ~uv_mask;
+    // Terrible bit-hacks to optimize the living hell out of this function
+    // Iterate over all assignments without u_idx or v_idx set
+    Assignment assgn = subset_mask;
+    do {
+        Assignment u_sep = assgn | u_mask;
+        Assignment v_sep = assgn | v_mask;
+        m_alpha_energy[u_sep] -= delta;
+        m_alpha_energy[v_sep] += delta;
+        assgn = ((assgn - 1) & subset_mask);
+    } while (assgn != subset_mask);
+
+    ComputeMinTightSets();
+}
+
+void EnergyTableClique::ComputeMinTightSets() {
+    size_t n = this->m_nodes.size();
+    Assignment num_assgns = 1 << n;
+    const Assignment bound = num_assgns-1;
+    for (auto& a : m_min_tight_set)
+        a = bound;
+    for (Assignment assgn = bound-1; assgn >= 1; --assgn) {
+        if (m_alpha_energy[assgn] == 0) {
+            for (size_t i = 0; i < n; ++i) {
+                ASSERT(m_alpha_energy[m_min_tight_set[i] & assgn] == 0);
+                ASSERT(m_alpha_energy[m_min_tight_set[i] | assgn] == 0);
+                if ((assgn & (1 << i)) != 0)
+                    m_min_tight_set[i] = assgn;
+            }
         }
     }
-    return min_energy;
+}
+
+bool EnergyTableClique::NonzeroCapacity(size_t u_idx, size_t v_idx) const {
+    Assignment min_set = m_min_tight_set[u_idx];
+    return (min_set & (1 << v_idx)) != 0;
+}
+
+static inline int32_t NextPerm(uint32_t v) {
+    uint32_t t = v | (v - 1); // t gets v's least significant 0 bits set to 1
+    // Next set to 1 the most significant bit to change, 
+    // set to 0 the least significant ones, and add the necessary 1 bits.
+    return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(v) + 1));
+}
+
+void EnergyTableClique::EnforceSubmodularity() {
+    // Decreasing marginal costs, so we require
+    // f(ti) - f(t) <= f(si) - f(s)
+    // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
+    // must hold for all subsets s, and t where t = s+j, 
+    // si = s+i, ti = t+i
+    const size_t n = this->m_nodes.size();
+    Assignment max_assgn = 1 << n;
+    // Need to iterate over all k bit subsets in increasing k
+    for (size_t k = 0; k < n; ++k) {
+        Assignment bound;
+        if (k == 0) bound = 0;
+        else bound = max_assgn - 1;
+        Assignment s = (1 << k) - 1;
+        do {
+            for (size_t i = 0; i < n; ++i) {
+                Assignment si = s | (1 << i);
+                if (si != s) {
+                    for (size_t j = i+1; j < n; ++j) {
+                        Assignment t = s | (1 << j);
+                        if (t != s && j != i) {
+                            Assignment ti = t | (1 << i);
+                            REAL violation = -m_energy[si] - m_energy[t] 
+                                + m_energy[s] + m_energy[ti];
+                            if (violation > 0) {
+                                m_energy[ti] -= violation;
+                            }
+                        }
+                    }
+                }
+            }
+            s = NextPerm(s);
+        } while (s < bound);
+    }
 }

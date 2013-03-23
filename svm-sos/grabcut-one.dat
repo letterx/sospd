@@ -1,0 +1,8 @@
+# The images directory
+../../grabcut-data/images/
+# The trimap directory
+../../grabcut-data/images-labels/
+# The ground-truth directory
+../../grabcut-data/images-gt/
+# The files
+106024.ppm
