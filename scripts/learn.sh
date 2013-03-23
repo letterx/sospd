@@ -8,5 +8,8 @@ fi
 
 for data_file in $2/data-small*.dat
 do
-    $1 -v 3 -l 1 -c $3 -w 3 $data_file $2/$(basename $data_file .dat).model
+    echo "***"
+    echo "*** $(basename $data_file .dat)"
+    echo "***"
+    time $1 -v 3 -l 1 -c $3 -w 3 $data_file $2/$(basename $data_file .dat).model
 done
