@@ -76,32 +76,18 @@ void SubmodularFlow::AddClique(const std::vector<NodeId>& nodes, const std::vect
 //////// Push Relabel methods ///////////
 
 void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {
-    //std::cout << "YOLO " << layer.active_vertices.size() << std::endl;
-    //layer.active_vertices.insert(u);
     layer.active_vertices.push_front(u);
     max_active = std::max BOOST_PREVENT_MACRO_SUBSTITUTION(dis[u], max_active);
     min_active = std::min BOOST_PREVENT_MACRO_SUBSTITUTION(dis[u], min_active);
     layer_list_ptr[u] = layer.active_vertices.begin();
 }
 
-// Inefficient but doing the remove manually since
-// I don't have a perfect understanding/translation of the boost code.
 void SubmodularFlow::remove_from_active_list(NodeId u) {
-    /* std::list<NodeId> temp;
-    for (NodeId i : layers[dis[u]].active_vertices) {
-        if (u != i) temp.push_back(i);
-    }
-    std::swap(layers[dis[u]].active_vertices, temp);
-    */
-    //layers[dis[u]].active_vertices.erase(u);
     layers[dis[u]].active_vertices.erase(layer_list_ptr[u]);
 }
 
 void SubmodularFlow::PushRelabelInit()
 {
-    //layer_list_ptr_data(m_num_nodes+2, layers.front().inactive_vertices.end());
-    //layer_list_ptr(layer_list_ptr_data.begin(), idx);
-
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
     max_active = 0; min_active = m_num_nodes + 2; // original nodes + source and sink
@@ -140,7 +126,7 @@ void SubmodularFlow::PushRelabelInit()
             excess[i] += m_c_si[i] - min_cap;
             dis[i] = 2;
 	        add_to_active_list(i, layers[2]);
-        } else { 
+        } else {
             dis[i] = 1;
         }
     }
@@ -256,7 +242,7 @@ REAL SubmodularFlow::ResCap(Arc& arc) {
         return m_phi_it[arc.j];
     } else if (arc.j == t) {
         return m_c_it[arc.i] - m_phi_it[arc.i];
-    } else { 
+    } else {
         ASSERT(false /* should not reach here */);
     }
 }
@@ -272,7 +258,7 @@ bool SubmodularFlow::NonzeroCap(Arc& arc) {
         return m_phi_it[arc.j] != 0;
     } else if (arc.j == t) {
         return (m_c_it[arc.i] - m_phi_it[arc.i]) != 0;
-    } else { 
+    } else {
         ASSERT(false /* should not reach here */);
     }
 }
@@ -361,7 +347,7 @@ void SubmodularFlow::ComputeMinCut() {
             NodeId u = curr.front();
             curr.pop();
             // Not iterating by reference, since we need to get reverse arc
-            for (Arc arc : m_arc_list[u]) { 
+            for (Arc arc : m_arc_list[u]) {
                 arc.i = arc.j;
                 arc.j = u;
                 std::swap(arc.i_idx, arc.j_idx);
@@ -413,7 +399,7 @@ static void CheckSubmodular(size_t n, const std::vector<REAL>& m_energy) {
                         // Decreasing marginal costs, so we require
                         // f(ti) - f(t) <= f(si) - f(s)
                         // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-                        REAL violation = -m_energy[si] - m_energy[t] 
+                        REAL violation = -m_energy[si] - m_energy[t]
                             + m_energy[s] + m_energy[ti];
                         ASSERT(violation <= 0);
                     }
@@ -442,7 +428,7 @@ void EnergyTableClique::NormalizeEnergy(SubmodularFlow& sf) {
         for (size_t i = 0; i < n; ++i) {
             if (!(a & (1 << i))) m_energy[a] += marginals[i];
         }
-        ASSERT(m_energy[a] >= 0); 
+        ASSERT(m_energy[a] >= 0);
         /* FIXME: the above only works if the energy is actually submodular
          * not epsilon-submodular. To make everything positive even if not,
          * we truncate to zero.
@@ -548,7 +534,7 @@ bool EnergyTableClique::NonzeroCapacity(size_t u_idx, size_t v_idx) const {
 
 static inline int32_t NextPerm(uint32_t v) {
     uint32_t t = v | (v - 1); // t gets v's least significant 0 bits set to 1
-    // Next set to 1 the most significant bit to change, 
+    // Next set to 1 the most significant bit to change,
     // set to 0 the least significant ones, and add the necessary 1 bits.
     return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(v) + 1));
 }
@@ -557,7 +543,7 @@ void EnergyTableClique::EnforceSubmodularity() {
     // Decreasing marginal costs, so we require
     // f(ti) - f(t) <= f(si) - f(s)
     // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-    // must hold for all subsets s, and t where t = s+j, 
+    // must hold for all subsets s, and t where t = s+j,
     // si = s+i, ti = t+i
     const size_t n = this->m_nodes.size();
     Assignment max_assgn = 1 << n;
@@ -575,7 +561,7 @@ void EnergyTableClique::EnforceSubmodularity() {
                         Assignment t = s | (1 << j);
                         if (t != s && j != i) {
                             Assignment ti = t | (1 << i);
-                            REAL violation = -m_energy[si] - m_energy[t] 
+                            REAL violation = -m_energy[si] - m_energy[t]
                                 + m_energy[s] + m_energy[ti];
                             if (violation > 0) {
                                 m_energy[ti] -= violation;
