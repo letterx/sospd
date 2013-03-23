@@ -139,7 +139,6 @@ class SubmodularFlow {
         std::vector< ArcList > m_arc_list;
         long work_since_last_update;
         long num_edges;
-        bool flow_done = true;
 
         void add_to_active_list(NodeId u, Layer& layer);
         void remove_from_active_list(NodeId u);
@@ -192,6 +191,7 @@ class SubmodularFlow {
         void PushRelabelInit();
         void PushRelabelStep();
         bool PushRelabelNotDone();
+        void GlobalRelabel();
 };
 
 /*

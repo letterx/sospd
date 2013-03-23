@@ -192,7 +192,7 @@ void SubmodularFlow::PushRelabelStep()
         remove_from_active_list(i);
         Discharge(i);
         if (work_since_last_update * 1 > 6*(m_num_nodes + 2) + num_edges) {
-            SubmodularFlow::ComputeMinCut();
+            SubmodularFlow::GlobalRelabel();
             work_since_last_update = 0;
         }
     }
@@ -215,7 +215,6 @@ bool SubmodularFlow::PushRelabelNotDone()
 
 void SubmodularFlow::PushRelabel()
 {
-    flow_done = false;
     PushRelabelInit();
 
     // find active i w/ largest distance
@@ -224,7 +223,6 @@ void SubmodularFlow::PushRelabel()
     }
     std::cout << "Push Relabel: " << m_num_clique_pushes << " clique pushes\n";
     std::cout << "              " << m_num_global_relabels << " global relabels\n";
-    flow_done = true;
 }
 
 REAL SubmodularFlow::ResCap(Arc& arc) {
@@ -322,13 +320,10 @@ void SubmodularFlow::Relabel(NodeId i) {
 
 ///////////////    end of push relabel    ///////////////////
 
-void SubmodularFlow::ComputeMinCut() {
+void SubmodularFlow::GlobalRelabel() {
     m_num_global_relabels++;
-    //if (!flow_done) std::cout << "Global distance heuristic\n";
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         dis[i] = m_num_nodes + 3;
-        if (flow_done)
-            m_labels[i] = 1;
     }
     dis[t] = 0;
     // curr is the current level of nodes to be visited;
@@ -353,14 +348,23 @@ void SubmodularFlow::ComputeMinCut() {
                 std::swap(arc.i_idx, arc.j_idx);
                 if (NonzeroCap(arc) && arc.i != s && arc.i != t
                         && dis[arc.i] == m_num_nodes + 3) {
-                    if (flow_done)
-                        m_labels[arc.i] = 0;
                     next.push(arc.i);
                     dis[arc.i] = level;
                 }
             }
         }
         ++level;
+    }
+}
+
+
+void SubmodularFlow::ComputeMinCut() {
+    GlobalRelabel();
+    for (NodeId i = 0; i < m_num_nodes; ++i) {
+        if (dis[i] < dis[s])
+            m_labels[i] = 0;
+        else
+            m_labels[i] = 1;
     }
 }
 
