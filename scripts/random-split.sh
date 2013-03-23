@@ -8,7 +8,7 @@ fi
 
 (cd $1/images; ls *.ppm) | shuf > $1/random-order.dat
 
-num_files=`cat random-order.dat | wc -l`
+num_files=`cat $1/random-order.dat | wc -l`
 echo "Num files: $num_files"
 
 if [ $num_files -eq 0 ]
@@ -34,8 +34,6 @@ do
     small_file=$1/data-small-$i-$num_splits.dat
     large_file=$1/data-large-$i-$num_splits.dat
 
-    echo $small_file
-
     cat $1/header.txt > $small_file
     cat $1/header.txt > $large_file
 
@@ -46,7 +44,6 @@ do
     head -n $start $1/random-order.dat >> $large_file
     tail -n $(($num_files - $end)) $1/random-order.dat >> $large_file
 
-    echo done
 done
 
 rm $1/header.txt
