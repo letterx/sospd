@@ -168,11 +168,15 @@ void TestNonnegativeCapacities(const SubmodularFlow& sf) {
     }
     for (const auto& cp : sf.GetCliques()) {
         const auto& c = *cp;
+        size_t i_idx = 0;
         for (NodeId i : c.Nodes()) {
+            size_t j_idx = 0;
             for (NodeId j : c.Nodes()) {
-                if (i == j) continue;
-                BOOST_REQUIRE_GE(c.ExchangeCapacity(i, j), 0);
+                if (i != j)
+                    BOOST_REQUIRE_GE(c.ExchangeCapacity(i_idx, j_idx), 0);
+                j_idx++;
             }
+            i_idx++;
         }
     }
 }
@@ -218,12 +222,17 @@ void TestDistance(const SubmodularFlow& sf) {
     }
     for (const auto& cp : cliques) {
         const auto& c = *cp;
+        size_t i_idx = 0;
         for (NodeId i : c.Nodes()) {
+            size_t j_idx = 0;
             for (NodeId j : c.Nodes()) {
-                if (i == j) continue;
-                if (c.ExchangeCapacity(i, j) > 0)
-                    BOOST_REQUIRE_LE(dis[i], dis[j]+1);
+                if (i != j) {
+                    if (c.ExchangeCapacity(i_idx, j_idx) > 0)
+                        BOOST_REQUIRE_LE(dis[i], dis[j]+1);
+                }
+                j_idx++;
             }
+            i_idx++;
         }
     }
 }

@@ -1,33 +1,41 @@
 CXX ?= g++
+AR = ar
 DEFS = 
-INCLUDES = -I. -I./higher-order-energy/include -I./higher-order-energy/qpbo
-CXX_FLAGS = -O3 -Wall -std=c++11 $(INCLUDES)
+INCLUDES = -I./submodular-flow/ -I./higher-order-energy/include -I./higher-order-energy/qpbo
+OPT ?= -O3
+CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = 
 LIBS = 
 TEST_DIR = ./test
+LIB_DIR = ./lib
 
 TEST_SRCS = $(wildcard $(TEST_DIR)/*.cpp)
 TEST_OBJS = $(TEST_SRCS:.cpp=.o)
-CORE_SRCS = submodular-flow.cpp \
-			gen-random.cpp
+CORE_SRCS = submodular-flow/submodular-flow.cpp \
+			submodular-flow/gen-random.cpp
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
 QPBO_DIR = ./higher-order-energy/qpbo
 QPBO_SRCS = $(QPBO_DIR)/QPBO.cpp
 QPBO_OBJS = $(QPBO_SRCS:.cpp=.o)
 
+SF_LIB = $(LIB_DIR)/libsubmodular-flow.a
+
 SRCS = $(CORE_SRCS) $(TEST_SRCS) $(QPBO_SRCS)
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
-all: $(OBJS) unit-test higher-order-experiment
+all: $(SF_LIB) unit-test higher-order-experiment
 
-unit-test: $(CORE_OBJS) $(TEST_OBJS) $(QPBO_OBJS)
-	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(CORE_OBJS) $(TEST_OBJS) $(QPBO_OBJS) $(LIBS) -lboost_unit_test_framework 
+unit-test: $(TEST_OBJS) $(SF_LIB)
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(TEST_OBJS) $(SF_LIB) $(LIBS) -lboost_unit_test_framework 
 
-higher-order-experiment: higher-order-experiment.o $(CORE_OBJS) $(QPBO_OBJS)
-	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ higher-order-experiment.o $(CORE_OBJS) $(QPBO_OBJS) $(LIBS)
+higher-order-experiment: higher-order-experiment.o $(SF_LIB)
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ higher-order-experiment.o $(SF_LIB) $(LIBS)
 
+$(SF_LIB): $(CORE_OBJS) $(QPBO_OBJS)
+	mkdir -p $(LIB_DIR)
+	$(AR) rcs $(SF_LIB) $(CORE_OBJS) $(QPBO_OBJS)
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -MMD -o $@ -c $<
@@ -44,13 +52,26 @@ clean:
 	rm -rf *.o
 	rm -rf *.P
 	rm -rf *.d
+	rm -rf *~
 	rm -rf $(TEST_DIR)/*.o
 	rm -rf $(TEST_DIR)/*.P
 	rm -rf $(TEST_DIR)/*.d
+	rm -rf $(TEST_DIR)/*~
 	rm -rf $(QPBO_DIR)/*.o
 	rm -rf $(QPBO_DIR)/*.P
 	rm -rf $(QPBO_DIR)/*.d
+	rm -rf $(QPBO_DIR)/*~
+	rm -rf submodular-flow/*.o
+	rm -rf submodular-flow/*.P
+	rm -rf submodular-flow/*.d
+	rm -rf submodular-flow/*~
 
 .PHONY: distclean
 distclean: clean
+	rm -rf unit-test
+	rm -rf higher-order-experiment
+	rm -rf ./lib
 
+.PHONY: check
+check: ./unit-test
+	./unit-test

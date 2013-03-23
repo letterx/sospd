@@ -16,7 +16,10 @@ class SubmodularFlow {
         typedef std::vector<CliquePtr> CliqueVec;
         struct arc {
 	        NodeId i, j;
+            size_t i_idx, j_idx;
 	        CliqueId c; // if this is a clique edge; -1 otherwise
+            REAL cached_cap; // Is the true capacity if cached_time == c.m_time
+            int64_t cache_time;
         };
         typedef arc Arc;
 
@@ -46,6 +49,8 @@ class SubmodularFlow {
         void PushRelabel();
         // After computing the max flow, extract the min cut
         void ComputeMinCut();
+        // Do both the above
+        void Solve();
 
         // Compute the total energy across all cliques of the current labeling
         REAL ComputeEnergy() const;
@@ -62,18 +67,22 @@ class SubmodularFlow {
             public:
             Clique(const std::vector<NodeId>& nodes)
                 : m_nodes(nodes),
-                m_alpha_Ci(nodes.size(), 0)
+                m_alpha_Ci(nodes.size(), 0),
+                m_time(0)
             { }
             ~Clique() = default;
 
             // Returns the energy of the given labeling for this clique function
             virtual REAL ComputeEnergy(const std::vector<int>& labels) const = 0;
             // Returns the exchange capacity between nodes u and v
-            virtual REAL ExchangeCapacity(NodeId u, NodeId v) const = 0;
+            virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const = 0;
+            virtual bool NonzeroCapacity(size_t u_idx, size_t v_idx) const = 0;
             // Normalizes energy so that it is always >= 0, and the all 1 and
             // all 0 labeling have energy 0. Subtracts a linear function from
             // the energy, so we may need to change c_si, c_it
             virtual void NormalizeEnergy(SubmodularFlow& sf) = 0;
+            // Push delta units of flow from u to v
+            virtual void Push(size_t u_idx, size_t v_idx, REAL delta) = 0;
 
             const std::vector<NodeId>& Nodes() const { return m_nodes; }
             size_t Size() const { return m_nodes.size(); }
@@ -82,7 +91,6 @@ class SubmodularFlow {
             size_t GetIndex(NodeId i) const {
                 return std::find(this->m_nodes.begin(), this->m_nodes.end(), i) - this->m_nodes.begin();
             }
-            // Returns the energy of the given labeling, minus alphas for i in S
             REAL ComputeEnergyAlpha(const std::vector<int>& labels) const {
                 REAL e = ComputeEnergy(labels);
                 for (size_t idx = 0; idx < m_nodes.size(); ++idx) {
@@ -90,10 +98,13 @@ class SubmodularFlow {
                 }
                 return e;
             }
+            int64_t& Time() { return m_time; }
+            int64_t Time() const { return m_time; }
 
             protected:
             std::vector<NodeId> m_nodes; // The list of nodes in the clique
             std::vector<REAL> m_alpha_Ci; // The reparameterization variables for this clique
+            int64_t m_time;
 
             // Prohibit copying and moving clique functions, to prevent slicing
             // of derived class data
@@ -117,25 +128,27 @@ class SubmodularFlow {
         LayerArray layers;
         int max_active, min_active;
         typedef typename std::list<NodeId>::iterator list_iterator;
-
         std::vector<list_iterator> layer_list_ptr;
 
         // Data needed during push-relabel
         NodeId s,t;
         std::vector<int> dis;
         std::vector<REAL> excess;
-        std::vector<int> current_arc_index;
-        std::vector< std::vector<Arc> > m_arc_list;
+        typedef std::vector<Arc> ArcList;
+        std::vector<typename ArcList::iterator> current_arc;
+        std::vector< ArcList > m_arc_list;
         long work_since_last_update;
         long num_edges;
         bool flow_done = true;
 
         void add_to_active_list(NodeId u, Layer& layer);
         void remove_from_active_list(NodeId u);
-        REAL ResCap(Arc arc);
-        boost::optional<Arc> FindPushableEdge(NodeId i);
-        void Push(Arc arc);
+        REAL ResCap(Arc& arc);
+        bool NonzeroCap(Arc& arc);
+        Arc* FindPushableEdge(NodeId i);
+        void Push(Arc& arc);
         void Relabel(NodeId i);
+        void Discharge(NodeId i);
 
         typedef std::vector<CliqueId> NeighborList;
 
@@ -150,6 +163,8 @@ class SubmodularFlow {
         CliqueId m_num_cliques;
         CliqueVec m_cliques;
         std::vector<NeighborList> m_neighbors;
+
+        size_t m_num_clique_pushes;
 
     public:
         // Functions for reading out data, useful for testing
@@ -189,15 +204,25 @@ class EnergyTableClique : public SubmodularFlow::Clique {
         EnergyTableClique(const std::vector<NodeId>& nodes,
                           const std::vector<REAL>& energy)
             : SubmodularFlow::Clique(nodes),
-            m_energy(energy)
-        { ASSERT(nodes.size() <= 31); }
+            m_energy(energy),
+            m_alpha_energy(energy),
+            m_min_tight_set(nodes.size(), (1 << nodes.size()) - 1)
+        { 
+            ASSERT(nodes.size() <= 31); 
+        }
 
         virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
-        virtual REAL ExchangeCapacity(NodeId u, NodeId v) const;
+        virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
+        virtual bool NonzeroCapacity(size_t u_idx, size_t v_idx) const;
         virtual void NormalizeEnergy(SubmodularFlow& sf);
+        virtual void Push(size_t u_idx, size_t v_idx, REAL delta);
+        void ComputeMinTightSets();
+        void EnforceSubmodularity();
 
     protected:
         std::vector<REAL> m_energy;
+        std::vector<REAL> m_alpha_energy;
+        std::vector<Assignment> m_min_tight_set;
 };
 
 #endif
