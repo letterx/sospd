@@ -15,7 +15,8 @@ SubmodularFlow::SubmodularFlow()
     m_num_cliques(0),
     m_cliques(),
     m_neighbors(),
-    m_num_clique_pushes(0)
+    m_num_clique_pushes(0),
+    m_num_global_relabels(0)
 { }
 
 SubmodularFlow::NodeId SubmodularFlow::AddNode(int n) {
@@ -236,6 +237,7 @@ void SubmodularFlow::PushRelabel()
         PushRelabelStep();
     }
     std::cout << "Push Relabel: " << m_num_clique_pushes << " clique pushes\n";
+    std::cout << "              " << m_num_global_relabels << " global relabels\n";
     flow_done = true;
 }
 
@@ -335,6 +337,8 @@ void SubmodularFlow::Relabel(NodeId i) {
 ///////////////    end of push relabel    ///////////////////
 
 void SubmodularFlow::ComputeMinCut() {
+    m_num_global_relabels++;
+    //if (!flow_done) std::cout << "Global distance heuristic\n";
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         dis[i] = m_num_nodes + 3;
         if (flow_done)
@@ -356,7 +360,8 @@ void SubmodularFlow::ComputeMinCut() {
         while (!curr.empty()) {
             NodeId u = curr.front();
             curr.pop();
-            for (Arc& arc : m_arc_list[u]) {
+            // Not iterating by reference, since we need to get reverse arc
+            for (Arc arc : m_arc_list[u]) { 
                 arc.i = arc.j;
                 arc.j = u;
                 std::swap(arc.i_idx, arc.j_idx);

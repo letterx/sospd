@@ -165,6 +165,7 @@ class SubmodularFlow {
         std::vector<NeighborList> m_neighbors;
 
         size_t m_num_clique_pushes;
+        size_t m_num_global_relabels;
 
     public:
         // Functions for reading out data, useful for testing
