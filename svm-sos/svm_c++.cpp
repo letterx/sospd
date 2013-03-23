@@ -137,7 +137,6 @@ class SubmodularFeature : public FG {
     }
     virtual Constr CollectConstrs(size_t feature_base) const {
         constexpr double constr_scale = 1.0;
-        std::cout << "Adding submodular constraints\n";
         typedef std::vector<std::pair<size_t, double>> LHS;
         typedef double RHS;
         Constr ret;
@@ -196,8 +195,8 @@ class SubmodularFeature : public FG {
                 }
             }
         }
-        std::cout << "Num constraints: " << num_constraints <<"\n";
-        std::cout << "Min violation: " << min_violation << "\n";
+        //std::cout << "Num constraints: " << num_constraints <<"\n";
+        //std::cout << "Min violation: " << min_violation << "\n";
         return max_violation;
     }
 };
@@ -382,12 +381,13 @@ LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
 }
 
 LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm) const {
-    std::cout << "Classify\n";
     CRF crf;
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
-        std::cout << "Max Violation: " << fgp->MaxViolation(feature_base, sm->w) << "\n";
+        double violation = fgp->MaxViolation(feature_base, sm->w);
+        if (violation > 0)
+            std::cout << "\n***\n*** Max Violation: " << violation << "\n***\n";
         fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }
@@ -396,19 +396,17 @@ LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm) const {
 }
 
 LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm) const {
-    std::cout << "FindMostViolatedConstraint\n";
     CRF crf;
     InitializeCRF(crf, x);
     size_t feature_base = 1;
-    std::cout << "Adding Features\n";
     for (auto fgp : m_features) {
-        std::cout << "Max Violation: " << fgp->MaxViolation(feature_base, sm->w) << "\n";
+        double violation = fgp->MaxViolation(feature_base, sm->w);
+        if (violation > 0)
+            std::cout << "\n***\n*** Max Violation: " << violation << "\n***\n";
         fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }
     AddLossToCRF(crf, x, y);
-    std::cout << "Solving\n";
     crf.Solve();
-    std::cout << "Done!\n";
     return ExtractLabel(crf, x);
 }
