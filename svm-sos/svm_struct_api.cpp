@@ -207,7 +207,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
         cv::Mat fgdModel;
         cv::grabCut(data(x)->m_image, data(y)->m_gt, cv::Rect(), bgdModel, fgdModel, sparm->grabcut_classify);
     } else {
-        y.data = data(sm)->Classify(*data(x), sm);
+        y.data = data(sm)->Classify(*data(x), sm, sparm);
     }
 
     return(y);
@@ -275,7 +275,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     LABEL ybar;
 
     /* insert your code for computing the label ybar here */
-    ybar.data = data(sm)->FindMostViolatedConstraint(*data(x), *data(y), sm);
+    ybar.data = data(sm)->FindMostViolatedConstraint(*data(x), *data(y), sm, sparm);
 
     return(ybar);
 }
@@ -576,6 +576,7 @@ void         parse_struct_parameters(STRUCT_LEARN_PARM *sparm)
       case 'a': i++; /* strcpy(learn_parm->alphafile,argv[i]); */ break;
       case 'e': i++; /* sparm->epsilon=atof(sparm->custom_argv[i]); */ break;
       case 'k': i++; /* sparm->newconstretrain=atol(sparm->custom_argv[i]); */ break;
+      case 'c': i++; sparm->crf=atol(sparm->custom_argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",sparm->custom_argv[i]);
 	       exit(0);
       }
@@ -607,6 +608,7 @@ void         parse_struct_parameters_classify(STRUCT_LEARN_PARM *sparm)
       /* case 'x': i++; strcpy(xvalue,sparm->custom_argv[i]); break; */
       case 'g': i++; sparm->grabcut_classify=atol(sparm->custom_argv[i]); break;
       case 's': i++; global_show_images=atol(sparm->custom_argv[i]); break;
+      case 'c': i++; sparm->crf=atol(sparm->custom_argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",sparm->custom_argv[i]);
 	       exit(0);
       }

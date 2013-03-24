@@ -102,6 +102,7 @@ typedef struct struct_learn_parm {
 				  option */
   /* further parameters that are passed to init_struct_model() */
   int grabcut_classify; // zero if normal classify, number of iterations otherwise
+  int crf; // 0 for SubmodularFlow, 1 for HigherOrder
 } STRUCT_LEARN_PARM;
 
 typedef struct struct_test_stats {

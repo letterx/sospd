@@ -101,6 +101,7 @@ class HigherOrderWrapper {
         NodeId AddNode(int n) { return ho.AddNode(n); }
         int GetLabel(NodeId i) const { return qr.GetLabel(i); }
         void Solve() {
+            std::cout << "Solving with HigherOrderEnergy\n";
             ho.ToQuadratic(qr);
             qr.MergeParallelEdges();
             qr.Solve();
@@ -134,8 +135,8 @@ class ModelData {
         void InitializeCRF(CRF& crf, const PatternData& p) const;
         void AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const;
         LabelData* ExtractLabel(const CRF& crf, const PatternData& x) const;
-        LabelData* Classify(const PatternData& x, STRUCTMODEL* sm) const;
-        LabelData* FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm) const;
+        LabelData* Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
+        LabelData* FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         std::vector<std::shared_ptr<FG>> m_features;
     private:
         friend class boost::serialization::access;
