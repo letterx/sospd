@@ -383,6 +383,8 @@ LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
 
 LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm) const {
     CRF crf;
+    SubmodularFlow sf;
+    crf.Wrap(&sf);
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
@@ -398,6 +400,8 @@ LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm) const {
 
 LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm) const {
     CRF crf;
+    SubmodularFlow sf;
+    crf.Wrap(&sf);
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {

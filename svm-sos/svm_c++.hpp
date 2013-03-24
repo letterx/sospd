@@ -58,11 +58,33 @@ class LabelData {
         }
 };
 
+class CRF {
+    public:
+        typedef int NodeId;
+        CRF() { }
+        std::function<void(const std::vector<NodeId>& nodes, const std::vector<REAL>& costTable)> AddClique;
+        std::function<void(NodeId, NodeId, REAL, REAL, REAL, REAL)> AddPairwiseTerm;
+        std::function<void(NodeId, REAL, REAL)> AddUnaryTerm;
+        std::function<NodeId(int)> AddNode;
+        std::function<int(NodeId)> GetLabel;
+        std::function<void(void)> Solve;
 
-//typedef SubmodularFlow CRF;
-typedef SubmodularFlow CRF;
+        // Sorry, future me. But the following is like making CRF an abstract base class,
+        // which you can subclass to anything fitting the interface. Please bear with me.
+        template <typename T>
+        void Wrap(T* crf) {
+            using namespace std::placeholders;
+            AddClique = std::bind(static_cast<void(T::*)(const std::vector<NodeId>&, const std::vector<REAL>&)>(&T::AddClique), crf, _1, _2);
+            //AddPairwiseTerm = std::bind(&T::AddPairwiseTerm, crf, _1, _2, _3, _4, _5, _6);
+            AddUnaryTerm = std::bind(static_cast<void(T::*)(NodeId, REAL, REAL)>(&T::AddUnaryTerm), crf, _1, _2, _3);
+            AddNode = std::bind(static_cast<NodeId(T::*)(int)>(&T::AddNode), crf, _1);
+            GetLabel = std::bind(static_cast<int(T::*)(NodeId)const>(&T::GetLabel), crf, _1);
+            Solve = std::bind(static_cast<void(T::*)(void)>(&T::Solve), crf);
+        }
+};
 
-template <typename PatternData, typename LabelData, typename CRF>
+
+template <typename PatternData, typename LabelData>
 class FeatureGroup {
     public:
         virtual size_t NumFeatures() const = 0;
@@ -73,7 +95,7 @@ class FeatureGroup {
         virtual double MaxViolation(size_t base, double* w) const { return 0.0; }
 };
 
-typedef FeatureGroup<PatternData, LabelData, CRF> FG;
+typedef FeatureGroup<PatternData, LabelData> FG;
 
 class ModelData {
     public:
