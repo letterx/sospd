@@ -73,6 +73,12 @@ void SubmodularFlow::AddClique(const std::vector<NodeId>& nodes, const std::vect
     AddClique(cp);
 }
 
+void SubmodularFlow::AddPairwiseTerm(NodeId i, NodeId j, REAL E00, REAL E01, REAL E10, REAL E11) {
+    std::vector<NodeId> nodes{i, j};
+    std::vector<REAL> energyTable{E00, E01, E10, E11};
+    AddClique(nodes, energyTable);
+}
+
 //////// Push Relabel methods ///////////
 
 void SubmodularFlow::add_to_active_list(NodeId u, Layer& layer) {

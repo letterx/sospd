@@ -44,6 +44,7 @@ class SubmodularFlow {
         void AddClique(const CliquePtr& cp);
         // Add Clique defined by nodes and energy table given
         void AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable);
+        void AddPairwiseTerm(NodeId i, NodeId j, REAL E00, REAL E01, REAL E10, REAL E11);
 
         // Compute the max flow using PushRelabel
         void PushRelabel();
@@ -225,5 +226,6 @@ class EnergyTableClique : public SubmodularFlow::Clique {
         std::vector<REAL> m_alpha_energy;
         std::vector<Assignment> m_min_tight_set;
 };
+
 
 #endif
