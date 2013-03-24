@@ -212,7 +212,6 @@ class SubmodularFeature : public FG {
 
 BOOST_CLASS_EXPORT_GUID(SubmodularFeature, "SubmodularFeature")
 
-/*
 class PairwiseFeature : public FG {
     public:
     typedef FG::Constr Constr;
@@ -243,7 +242,16 @@ class PairwiseFeature : public FG {
         ret.push_back(c);
         return ret;
     }
+    private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version) { 
+        std::cout << "Serializing PairwiseFeature\n";
+        ar & boost::serialization::base_object<FG>(*this);
+    }
 };
+
+BOOST_CLASS_EXPORT_GUID(PairwiseFeature, "PairwiseFeature")
 
 class ContrastPairwiseFeature : public FG {
     public:
@@ -284,8 +292,16 @@ class ContrastPairwiseFeature : public FG {
         ret.push_back(c);
         return ret;
     }
+    private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version) { 
+        std::cout << "Serializing ContrastPairwiseFeature\n";
+        ar & boost::serialization::base_object<FG>(*this);
+    }
 };
-*/
+
+BOOST_CLASS_EXPORT_GUID(ContrastPairwiseFeature, "ContrastPairwiseFeature")
 
 
 class GMMFeature : public FG {
@@ -345,12 +361,22 @@ class GMMFeature : public FG {
 BOOST_CLASS_EXPORT_GUID(GMMFeature, "GMMFeature")
                 
 
-ModelData::ModelData() {
-    m_features.push_back(boost::shared_ptr<FG>(new GMMFeature));
-    //m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature));
-    //m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature));
-    m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature));
+ModelData::ModelData() { }
 
+void ModelData::InitFeatures(STRUCT_LEARN_PARM* sparm) {
+    m_features.push_back(boost::shared_ptr<FG>(new GMMFeature));
+    if (sparm->pairwise_feature) {
+        std::cout << "Adding PairwiseFeature\n";
+        m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature));
+    }
+    if (sparm->contrast_pairwise_feature) {
+        std::cout << "Adding ContrastPairwiseFeature\n";
+        m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature));
+    }
+    if (sparm->submodular_feature) {
+        std::cout << "Adding SubmodularFeature\n";
+        m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature));
+    }
 }
 
 long ModelData::NumFeatures() const {

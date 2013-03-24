@@ -99,7 +99,7 @@ class HigherOrderWrapper {
         void AddUnaryTerm(NodeId i, REAL E0, REAL E1) {
             ho.AddUnaryTerm(i, E0, E1);
         }
-        NodeId AddNode(int n) { return ho.AddNode(n); }
+        NodeId AddNode(int n) { qr.AddNode(n); return ho.AddNode(n); }
         int GetLabel(NodeId i) const { return qr.GetLabel(i); }
         void Solve() {
             std::cout << "Solving with HigherOrderEnergy\n";
@@ -136,6 +136,7 @@ class ModelData {
         typedef QPBO<REAL> QR;
         ModelData();
 
+        void InitFeatures(STRUCT_LEARN_PARM* sparm);
         long NumFeatures() const;
         void InitializeCRF(CRF& crf, const PatternData& p) const;
         void AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const;

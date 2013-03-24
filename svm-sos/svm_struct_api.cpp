@@ -136,6 +136,7 @@ void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
      weights that can be learned. Later, the weight vector w will
      contain the learned weights for the model. */
     sm->data = new ModelData;
+    data(sm)->InitFeatures(sparm);
 
     sm->sizePsi=data(sm)->NumFeatures(); /* replace by appropriate number of features */
 }
@@ -569,14 +570,18 @@ void         parse_struct_parameters(STRUCT_LEARN_PARM *sparm)
   int i;
 
   sparm->grabcut_classify = 0;
+  sparm->crf = 0;
+  sparm->pairwise_feature = 0;
+  sparm->contrast_pairwise_feature = 0;
+  sparm->submodular_feature = 1;
 
   for(i=0;(i<sparm->custom_argc) && ((sparm->custom_argv[i])[0] == '-');i++) {
     switch ((sparm->custom_argv[i])[2]) 
       { 
-      case 'a': i++; /* strcpy(learn_parm->alphafile,argv[i]); */ break;
-      case 'e': i++; /* sparm->epsilon=atof(sparm->custom_argv[i]); */ break;
-      case 'k': i++; /* sparm->newconstretrain=atol(sparm->custom_argv[i]); */ break;
       case 'c': i++; sparm->crf=atol(sparm->custom_argv[i]); break;
+      case 'p': i++; sparm->pairwise_feature=atol(sparm->custom_argv[i]); break;
+      case 'g': i++; sparm->contrast_pairwise_feature=atol(sparm->custom_argv[i]); break;
+      case 's': i++; sparm->submodular_feature=atol(sparm->custom_argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",sparm->custom_argv[i]);
 	       exit(0);
       }
