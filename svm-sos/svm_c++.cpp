@@ -364,6 +364,7 @@ void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l)
 
 LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
     LabelData* lp = new LabelData;
+    lp->m_name = x.m_name;
     lp->m_gt.create(x.m_image.rows, x.m_image.cols, CV_8UC1);
     CRF::NodeId id = 0;
     ImageIterate(lp->m_gt, 

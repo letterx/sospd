@@ -516,12 +516,14 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 void        write_label(FILE *fp, LABEL y)
 {
   /* Writes label y to file handle fp. */
-    std::ostringstream os;
-    boost::archive::text_oarchive oa(os);
-    oa << *data(y);
-    fwrite(os.str().c_str(), sizeof(char), os.str().size()+1, fp);
+    std::string& name = data(y)->m_name;
+    fputs(name.c_str(), fp);
+    fputs("\n", fp);
     if (global_show_images)
         ShowImage(data(y)->m_gt);
+
+    cv::imwrite(name, (data(y)->m_gt)*(255/3));
+
 } 
 
 void        free_pattern(PATTERN x) {
