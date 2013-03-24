@@ -33,3 +33,6 @@ svm_sos_learn
 *.model
 *.predictions
 nohup.out
+
+# images
+*.ppm
