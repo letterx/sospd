@@ -11,6 +11,7 @@ extern "C" {
 #include <vector>
 #include <memory>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/shared_ptr.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 
@@ -122,6 +123,10 @@ class FeatureGroup {
         typedef std::vector<std::pair<std::vector<std::pair<size_t, double>>, double>> Constr;
         virtual Constr CollectConstrs(size_t base) const { return Constr(); }
         virtual double MaxViolation(size_t base, double* w) const { return 0.0; }
+    private:
+        friend class boost::serialization::access;
+        template <typename Archive>
+        void serialize(const Archive& ar, const unsigned int version) { }
 };
 
 typedef FeatureGroup<PatternData, LabelData> FG;
@@ -137,12 +142,12 @@ class ModelData {
         LabelData* ExtractLabel(const CRF& crf, const PatternData& x) const;
         LabelData* Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         LabelData* FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
-        std::vector<std::shared_ptr<FG>> m_features;
+        std::vector<boost::shared_ptr<FG>> m_features;
     private:
         friend class boost::serialization::access;
         template <class Archive>
         void serialize(Archive& ar, const unsigned int version) {
-            // FIXME: Write out features???
+            ar & m_features;
         }
 };
 

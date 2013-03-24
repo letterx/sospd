@@ -1,6 +1,8 @@
 #include <cmath>
 #include "svm_c++.hpp"
 #include "image_manip.hpp"
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/export.hpp>
 
 constexpr double LOSS_SCALE = 100000.0;
 inline double LabelDiff(unsigned char l1, unsigned char l2) {
@@ -199,7 +201,16 @@ class SubmodularFeature : public FG {
         //std::cout << "Min violation: " << min_violation << "\n";
         return max_violation;
     }
+    private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version) { 
+        std::cout << "Serializing SubmodularFeature\n";
+        ar & boost::serialization::base_object<FG>(*this);
+    }
 };
+
+BOOST_CLASS_EXPORT_GUID(SubmodularFeature, "SubmodularFeature")
 
 /*
 class PairwiseFeature : public FG {
@@ -322,15 +333,23 @@ class GMMFeature : public FG {
             }
         }
     }
+    private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version) {
+        std::cout << "Serializing GMMFeature\n";
+        ar & boost::serialization::base_object<FG>(*this);
+    }
 };
 
+BOOST_CLASS_EXPORT_GUID(GMMFeature, "GMMFeature")
                 
 
 ModelData::ModelData() {
-    m_features.push_back(std::shared_ptr<FG>(new GMMFeature));
-    //m_features.push_back(std::shared_ptr<FG>(new PairwiseFeature));
-    //m_features.push_back(std::shared_ptr<FG>(new ContrastPairwiseFeature));
-    m_features.push_back(std::shared_ptr<FG>(new SubmodularFeature));
+    m_features.push_back(boost::shared_ptr<FG>(new GMMFeature));
+    //m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature));
+    //m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature));
+    m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature));
 
 }
 
