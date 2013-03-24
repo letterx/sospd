@@ -83,6 +83,34 @@ class CRF {
         }
 };
 
+class HigherOrderWrapper {
+    public:
+        typedef HigherOrderEnergy<REAL, 4> HO;
+        typedef QPBO<REAL> QR;
+        typedef typename HO::NodeId NodeId;
+        HigherOrderWrapper() : ho(), qr(0, 0) { }
+        void AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& costTable) {
+            ho.AddClique(nodes, costTable);
+        }
+        void AddPairwiseTerm(NodeId i, NodeId j, REAL E00, REAL E01, REAL E10, REAL E11) {
+            qr.AddPairwiseTerm(i, j, E00, E01, E10, E11);
+        }
+        void AddUnaryTerm(NodeId i, REAL E0, REAL E1) {
+            ho.AddUnaryTerm(i, E0, E1);
+        }
+        NodeId AddNode(int n) { return ho.AddNode(n); }
+        int GetLabel(NodeId i) const { return qr.GetLabel(i); }
+        void Solve() {
+            ho.ToQuadratic(qr);
+            qr.MergeParallelEdges();
+            qr.Solve();
+        }
+    private:
+        HO ho;
+        QR qr;
+};
+
+
 
 template <typename PatternData, typename LabelData>
 class FeatureGroup {
