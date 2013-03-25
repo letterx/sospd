@@ -24,9 +24,8 @@ extern "C" {
 #include "svm_struct_api.h"
 }
 #include "svm_c++.hpp"
+#include "svm_struct_options.hpp"
 #include "image_manip.hpp"
-
-static bool global_show_images = false;
 
 PatternData* data(PATTERN& p) { return (PatternData*)p.data; }
 PATTERN MakePattern(PatternData* d) {
@@ -562,30 +561,13 @@ void        print_struct_help()
   printf("         --* string  -> custom parameters that can be adapted for struct\n");
   printf("                        learning. The * can be replaced by any character\n");
   printf("                        and there can be multiple options starting with --.\n");
+    PrintStructLearnHelp();
 }
 
 void         parse_struct_parameters(STRUCT_LEARN_PARM *sparm)
 {
   /* Parses the command line parameters that start with -- */
-  int i;
-
-  sparm->grabcut_classify = 0;
-  sparm->crf = 0;
-  sparm->pairwise_feature = 0;
-  sparm->contrast_pairwise_feature = 0;
-  sparm->submodular_feature = 1;
-
-  for(i=0;(i<sparm->custom_argc) && ((sparm->custom_argv[i])[0] == '-');i++) {
-    switch ((sparm->custom_argv[i])[2]) 
-      { 
-      case 'c': i++; sparm->crf=atol(sparm->custom_argv[i]); break;
-      case 'p': i++; sparm->pairwise_feature=atol(sparm->custom_argv[i]); break;
-      case 'g': i++; sparm->contrast_pairwise_feature=atol(sparm->custom_argv[i]); break;
-      case 's': i++; sparm->submodular_feature=atol(sparm->custom_argv[i]); break;
-      default: printf("\nUnrecognized option %s!\n\n",sparm->custom_argv[i]);
-	       exit(0);
-      }
-  }
+    ParseStructLearnParameters(sparm);
 }
 
 void        print_struct_help_classify()
@@ -597,26 +579,13 @@ void        print_struct_help_classify()
   printf("         --* string -> custom parameters that can be adapted for struct\n");
   printf("                       learning. The * can be replaced by any character\n");
   printf("                       and there can be multiple options starting with --.\n");
+  PrintStructClassifyHelp();
 }
 
 void         parse_struct_parameters_classify(STRUCT_LEARN_PARM *sparm)
 {
   /* Parses the command line parameters that start with -- for the
      classification module */
-  int i;
-
-  sparm->grabcut_classify = 0;
-
-  for(i=0;(i<sparm->custom_argc) && ((sparm->custom_argv[i])[0] == '-');i++) {
-    switch ((sparm->custom_argv[i])[2]) 
-      { 
-      /* case 'x': i++; strcpy(xvalue,sparm->custom_argv[i]); break; */
-      case 'g': i++; sparm->grabcut_classify=atol(sparm->custom_argv[i]); break;
-      case 's': i++; global_show_images=atol(sparm->custom_argv[i]); break;
-      case 'c': i++; sparm->crf=atol(sparm->custom_argv[i]); break;
-      default: printf("\nUnrecognized option %s!\n\n",sparm->custom_argv[i]);
-	       exit(0);
-      }
-  }
+    ParseStructClassifyParameters(sparm);
 }
 
