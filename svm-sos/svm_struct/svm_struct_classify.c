@@ -139,14 +139,16 @@ void read_input_parameters(int argc,char *argv[],char *testfile,
   strcpy (predictionsfile, "svm_predictions"); 
   (*verbosity)=0;/*verbosity for svm_light*/
   (*struct_verbosity)=1; /*verbosity for struct learning portion*/
-  struct_parm->custom_argc=0;
+  struct_parm->custom_argc=1;
+  struct_parm->custom_argv[0] = "";
 
   for(i=1;(i<argc) && ((argv[i])[0] == '-');i++) {
     switch ((argv[i])[1]) 
       { 
       case 'h': print_help(); exit(0);
       case '?': print_help(); exit(0);
-      case '-': strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);i++; strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);break; 
+      case '-': struct_parm->custom_argv[struct_parm->custom_argc++] = argv[i]; i++; struct_parm->custom_argv[struct_parm->custom_argc++] = argv[i]; break;
+      //case '-': strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);i++; strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);break; 
       case 'v': i++; (*struct_verbosity)=atol(argv[i]); break;
       case 'y': i++; (*verbosity)=atol(argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",argv[i]);

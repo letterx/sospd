@@ -1,52 +1,117 @@
 #include "svm_struct_options.hpp"
+#include <string>
+#include <iostream>
 #include <boost/program_options.hpp>
 
 bool global_show_images = false;
 
-void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
-    int i;
+namespace po = boost::program_options;
 
+static po::options_description GetCommonOptions() {
+    po::options_description desc("Custom SVM options");
+    desc.add_options()
+        ("crf", po::value<std::string>(), "[ho | sf] -> Set CRF optimizer. (default sf)")
+    ;
+
+    return desc;
+}
+
+static po::options_description GetLearnOptions() {
+    po::options_description desc = GetCommonOptions();
+    desc.add_options()
+        ("pairwise", po::value<int>(), "[0, 1] -> Use pairwise edge features. (default 0)")
+        ("contrast-pairwise", po::value<int>(), "[0, 1] -> Use contrast-sensitive pairwise features. (default 0)")
+        ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 1)")
+    ;
+    return desc;
+}
+
+static po::options_description GetClassifyOptions() {
+    po::options_description desc = GetCommonOptions();
+    desc.add_options()
+        ("grabcut", po::value<int>(), "[0..] -> If nonzero, run n iterations of grabcut as the classifier instead. (default 0)")
+        ("show", po::value<int>(), "[0,1] -> Display each image after it is classified. (default 0)")
+    ;
+    return desc;
+}
+
+
+void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     sparm->grabcut_classify = 0;
     sparm->crf = 0;
     sparm->pairwise_feature = 0;
     sparm->contrast_pairwise_feature = 0;
     sparm->submodular_feature = 1;
 
-    for(i=0;(i<sparm->custom_argc) && ((sparm->custom_argv[i])[0] == '-');i++) {
-    switch ((sparm->custom_argv[i])[2]) 
-      { 
-      case 'c': i++; sparm->crf=atol(sparm->custom_argv[i]); break;
-      case 'p': i++; sparm->pairwise_feature=atol(sparm->custom_argv[i]); break;
-      case 'g': i++; sparm->contrast_pairwise_feature=atol(sparm->custom_argv[i]); break;
-      case 's': i++; sparm->submodular_feature=atol(sparm->custom_argv[i]); break;
-      default: printf("\nUnrecognized option %s!\n\n",sparm->custom_argv[i]);
-           exit(0);
-      }
+    po::options_description desc = GetLearnOptions();
+    po::variables_map vm;
+    po::store(po::parse_command_line(sparm->custom_argc, sparm->custom_argv, desc), vm);
+
+    if (vm.count("crf")) {
+        std::string type = vm["crf"].as<std::string>();
+        if (type == "sf") {
+            std::cout << "SubmodularFlow optimizer\n";
+            sparm->crf = 0;
+        } else if (type == "ho") {
+            std::cout << "HigherOrder optimizer\n";
+            sparm->crf = 1;
+        } else {
+            std::cout << "Unrecognized optimizer\n";
+            exit(-1);
+        }
     }
+    if (vm.count("pairwise")) {
+        sparm->pairwise_feature = vm["pairwise"].as<int>();
+        std::cout << "Pairwise Feature = " << sparm->pairwise_feature << "\n";
+    }
+    if (vm.count("contrast-pairwise")) {
+        sparm->contrast_pairwise_feature = vm["contrast-pairwise"].as<int>();
+        std::cout << "Contrast Pairwise Feature = " << sparm->contrast_pairwise_feature << "\n";
+    }
+    if (vm.count("submodular")) {
+        sparm->submodular_feature = vm["submodular"].as<int>();
+        std::cout << "Submodular Feature = " << sparm->submodular_feature << "\n";
+    }
+
 }
 
 void PrintStructLearnHelp() {
-
+    std::cout << GetLearnOptions() << "\n";
 }
 
 void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
-    int i;
-
+    global_show_images = false;
     sparm->grabcut_classify = 0;
+    sparm->crf = 0;
 
-    for(i=0;(i<sparm->custom_argc) && ((sparm->custom_argv[i])[0] == '-');i++) {
-    switch ((sparm->custom_argv[i])[2]) 
-      { 
-      /* case 'x': i++; strcpy(xvalue,sparm->custom_argv[i]); break; */
-      case 'g': i++; sparm->grabcut_classify=atol(sparm->custom_argv[i]); break;
-      case 's': i++; global_show_images=atol(sparm->custom_argv[i]); break;
-      case 'c': i++; sparm->crf=atol(sparm->custom_argv[i]); break;
-      default: printf("\nUnrecognized option %s!\n\n",sparm->custom_argv[i]);
-           exit(0);
-      }
+    po::options_description desc = GetClassifyOptions();
+    po::variables_map vm;
+    po::store(po::parse_command_line(sparm->custom_argc, sparm->custom_argv, desc), vm);
+
+    if (vm.count("crf")) {
+        std::string type = vm["crf"].as<std::string>();
+        if (type == "sf") {
+            std::cout << "SubmodularFlow optimizer\n";
+            sparm->crf = 0;
+        } else if (type == "ho") {
+            std::cout << "HigherOrder optimizer\n";
+            sparm->crf = 1;
+        } else {
+            std::cout << "Unrecognized optimizer\n";
+            exit(-1);
+        }
     }
+    if (vm.count("show")) {
+        global_show_images = vm["show"].as<int>();
+        std::cout << "Show Images = " << global_show_images << "\n";
+    }
+    if (vm.count("grabcut")) {
+        sparm->grabcut_classify = vm["grabcut"].as<int>();
+        std::cout << "Grabcut iterations = " << sparm->grabcut_classify << "\n";
+    }
+
 }
 
 void PrintStructClassifyHelp() {
-
+    std::cout << GetClassifyOptions() << "\n";
 }

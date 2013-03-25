@@ -88,7 +88,7 @@ typedef struct struct_learn_parm {
 				  of training set size (used in w=4
 				  algorithm) */
   double C;                    /* trade-off between margin and loss */
-  char   custom_argv[50][300]; /* storage for the --* command line options */
+  char*  custom_argv[50];      /* storage for the --* command line options */
   int    custom_argc;          /* number of --* command line options */
   int    slack_norm;           /* norm to use in objective function
                                   for slack variables; 1 -> L1-norm, 

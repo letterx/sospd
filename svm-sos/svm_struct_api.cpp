@@ -558,9 +558,6 @@ void        print_struct_help()
 {
   /* Prints a help text that is appended to the common help text of
      svm_struct_learn. */
-  printf("         --* string  -> custom parameters that can be adapted for struct\n");
-  printf("                        learning. The * can be replaced by any character\n");
-  printf("                        and there can be multiple options starting with --.\n");
     PrintStructLearnHelp();
 }
 
@@ -574,12 +571,7 @@ void        print_struct_help_classify()
 {
   /* Prints a help text that is appended to the common help text of
      svm_struct_classify. */
-  printf("         --g n_iters -> use opencv's grabcut for classification instead\n");
-  printf("         --s bool    -> show images at end of classify\n");
-  printf("         --* string -> custom parameters that can be adapted for struct\n");
-  printf("                       learning. The * can be replaced by any character\n");
-  printf("                       and there can be multiple options starting with --.\n");
-  PrintStructClassifyHelp();
+    PrintStructClassifyHelp();
 }
 
 void         parse_struct_parameters_classify(STRUCT_LEARN_PARM *sparm)

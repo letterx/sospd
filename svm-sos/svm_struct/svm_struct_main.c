@@ -122,7 +122,7 @@ void read_input_parameters(int argc,char *argv[],char *trainfile,
   struct_parm->C=-0.01;
   struct_parm->slack_norm=1;
   struct_parm->epsilon=DEFAULT_EPS;
-  struct_parm->custom_argc=0;
+  struct_parm->custom_argc=1;
   struct_parm->loss_function=DEFAULT_LOSS_FCT;
   struct_parm->loss_type=DEFAULT_RESCALING;
   struct_parm->newconstretrain=100;
@@ -161,6 +161,8 @@ void read_input_parameters(int argc,char *argv[],char *trainfile,
   strcpy(kernel_parm->custom,"empty");
   strcpy(type,"c");
 
+  struct_parm->custom_argv[0] = "";
+
   for(i=1;(i<argc) && ((argv[i])[0] == '-');i++) {
     switch ((argv[i])[1]) 
       { 
@@ -186,7 +188,8 @@ void read_input_parameters(int argc,char *argv[],char *trainfile,
       case 's': i++; kernel_parm->coef_lin=atof(argv[i]); break;
       case 'r': i++; kernel_parm->coef_const=atof(argv[i]); break;
       case 'u': i++; strcpy(kernel_parm->custom,argv[i]); break;
-      case '-': strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);i++; strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);break; 
+      case '-': struct_parm->custom_argv[struct_parm->custom_argc++] = argv[i]; i++; struct_parm->custom_argv[struct_parm->custom_argc++] = argv[i]; break;
+      //case '-': strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);i++; strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);break; 
       case 'v': i++; (*struct_verbosity)=atol(argv[i]); break;
       case 'y': i++; (*verbosity)=atol(argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",argv[i]);
