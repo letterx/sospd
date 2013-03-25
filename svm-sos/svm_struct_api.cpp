@@ -395,9 +395,18 @@ void        eval_prediction(long exnum, EXAMPLE ex, LABEL ypred,
      predicition matches the labeled example. It is called from
      svm_struct_classify. See also the function
      print_struct_testing_stats. */
-  if(exnum == 0) { /* this is the first time the function is
-		      called. So initialize the teststats */
-  }
+    if(exnum == 0) { /* this is the first time the function is
+              called. So initialize the teststats */
+    }
+
+    const std::string& name = data(ypred)->m_name;
+    if (sparm->show_images)
+        ShowImage(data(ypred)->m_gt);
+
+    if (sparm->output_dir[0] != 0) {
+        std::string out_filename = std::string(sparm->output_dir) + "/" + name;
+        cv::imwrite(out_filename, (data(ypred)->m_gt)*(255/3));
+    }
 }
 
 void        write_struct_model(char *file, STRUCTMODEL *sm, 
@@ -514,16 +523,9 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
     return sm;
 }
 
-void        write_label(FILE *fp, LABEL y)
+void        write_label(FILE* fp, LABEL y)
 {
   /* Writes label y to file handle fp. */
-    std::string& name = data(y)->m_name;
-    fputs(name.c_str(), fp);
-    fputs("\n", fp);
-    if (global_show_images)
-        ShowImage(data(y)->m_gt);
-
-    cv::imwrite(name, (data(y)->m_gt)*(255/3));
 
 } 
 

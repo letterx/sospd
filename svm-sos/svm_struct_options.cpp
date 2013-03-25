@@ -1,9 +1,8 @@
 #include "svm_struct_options.hpp"
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <boost/program_options.hpp>
-
-bool global_show_images = false;
 
 namespace po = boost::program_options;
 
@@ -30,7 +29,8 @@ static po::options_description GetClassifyOptions() {
     po::options_description desc = GetCommonOptions();
     desc.add_options()
         ("grabcut", po::value<int>(), "[0..] -> If nonzero, run n iterations of grabcut as the classifier instead. (default 0)")
-        ("show", po::value<int>(), "[0,1] -> Display each image after it is classified. (default 0)")
+        ("show", po::value<int>(), "[0,1] -> If nonzero, display each image after it is classified. (default 0)")
+        ("output-dir", po::value<std::string>(), "Write predicted images to directory.")
     ;
     return desc;
 }
@@ -80,7 +80,7 @@ void PrintStructLearnHelp() {
 }
 
 void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
-    global_show_images = false;
+    sparm->show_images = false;
     sparm->grabcut_classify = 0;
     sparm->crf = 0;
 
@@ -102,14 +102,22 @@ void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
         }
     }
     if (vm.count("show")) {
-        global_show_images = vm["show"].as<int>();
-        std::cout << "Show Images = " << global_show_images << "\n";
+        sparm->show_images = vm["show"].as<int>();
+        std::cout << "Show Images = " << sparm->show_images << "\n";
     }
     if (vm.count("grabcut")) {
         sparm->grabcut_classify = vm["grabcut"].as<int>();
         std::cout << "Grabcut iterations = " << sparm->grabcut_classify << "\n";
     }
-
+    if (vm.count("output-dir")) {
+        strncpy(sparm->output_dir, vm["output-dir"].as<std::string>().c_str(), 256);
+        if (sparm->output_dir[255] != 0) {
+            std::cout << "Output-directory name too long!\n";
+            exit(-1);
+        }
+    } else {
+        sparm->output_dir[0] = 0;
+    }
 }
 
 void PrintStructClassifyHelp() {

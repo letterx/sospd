@@ -102,7 +102,10 @@ typedef struct struct_learn_parm {
 				  option */
   /* further parameters that are passed to init_struct_model() */
   int grabcut_classify; // zero if normal classify, number of iterations otherwise
+  int show_images; // [0,1] if we show each image after classification
   int crf; // 0 for SubmodularFlow, 1 for HigherOrder
+  char output_dir[256]; // Directory to write predicted values to
+  // Flags for which features to use
   int pairwise_feature;
   int contrast_pairwise_feature;
   int submodular_feature;

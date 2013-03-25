@@ -9,6 +9,4 @@ void PrintStructLearnHelp();
 void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm);
 void PrintStructClassifyHelp();
 
-extern bool global_show_images;
-
 #endif
