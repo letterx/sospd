@@ -202,6 +202,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
 
     if (sparm->grabcut_classify) {
         y.data = new LabelData;
+        data(y)->m_name = data(x)->m_name;
         data(x)->m_tri.copyTo(data(y)->m_gt);
         cv::Mat bgdModel;
         cv::Mat fgdModel;
