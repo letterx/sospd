@@ -17,6 +17,10 @@ PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv
 
     learnGMMs(m_image, m_tri, m_bgdGMM, m_fgdGMM);
 
+    m_fgdUnaries.create(m_image.rows, m_image.cols, CV_64FC1);
+    m_bgdUnaries.create(m_image.rows, m_image.cols, CV_64FC1);
+    CalcUnaries(*this);
+
     m_beta = calcBeta(m_image);
     m_downW.create(m_image.rows, m_image.cols, CV_64FC1);
     m_rightW.create(m_image.rows, m_image.cols, CV_64FC1);

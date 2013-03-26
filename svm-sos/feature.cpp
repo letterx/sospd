@@ -244,22 +244,19 @@ class GMMFeature : public FeatureGroup {
     GMMFeature() : m_scale(1.0) { }
     explicit GMMFeature(double scale) : m_scale(0.1*scale) { }
 
-    static constexpr double prob_epsilon = 0.00001;
-
     virtual size_t NumFeatures() const { return 3; }
     virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
         std::vector<FVAL> psi = {0.0, 0.0, 0.0};
-        ImageCIterate3_1(p.m_image, l.m_gt, 
-            [&](const cv::Vec3b& color, const unsigned char& label) {
-                double bgd_prob = p.m_bgdGMM(color);
-                double fgd_prob = p.m_fgdGMM(color);
-                if (bgd_prob < prob_epsilon) bgd_prob = prob_epsilon;
-                if (fgd_prob < prob_epsilon) fgd_prob = prob_epsilon;
-                psi[0] += -log(bgd_prob)*m_scale*LabelDiff(label, cv::GC_FGD);
-                psi[0] += -log(fgd_prob)*m_scale*LabelDiff(label, cv::GC_BGD);
+        cv::Point pt;
+        for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
+            for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
+                unsigned char label = l.m_gt.at<unsigned char>(pt);
+                psi[0] += p.m_bgdUnaries.at<double>(pt)*m_scale*LabelDiff(label, cv::GC_FGD);
+                psi[0] += p.m_fgdUnaries.at<double>(pt)*m_scale*LabelDiff(label, cv::GC_BGD);
                 ASSERT(!std::isnan(psi[0]));
                 ASSERT(std::isfinite(psi[0]));
-            });
+            }
+        }
         ImageCIterate(p.m_tri, l.m_gt,
             [&](const unsigned char& tri_label, const unsigned char& label) {
                 if (tri_label == cv::GC_BGD)
@@ -275,14 +272,9 @@ class GMMFeature : public FeatureGroup {
         cv::Point pt;
         for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
             for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
-                const cv::Vec3b& color = p.m_image.at<cv::Vec3b>(pt);
                 CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
-                double bgd_prob = p.m_bgdGMM(color);
-                double fgd_prob = p.m_fgdGMM(color);
-                if (bgd_prob < prob_epsilon) bgd_prob = prob_epsilon;
-                if (fgd_prob < prob_epsilon) fgd_prob = prob_epsilon;
-                double E0 = w[0]*-log(bgd_prob)*m_scale;
-                double E1 = w[0]*-log(fgd_prob)*m_scale;
+                double E0 = w[0]*p.m_bgdUnaries.at<double>(pt)*m_scale;
+                double E1 = w[0]*p.m_fgdUnaries.at<double>(pt)*m_scale;
                 if (p.m_tri.at<unsigned char>(pt) == cv::GC_BGD) E1 += w[1]*m_scale;
                 if (p.m_tri.at<unsigned char>(pt) == cv::GC_FGD) E0 += w[2]*m_scale;
                 crf.AddUnaryTerm(id, doubleToREAL(E0), doubleToREAL(E1));
@@ -301,6 +293,22 @@ class GMMFeature : public FeatureGroup {
 
 BOOST_CLASS_EXPORT_GUID(GMMFeature, "GMMFeature")
                 
+void CalcUnaries(PatternData& p) {
+    static constexpr double prob_epsilon = 0.00001;
+
+    cv::Point pt;
+    for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
+        for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
+            const cv::Vec3b& color = p.m_image.at<cv::Vec3b>(pt);
+            double bgd_prob = p.m_bgdGMM(color);
+            double fgd_prob = p.m_fgdGMM(color);
+            if (bgd_prob < prob_epsilon) bgd_prob = prob_epsilon;
+            if (fgd_prob < prob_epsilon) fgd_prob = prob_epsilon;
+            p.m_bgdUnaries.at<double>(pt) = -log(bgd_prob);
+            p.m_fgdUnaries.at<double>(pt) = -log(fgd_prob);
+        }
+    }
+}
 
 std::vector<boost::shared_ptr<FeatureGroup>> GetFeaturesFromParam(STRUCT_LEARN_PARM* sparm) {
     std::vector<boost::shared_ptr<FeatureGroup>> features;
@@ -319,3 +327,4 @@ std::vector<boost::shared_ptr<FeatureGroup>> GetFeaturesFromParam(STRUCT_LEARN_P
     }
     return features;
 }
+

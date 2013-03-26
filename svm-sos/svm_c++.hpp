@@ -37,6 +37,8 @@ class PatternData {
         cv::Mat m_fgdModel;
         GMM m_fgdGMM;
         double m_beta;
+        cv::Mat m_fgdUnaries;
+        cv::Mat m_bgdUnaries;
         cv::Mat m_downW;
         cv::Mat m_rightW;
 };

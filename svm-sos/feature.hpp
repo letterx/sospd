@@ -28,5 +28,6 @@ class FeatureGroup {
 };
 
 std::vector<boost::shared_ptr<FeatureGroup>> GetFeaturesFromParam(STRUCT_LEARN_PARM* sparm);
+void CalcUnaries(PatternData& p);
 
 #endif
