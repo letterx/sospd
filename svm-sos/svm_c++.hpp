@@ -102,7 +102,7 @@ class HigherOrderWrapper {
         NodeId AddNode(int n) { qr.AddNode(n); return ho.AddNode(n); }
         int GetLabel(NodeId i) const { return qr.GetLabel(i); }
         void Solve() {
-            std::cout << "Solving with HigherOrderEnergy\n";
+            //std::cout << "Solving with HigherOrderEnergy\n";
             ho.ToQuadratic(qr);
             qr.MergeParallelEdges();
             qr.Solve();

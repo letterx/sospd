@@ -461,8 +461,10 @@ LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEA
         double w2 = 0;
         for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
             w2 += sm->w[i] * sm->w[i];
-        if (violation > 0.0001 * w2)
-            std::cout << "\n***\n*** Max Violation: " << violation << "\t|w|^2: " << w2 << "\n***\n";
+        if (violation > 0.0001 * w2) {
+            std::cout << "*** Max Violation: " << violation << ", |w|^2: " << w2 << "***";
+            std::cout.flush();
+        }
         fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }
@@ -486,8 +488,10 @@ LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const Lab
         double w2 = 0;
         for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
             w2 += sm->w[i] * sm->w[i];
-        if (violation > 0.0001 * w2)
-            std::cout << "\n***\n*** Max Violation: " << violation << "\t|w|^2: " << w2 << "\n***\n";
+        if (violation > 0.0001 * w2) {
+            std::cout << "*** Max Violation: " << violation << ", |w|^2: " << w2 << "***";
+            std::cout.flush();
+        }
         fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }
