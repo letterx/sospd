@@ -321,7 +321,9 @@ class GMMFeature : public FG {
     public:
     double m_scale;
     GMMFeature() : m_scale(1.0) { }
-    explicit GMMFeature(double scale) : m_scale(scale) { }
+    explicit GMMFeature(double scale) : m_scale(0.1*scale) { }
+
+    static constexpr double prob_epsilon = 0.00001;
 
     virtual size_t NumFeatures() const { return 3; }
     virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
@@ -330,13 +332,12 @@ class GMMFeature : public FG {
             [&](const cv::Vec3b& color, const unsigned char& label) {
                 double bgd_prob = p.m_bgdGMM(color);
                 double fgd_prob = p.m_fgdGMM(color);
-                if (bgd_prob < 0.0000001) bgd_prob = 0.0000001;
-                if (fgd_prob < 0.0000001) fgd_prob = 0.0000001;
+                if (bgd_prob < prob_epsilon) bgd_prob = prob_epsilon;
+                if (fgd_prob < prob_epsilon) fgd_prob = prob_epsilon;
                 psi[0] += -log(bgd_prob)*m_scale*LabelDiff(label, cv::GC_FGD);
                 psi[0] += -log(fgd_prob)*m_scale*LabelDiff(label, cv::GC_BGD);
                 ASSERT(!std::isnan(psi[0]));
                 ASSERT(std::isfinite(psi[0]));
-                ASSERT(std::isnormal(psi[0]));
             });
         ImageCIterate(p.m_tri, l.m_gt,
             [&](const unsigned char& tri_label, const unsigned char& label) {
@@ -357,8 +358,8 @@ class GMMFeature : public FG {
                 CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
                 double bgd_prob = p.m_bgdGMM(color);
                 double fgd_prob = p.m_fgdGMM(color);
-                if (bgd_prob < 0.0000001) bgd_prob = 0.0000001;
-                if (fgd_prob < 0.0000001) fgd_prob = 0.0000001;
+                if (bgd_prob < prob_epsilon) bgd_prob = prob_epsilon;
+                if (fgd_prob < prob_epsilon) fgd_prob = prob_epsilon;
                 double E0 = w[0]*-log(bgd_prob)*m_scale;
                 double E1 = w[0]*-log(fgd_prob)*m_scale;
                 if (p.m_tri.at<unsigned char>(pt) == cv::GC_BGD) E1 += w[1]*m_scale;
