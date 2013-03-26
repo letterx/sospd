@@ -8,7 +8,7 @@ LD = gcc
 #		make 'SFLAGS=-mno-cygwin'
 
 OPT ?= -g
-CFLAGS =    $(SFLAGS) $(OPT) -fomit-frame-pointer -ffast-math -Wall 
+CFLAGS =    $(SFLAGS) $(OPT) -ffast-math -Wall 
 LDFLAGS =   $(SFLAGS) $(OPT) -lm -Wall
 #CFLAGS =   $(SFLAGS) -pg -Wall
 #LDFLAGS =  $(SFLAGS) -pg -Wall
