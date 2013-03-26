@@ -109,6 +109,10 @@ typedef struct struct_learn_parm {
   int pairwise_feature;
   int contrast_pairwise_feature;
   int submodular_feature;
+  // Scaling factors for various parts of the learning algorithm
+  double constraint_scale;
+  double feature_scale;
+  double loss_scale;
 } STRUCT_LEARN_PARM;
 
 typedef struct struct_test_stats {

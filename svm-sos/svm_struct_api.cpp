@@ -153,12 +153,10 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
      set of constraints. */
     CONSTSET c;
 
-    constexpr double cost_scale = 10000.0;
-
     FG::Constr constrs;
     size_t feature_base = 1; 
     for (auto fgp : data(sm)->m_features) {
-        FG::Constr new_constrs = fgp->CollectConstrs(feature_base);
+        FG::Constr new_constrs = fgp->CollectConstrs(feature_base, sparm->constraint_scale);
         constrs.insert(constrs.end(), new_constrs.begin(), new_constrs.end());
         feature_base += fgp->NumFeatures();
     }
@@ -180,7 +178,7 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
         }
         w.wnum = 0;
         words.push_back(w);
-        c.lhs[i] = create_example(i, 0, sample.n+2+i, cost_scale, create_svector(words.data(), NULL, 1.0));
+        c.lhs[i] = create_example(i, 0, sample.n+2+i, 1.0, create_svector(words.data(), NULL, 1.0));
         c.rhs[i] = rhs;
         i++;
     }
@@ -349,7 +347,7 @@ double      loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
     /* Put your code for different loss functions here. But then
        find_most_violated_constraint_???(x, y, sm) has to return the
        highest scoring label with the largest loss. */
-      return data(y)->Loss(*data(ybar));
+      return data(y)->Loss(*data(ybar), sparm->loss_scale);
   }
 }
 
@@ -425,6 +423,9 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
     std::string version = std::string(INST_VERSION);
     ar & version;
     ar & sparm->loss_function;
+    ar & sparm->constraint_scale;
+    ar & sparm->feature_scale;
+    ar & sparm->loss_scale;
     ar & model->kernel_parm.kernel_type;
     ar & model->kernel_parm.poly_degree;
     ar & model->kernel_parm.rbf_gamma;
@@ -480,6 +481,9 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
     ar & inst_version;
     ASSERT(inst_version == std::string(INST_VERSION));
     ar & sparm->loss_function;
+    ar & sparm->constraint_scale;
+    ar & sparm->feature_scale;
+    ar & sparm->loss_scale;
     ar & model->kernel_parm.kernel_type;
     ar & model->kernel_parm.poly_degree;
     ar & model->kernel_parm.rbf_gamma;

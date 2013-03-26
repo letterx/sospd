@@ -21,6 +21,9 @@ static po::options_description GetLearnOptions() {
         ("pairwise", po::value<int>(), "[0, 1] -> Use pairwise edge features. (default 0)")
         ("contrast-pairwise", po::value<int>(), "[0, 1] -> Use contrast-sensitive pairwise features. (default 0)")
         ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 1)")
+        ("constraint-scale", po::value<double>(), "Scaling factor for constraint violations")
+        ("feature-scale", po::value<double>(), "Scaling factor for Psi")
+        ("loss-scale", po::value<double>(), "Scaling factor for Delta (loss function")
     ;
     return desc;
 }
@@ -42,6 +45,9 @@ void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     sparm->pairwise_feature = 0;
     sparm->contrast_pairwise_feature = 0;
     sparm->submodular_feature = 1;
+    sparm->constraint_scale = 1.0;
+    sparm->feature_scale = 1.0;
+    sparm->loss_scale = 1.0;
 
     po::options_description desc = GetLearnOptions();
     po::variables_map vm;
@@ -72,6 +78,12 @@ void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
         sparm->submodular_feature = vm["submodular"].as<int>();
         std::cout << "Submodular Feature = " << sparm->submodular_feature << "\n";
     }
+    if (vm.count("constraint-scale"))
+        sparm->constraint_scale = vm["constraint-scale"].as<double>();
+    if (vm.count("feature-scale"))
+        sparm->feature_scale = vm["feature-scale"].as<double>();
+    if (vm.count("loss-scale"))
+        sparm->loss_scale = vm["loss-scale"].as<double>();
 
 }
 

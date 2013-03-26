@@ -46,7 +46,7 @@ class LabelData {
         LabelData() = default;
         LabelData(const std::string& name, const cv::Mat& gt);
         bool operator==(const LabelData& l) const;
-        double Loss(const LabelData& l) const;
+        double Loss(const LabelData& l, double scale) const;
 
         std::string m_name;
         cv::Mat m_gt;
@@ -121,7 +121,7 @@ class FeatureGroup {
         virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const = 0;
         virtual void AddToCRF(CRF& c, const PatternData& p, double* w) const = 0;
         typedef std::vector<std::pair<std::vector<std::pair<size_t, double>>, double>> Constr;
-        virtual Constr CollectConstrs(size_t base) const { return Constr(); }
+        virtual Constr CollectConstrs(size_t base, double constraint_scale) const { return Constr(); }
         virtual double MaxViolation(size_t base, double* w) const { return 0.0; }
     private:
         friend class boost::serialization::access;
@@ -139,7 +139,7 @@ class ModelData {
         void InitFeatures(STRUCT_LEARN_PARM* sparm);
         long NumFeatures() const;
         void InitializeCRF(CRF& crf, const PatternData& p) const;
-        void AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l) const;
+        void AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l, double scale) const;
         LabelData* ExtractLabel(const CRF& crf, const PatternData& x) const;
         LabelData* Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         LabelData* FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
