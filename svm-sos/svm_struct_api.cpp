@@ -24,6 +24,7 @@ extern "C" {
 #include "svm_struct_api.h"
 }
 #include "svm_c++.hpp"
+#include "feature.hpp"
 #include "svm_struct_options.hpp"
 #include "image_manip.hpp"
 
@@ -153,10 +154,10 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
      set of constraints. */
     CONSTSET c;
 
-    FG::Constr constrs;
+    FeatureGroup::Constr constrs;
     size_t feature_base = 1; 
     for (auto fgp : data(sm)->m_features) {
-        FG::Constr new_constrs = fgp->CollectConstrs(feature_base, sparm->constraint_scale);
+        FeatureGroup::Constr new_constrs = fgp->CollectConstrs(feature_base, sparm->constraint_scale);
         constrs.insert(constrs.end(), new_constrs.begin(), new_constrs.end());
         feature_base += fgp->NumFeatures();
     }

@@ -17,6 +17,7 @@ extern "C" {
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include "submodular-flow.hpp"
 #include "higher-order-energy.hpp"
@@ -113,23 +114,7 @@ class HigherOrderWrapper {
 };
 
 
-
-template <typename PatternData, typename LabelData>
-class FeatureGroup {
-    public:
-        virtual size_t NumFeatures() const = 0;
-        virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const = 0;
-        virtual void AddToCRF(CRF& c, const PatternData& p, double* w) const = 0;
-        typedef std::vector<std::pair<std::vector<std::pair<size_t, double>>, double>> Constr;
-        virtual Constr CollectConstrs(size_t base, double constraint_scale) const { return Constr(); }
-        virtual double Violation(size_t base, double* w) const { return 0.0; }
-    private:
-        friend class boost::serialization::access;
-        template <typename Archive>
-        void serialize(const Archive& ar, const unsigned int version) { }
-};
-
-typedef FeatureGroup<PatternData, LabelData> FG;
+class FeatureGroup;
 
 class ModelData {
     public:
@@ -143,7 +128,7 @@ class ModelData {
         LabelData* ExtractLabel(const CRF& crf, const PatternData& x) const;
         LabelData* Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         LabelData* FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
-        std::vector<boost::shared_ptr<FG>> m_features;
+        std::vector<boost::shared_ptr<FeatureGroup>> m_features;
     private:
         friend class boost::serialization::access;
         template <class Archive>
@@ -151,6 +136,27 @@ class ModelData {
             ar & m_features;
         }
 };
+
+inline double LabelDiff(unsigned char l1, unsigned char l2) {
+    if (l1 == cv::GC_BGD || l1 == cv::GC_PR_BGD) {
+        if (l2 == cv::GC_FGD || l2 == cv::GC_PR_FGD)
+            return 1.0;
+        else if (l2 == (unsigned char)-1)
+            return 0.5;
+        else 
+            return 0.0;
+    } else if (l1 == cv::GC_FGD || l1 == cv::GC_PR_FGD) {
+        if (l2 == cv::GC_BGD || l2 == cv::GC_PR_BGD)
+            return 1.0;
+        else if (l2 == (unsigned char)-1)
+            return 0.5;
+        else 
+            return 0.0;
+    } else if (l1 == l2)
+        return 0.0;
+    else
+        return 0.5;
+}
 
 
 
