@@ -385,18 +385,18 @@ BOOST_CLASS_EXPORT_GUID(GMMFeature, "GMMFeature")
 ModelData::ModelData() { }
 
 void ModelData::InitFeatures(STRUCT_LEARN_PARM* sparm) {
-    m_features.push_back(boost::shared_ptr<FG>(new GMMFeature));
+    m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(sparm->feature_scale)));
     if (sparm->pairwise_feature) {
         std::cout << "Adding PairwiseFeature\n";
-        m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature));
+        m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature(sparm->feature_scale)));
     }
     if (sparm->contrast_pairwise_feature) {
         std::cout << "Adding ContrastPairwiseFeature\n";
-        m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature));
+        m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature(sparm->feature_scale)));
     }
     if (sparm->submodular_feature) {
         std::cout << "Adding SubmodularFeature\n";
-        m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature));
+        m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature(sparm->feature_scale)));
     }
 }
 
