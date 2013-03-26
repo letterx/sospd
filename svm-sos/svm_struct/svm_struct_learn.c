@@ -118,7 +118,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
 
   /* set initial model and slack variables*/
   svmModel=(MODEL *)my_malloc(sizeof(MODEL));
-  lparm->epsilon_crit=MIN(epsilon, CONSTRAINT_EPS);
+  lparm->epsilon_crit=epsilon;
   if(kparm->kernel_type != LINEAR)
     kcache=kernel_cache_init(MAX(cset.m,1),lparm->kernel_cache_size);
   svm_learn_optimization(cset.lhs,cset.rhs,cset.m,sizePsi+n,
@@ -155,7 +155,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
     new_precision=1;
     if(epsilon == sparm->epsilon)   /* for final precision, find all SV */
       tolerance=0; 
-    lparm->epsilon_crit=MIN(epsilon/2, CONSTRAINT_EPS);  /* svm precision must be higher than eps */
+    lparm->epsilon_crit=epsilon/2;  /* svm precision must be higher than eps */
     if(struct_verbosity>=1)
       printf("Setting current working precision to %g.\n",epsilon);
 
@@ -557,7 +557,7 @@ void svm_learn_struct_joint(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
 
   /* set initial model and slack variables */
   svmModel=(MODEL *)my_malloc(sizeof(MODEL));
-  lparm->epsilon_crit=MIN(epsilon, CONSTRAINT_EPS);
+  lparm->epsilon_crit=epsilon;
   svm_learn_optimization(cset.lhs,cset.rhs,cset.m,sizePsi,
                          lparm,kparm,NULL,svmModel,alpha);
   add_weight_vector_to_linear_model(svmModel);
@@ -778,11 +778,11 @@ void svm_learn_struct_joint(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
         /* set svm precision so that higher than eps of most violated constr */
         if(cached_constraint) {
           epsilon_cached=MIN(epsilon_cached,ceps); 
-          lparm->epsilon_crit=MIN(epsilon_cached/2, CONSTRAINT_EPS); 
+          lparm->epsilon_crit=epsilon_cached/2;
         }
         else {
           epsilon=MIN(epsilon,ceps); /* best eps so far */
-          lparm->epsilon_crit=MIN(epsilon/2, CONSTRAINT_EPS); 
+          lparm->epsilon_crit=epsilon/2;
           epsilon_cached=epsilon;
         }
         free_model(svmModel,0);
