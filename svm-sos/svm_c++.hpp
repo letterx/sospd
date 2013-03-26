@@ -41,6 +41,9 @@ class PatternData {
         cv::Mat m_bgdUnaries;
         cv::Mat m_downW;
         cv::Mat m_rightW;
+        cv::Mat m_fgdDist;
+        cv::Mat m_bgdDist;
+        cv::Mat m_closerMask;
 };
 
 

@@ -8,6 +8,7 @@ extern "C" {
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/access.hpp>
+#include <opencv2/core/core.hpp>
 
 class PatternData;
 class LabelData;
@@ -29,5 +30,6 @@ class FeatureGroup {
 
 std::vector<boost::shared_ptr<FeatureGroup>> GetFeaturesFromParam(STRUCT_LEARN_PARM* sparm);
 void CalcUnaries(PatternData& p);
+void CalcDistances(const cv::Mat& tri, cv::Mat& fgdDist, cv::Mat& bgdDist, cv::Mat& closerMap);
 
 #endif

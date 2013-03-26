@@ -1,5 +1,6 @@
 #include "feature.hpp"
 #include <cmath>
+#include <queue>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 #include "svm_c++.hpp"
@@ -306,6 +307,69 @@ void CalcUnaries(PatternData& p) {
             if (fgd_prob < prob_epsilon) fgd_prob = prob_epsilon;
             p.m_bgdUnaries.at<double>(pt) = -log(bgd_prob);
             p.m_fgdUnaries.at<double>(pt) = -log(fgd_prob);
+        }
+    }
+}
+
+static void BFS(const cv::Mat& tri, std::queue<cv::Point>& queue, cv::Mat& dist) {
+    const std::vector<cv::Point> offsets = {cv::Point(0, 1), cv::Point(1, 0), cv::Point(0, -1), cv::Point(-1, 0)};
+    while (!queue.empty()) {
+        cv::Point p = queue.front();
+        int p_dist = dist.at<int>(p);
+        queue.pop();
+        for (const cv::Point& o : offsets) {
+            cv::Point q = p+o;
+            if (q.x >= 0 && q.x < tri.cols && q.y >= 0 && q.y < tri.rows) {
+                int& q_dist = dist.at<int>(q);
+                if (q_dist > p_dist + 1) {
+                    q_dist = p_dist + 1;
+                    queue.push(q);
+                }
+            }
+        }
+    }
+}
+
+void CalcDistances(const cv::Mat& tri, cv::Mat& fgdDist, cv::Mat& bgdDist, cv::Mat& closerMap) {
+    typedef std::queue<cv::Point> Queue;
+    Queue fgdQueue;
+    Queue bgdQueue;
+    cv::Point p;
+    for (p.y = 0; p.y < tri.rows; p.y++) {
+        for (p.x = 0; p.x < tri.cols; ++p.x) {
+            fgdDist.at<int>(p) = std::numeric_limits<int>::max();
+            bgdDist.at<int>(p) = std::numeric_limits<int>::max();
+            unsigned char label = tri.at<unsigned char>(p);
+            if (label == cv::GC_FGD) {
+                fgdQueue.push(p);
+                fgdDist.at<int>(p) = 0;
+            }
+            if (label == cv::GC_BGD) {
+                bgdQueue.push(p);
+                bgdDist.at<int>(p) = 0;
+            }
+        }
+    }
+
+    ASSERT(!fgdQueue.empty());
+    ASSERT(!bgdQueue.empty());
+    BFS(tri, fgdQueue, fgdDist);
+    BFS(tri, bgdQueue, bgdDist);
+
+    for (p.y = 0; p.y < tri.rows; p.y++) {
+        for (p.x = 0; p.x < tri.cols; ++p.x) {
+            int f_dist = fgdDist.at<int>(p);
+            int b_dist = bgdDist.at<int>(p);
+            unsigned char label = tri.at<unsigned char>(p);
+            if (label == cv::GC_FGD) {
+                closerMap.at<unsigned char>(p) = cv::GC_FGD;
+            } else if (label == cv::GC_BGD) {
+                closerMap.at<unsigned char>(p) = cv::GC_BGD;
+            } else if (b_dist < f_dist) {
+                closerMap.at<unsigned char>(p) = cv::GC_PR_BGD;
+            } else {
+                closerMap.at<unsigned char>(p) = cv::GC_PR_FGD;
+            }
         }
     }
 }
