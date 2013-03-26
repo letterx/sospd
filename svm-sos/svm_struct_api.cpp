@@ -357,11 +357,13 @@ int         finalize_iteration(double ceps, int cached_constraint,
 			       STRUCT_LEARN_PARM *sparm)
 {
   /* This function is called just before the end of each cutting plane iteration. ceps is the amount by which the most violated constraint found in the current iteration was violated. cached_constraint is true if the added constraint was constructed from the cache. If the return value is FALSE, then the algorithm is allowed to terminate. If it is TRUE, the algorithm will keep iterating even if the desired precision sparm->epsilon is already reached. */
+    /*
     std::cout << "w = ";
     for (int i = 1; i <= data(sm)->NumFeatures(); ++i) {
         std::cout << sm->w[i] << ", ";
     }
     std::cout << "\n";
+    */
   return(0);
 }
 
@@ -372,6 +374,11 @@ void        print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm,
   /* This function is called after training and allows final touches to
      the model sm. But primarly it allows computing and printing any
      kind of statistic (e.g. training error) you might want. */
+    std::cout << "Final w = {";
+    for (int i = 1; i <= data(sm)->NumFeatures(); ++i) {
+        std::cout << sm->w[i] << ", ";
+    }
+    std::cout << "}\n";
 }
 
 void        print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm,

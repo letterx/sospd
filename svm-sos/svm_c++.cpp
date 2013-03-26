@@ -171,10 +171,9 @@ class SubmodularFeature : public FG {
         }
         return ret;
     }
-    virtual double MaxViolation(size_t base, double* w) const {
+    virtual double Violation(size_t base, double* w) const {
         size_t num_constraints = 0;
-        double max_violation = -std::numeric_limits<double>::max();
-        double min_violation = std::numeric_limits<double>::max();
+        double total_violation = 0;
         Assgn max_assgn = NumFeatures();
         Assgn all_zeros = 0;
         Assgn all_ones = (1 << clique_size) - 1;
@@ -193,8 +192,7 @@ class SubmodularFeature : public FG {
                             double violation = -w[base+si-1] - w[base+t-1];
                             if (s != all_zeros) violation += w[base+s-1];
                             if (ti != all_ones) violation += w[base+ti-1];
-                            if (violation > max_violation) max_violation = violation;
-                            if (violation < min_violation) min_violation = violation;
+                            if (violation > 0) total_violation += violation;
                         }
                     }
                 }
@@ -202,13 +200,13 @@ class SubmodularFeature : public FG {
         }
         //std::cout << "Num constraints: " << num_constraints <<"\n";
         //std::cout << "Min violation: " << min_violation << "\n";
-        return max_violation;
+        return total_violation;
     }
     private:
     friend class boost::serialization::access;
     template <class Archive>
     void serialize(Archive& ar, const unsigned int version) { 
-        std::cout << "Serializing SubmodularFeature\n";
+        //std::cout << "Serializing SubmodularFeature\n";
         ar & boost::serialization::base_object<FG>(*this);
         ar & m_scale;
     }
@@ -254,7 +252,7 @@ class PairwiseFeature : public FG {
     friend class boost::serialization::access;
     template <class Archive>
     void serialize(Archive& ar, const unsigned int version) { 
-        std::cout << "Serializing PairwiseFeature\n";
+        //std::cout << "Serializing PairwiseFeature\n";
         ar & boost::serialization::base_object<FG>(*this);
         ar & m_scale;
     }
@@ -310,7 +308,7 @@ class ContrastPairwiseFeature : public FG {
     friend class boost::serialization::access;
     template <class Archive>
     void serialize(Archive& ar, const unsigned int version) { 
-        std::cout << "Serializing ContrastPairwiseFeature\n";
+        //std::cout << "Serializing ContrastPairwiseFeature\n";
         ar & boost::serialization::base_object<FG>(*this);
         ar & m_scale;
     }
@@ -373,7 +371,7 @@ class GMMFeature : public FG {
     friend class boost::serialization::access;
     template <class Archive>
     void serialize(Archive& ar, const unsigned int version) {
-        std::cout << "Serializing GMMFeature\n";
+        //std::cout << "Serializing GMMFeature\n";
         ar & boost::serialization::base_object<FG>(*this);
         ar & m_scale;
     }
@@ -459,9 +457,12 @@ LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEA
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
-        double violation = fgp->MaxViolation(feature_base, sm->w);
-        if (violation > 0)
-            std::cout << "\n***\n*** Max Violation: " << violation << "\n***\n";
+        double violation = fgp->Violation(feature_base, sm->w);
+        double w2 = 0;
+        for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
+            w2 += sm->w[i] * sm->w[i];
+        if (violation > 0.0001 * w2)
+            std::cout << "\n***\n*** Max Violation: " << violation << "\t|w|^2: " << w2 << "\n***\n";
         fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }
@@ -481,9 +482,12 @@ LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const Lab
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
-        double violation = fgp->MaxViolation(feature_base, sm->w);
-        if (violation > 0)
-            std::cout << "\n***\n*** Max Violation: " << violation << "\n***\n";
+        double violation = fgp->Violation(feature_base, sm->w);
+        double w2 = 0;
+        for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
+            w2 += sm->w[i] * sm->w[i];
+        if (violation > 0.0001 * w2)
+            std::cout << "\n***\n*** Max Violation: " << violation << "\t|w|^2: " << w2 << "\n***\n";
         fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }

@@ -122,7 +122,7 @@ class FeatureGroup {
         virtual void AddToCRF(CRF& c, const PatternData& p, double* w) const = 0;
         typedef std::vector<std::pair<std::vector<std::pair<size_t, double>>, double>> Constr;
         virtual Constr CollectConstrs(size_t base, double constraint_scale) const { return Constr(); }
-        virtual double MaxViolation(size_t base, double* w) const { return 0.0; }
+        virtual double Violation(size_t base, double* w) const { return 0.0; }
     private:
         friend class boost::serialization::access;
         template <typename Archive>

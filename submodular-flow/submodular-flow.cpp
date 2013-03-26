@@ -227,8 +227,8 @@ void SubmodularFlow::PushRelabel()
     while (PushRelabelNotDone()) {
         PushRelabelStep();
     }
-    std::cout << "Push Relabel: " << m_num_clique_pushes << " clique pushes";
-    std::cout << ", " << m_num_global_relabels << " global relabels\n";
+    //std::cout << "Push Relabel: " << m_num_clique_pushes << " clique pushes";
+    //std::cout << ", " << m_num_global_relabels << " global relabels\n";
 }
 
 REAL SubmodularFlow::ResCap(Arc& arc) {
