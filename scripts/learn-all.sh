@@ -6,20 +6,20 @@ then
     exit 1
 fi
 
-for data_file in $2/data-small*.dat
+for data_file in $2/data*-small.dat
 do
     echo "***"
     echo "*** $(basename $data_file .dat) -- submodular"
     echo "***"
-    time $1 -v 3 -l 1 -c $3 -w 3 --pairwise 0 --gradient 0 --submodular 1 $data_file $2/$(basename $data_file .dat)-submodular.model
+    time $1 -v 3 -l 1 -c $3 -w 2 --pairwise 0 --contrast-pairwise 0 --submodular 1 $data_file $2/$(basename $data_file -small.dat)-submodular.model
 
     echo "***"
     echo "*** $(basename $data_file .dat) -- pairwise"
     echo "***"
-    time $1 -v 3 -l 1 -c $3 -w 3 --pairwise 1 --gradient 0 --submodular 0 --crf 1 $data_file $2/$(basename $data_file .dat)-pairwise.model
+    time $1 -v 3 -l 1 -c $3 -w 2 --pairwise 1 --contrast-pairwise 0 --submodular 0 --crf ho $data_file $2/$(basename $data_file -small.dat)-pairwise.model
 
     echo "***"
     echo "*** $(basename $data_file .dat) -- contrast-pairwise"
     echo "***"
-    time $1 -v 3 -l 1 -c $3 -w 3 --pairwise 1 --gradient 1 --submodular 0 --crf 1 $data_file $2/$(basename $data_file .dat)-contrast.model
+    time $1 -v 3 -l 1 -c $3 -w 2 --pairwise 1 --contrast-pairwise 1 --submodular 0 --crf ho $data_file $2/$(basename $data_file -small.dat)-contrast.model
 done

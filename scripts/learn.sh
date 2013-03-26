@@ -6,10 +6,10 @@ then
     exit 1
 fi
 
-for data_file in $2/data-small*.dat
+for data_file in $2/data*-small.dat
 do
     echo "***"
     echo "*** $(basename $data_file .dat)"
     echo "***"
-    time $1 -v 3 -l 1 -c $3 -w 3 $data_file $2/$(basename $data_file .dat).model
+    time $1 -v 3 -l 1 -c $3 -w 2 $data_file $2/$(basename $data_file -small.dat).model
 done

@@ -6,29 +6,23 @@ then
     exit 1
 fi
 
-for data_file in $2/data-small*.dat
+for data_file in $2/data*-large.dat
 do
     echo "***"
     echo "*** $(basename $data_file .dat) -- submodular"
     echo "***"
-    mkdir -p submodular-results
-    cd submodular-results
-    time $1 -v 3 $data_file $2/$(basename $data_file .dat)-submodular.model $2/$(basename $data_file .dat)-submodular.predictions
-    cd ..
+    mkdir -p $2/submodular-results
+    time $1 -v 3 --output-dir $2/submodular-results/ $data_file $2/$(basename $data_file -large.dat)-submodular.model /dev/null
 
     echo "***"
     echo "*** $(basename $data_file .dat) -- pairwise"
     echo "***"
-    mkdir -p pairwise-results
-    cd pairwise-results
-    time $1 -v 3 --crf 1 $data_file $2/$(basename $data_file .dat)-pairwise.model $2/$(basename $data_file .dat)-pairwise.predictions
-    cd ..
+    mkdir -p $2/pairwise-results
+    time $1 -v 3 --output-dir $2/pairwise-results/ --crf ho $data_file $2/$(basename $data_file -large.dat)-pairwise.model /dev/null
 
     echo "***"
     echo "*** $(basename $data_file .dat) -- contrast-pairwise"
     echo "***"
-    mkdir -p gradient-results
-    cd gradient-results
-    time $1 -v 3 --crf 1 $data_file $2/$(basename $data_file .dat)-contrast.model $2/$(basename $data_file .dat)-gradient.predictions
-    cd ..
+    mkdir -p contrast-results
+    time $1 -v 3 --output-dir $2/contrast-results/ --crf ho $data_file $2/$(basename $data_file -large.dat)-contrast.model /dev/null
 done

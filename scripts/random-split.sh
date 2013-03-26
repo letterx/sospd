@@ -31,8 +31,8 @@ echo "Split size: $split_size"
 
 for i in $(seq 1 $num_splits)
 do
-    small_file=$1/data-small-$i-$num_splits.dat
-    large_file=$1/data-large-$i-$num_splits.dat
+    small_file=$1/data-$i-$num_splits-small.dat
+    large_file=$1/data-$i-$num_splits-large.dat
 
     cat $1/header.txt > $small_file
     cat $1/header.txt > $large_file
