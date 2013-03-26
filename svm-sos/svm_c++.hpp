@@ -28,7 +28,7 @@ inline REAL doubleToREAL(double d) { return (REAL)(d * 500000.0); }
 
 class PatternData {
     public:
-        PatternData(const std::string& name, const cv::Mat& im, const cv::Mat& tri);
+        PatternData(const std::string& name, const cv::Mat& im, const cv::Mat& tri, STRUCT_LEARN_PARM* sparm);
         std::string m_name;
         cv::Mat m_image;
         cv::Mat m_tri;

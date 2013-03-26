@@ -107,7 +107,7 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
           cv::Mat trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR);
           cv::Mat gt = cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
           ValidateExample(image, trimap, gt);
-          patterns.push_back(new PatternData(line, image, trimap));
+          patterns.push_back(new PatternData(line, image, trimap, sparm));
           labels.push_back(new LabelData(line, gt));
       }
   }

@@ -5,7 +5,7 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 
-PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv::Mat& trimap) 
+PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv::Mat& trimap, STRUCT_LEARN_PARM* sparm) 
     : m_name(name), 
     m_image(image),
     m_bgdModel(),
@@ -15,7 +15,12 @@ PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv
 {
     ConvertToMask(trimap, m_tri);
 
-    learnGMMs(m_image, m_tri, m_bgdGMM, m_fgdGMM);
+    cv::Mat grabcutResult;
+    m_tri.copyTo(grabcutResult);
+    if (sparm->grabcut_unary)
+        cv::grabCut(m_image, grabcutResult, cv::Rect(), m_bgdModel, m_fgdModel, sparm->grabcut_unary, cv::GC_INIT_WITH_MASK);
+
+    learnGMMs(m_image, grabcutResult, m_bgdGMM, m_fgdGMM);
 
     m_fgdUnaries.create(m_image.rows, m_image.cols, CV_64FC1);
     m_bgdUnaries.create(m_image.rows, m_image.cols, CV_64FC1);
