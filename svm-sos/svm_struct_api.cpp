@@ -434,6 +434,7 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
     ar & sparm->constraint_scale;
     ar & sparm->feature_scale;
     ar & sparm->loss_scale;
+    ar & sparm->grabcut_unary;
     ar & model->kernel_parm.kernel_type;
     ar & model->kernel_parm.poly_degree;
     ar & model->kernel_parm.rbf_gamma;
@@ -492,6 +493,7 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
     ar & sparm->constraint_scale;
     ar & sparm->feature_scale;
     ar & sparm->loss_scale;
+    ar & sparm->grabcut_unary;
     ar & model->kernel_parm.kernel_type;
     ar & model->kernel_parm.poly_degree;
     ar & model->kernel_parm.rbf_gamma;

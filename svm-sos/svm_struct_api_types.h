@@ -106,6 +106,7 @@ typedef struct struct_learn_parm {
   int crf; // 0 for SubmodularFlow, 1 for HigherOrder
   char output_dir[256]; // Directory to write predicted values to
   // Flags for which features to use
+  int grabcut_unary;
   int pairwise_feature;
   int contrast_pairwise_feature;
   int submodular_feature;

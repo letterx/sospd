@@ -18,6 +18,7 @@ static po::options_description GetCommonOptions() {
 static po::options_description GetLearnOptions() {
     po::options_description desc = GetCommonOptions();
     desc.add_options()
+        ("grabcut-unary", po::value<int>(), "[0..] Use n iterations of grabcut to initialize GMM unary features (default 0)")
         ("pairwise", po::value<int>(), "[0, 1] -> Use pairwise edge features. (default 0)")
         ("contrast-pairwise", po::value<int>(), "[0, 1] -> Use contrast-sensitive pairwise features. (default 0)")
         ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 1)")
@@ -42,6 +43,7 @@ static po::options_description GetClassifyOptions() {
 void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     sparm->grabcut_classify = 0;
     sparm->crf = 0;
+    sparm->grabcut_unary = 0;
     sparm->pairwise_feature = 0;
     sparm->contrast_pairwise_feature = 0;
     sparm->submodular_feature = 1;
@@ -66,6 +68,8 @@ void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
             exit(-1);
         }
     }
+    if (vm.count("grabcut-unary")) 
+        sparm->grabcut_unary = vm["grabcut-unary"].as<int>();
     if (vm.count("pairwise")) {
         sparm->pairwise_feature = vm["pairwise"].as<int>();
         std::cout << "Pairwise Feature = " << sparm->pairwise_feature << "\n";
@@ -95,6 +99,7 @@ void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
     sparm->show_images = false;
     sparm->grabcut_classify = 0;
     sparm->crf = 0;
+    sparm->grabcut_unary = 0;
 
     po::options_description desc = GetClassifyOptions();
     po::variables_map vm;
