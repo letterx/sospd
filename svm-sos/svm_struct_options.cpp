@@ -45,9 +45,9 @@ void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     sparm->pairwise_feature = 0;
     sparm->contrast_pairwise_feature = 0;
     sparm->submodular_feature = 1;
-    sparm->constraint_scale = 1.0;
-    sparm->feature_scale = 1.0;
-    sparm->loss_scale = 1.0;
+    sparm->constraint_scale = 100000.0;
+    sparm->feature_scale = 0.01;
+    sparm->loss_scale = 1000.0;
 
     po::options_description desc = GetLearnOptions();
     po::variables_map vm;
