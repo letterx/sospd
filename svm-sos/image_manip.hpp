@@ -248,9 +248,37 @@ inline void ConvertGreyToMask(const cv::Mat& gt, cv::Mat& out) {
     }
 }
 
+inline cv::Mat MaskToColor(const cv::Mat& mask, const cv::Mat& image) {
+    cv::Mat gray_image;
+    cv::cvtColor(image, gray_image, CV_BGR2GRAY);
+    ASSERT(image.depth() == CV_8U);
+    ASSERT(gray_image.depth() == CV_8U);
+    cv::Mat out_image(gray_image.rows, gray_image.cols, CV_64FC3);
+    cv::Point p;
+    for (p.y = 0; p.y < gray_image.rows; ++p.y) {
+        for (p.x = 0; p.x < gray_image.cols; ++p.x) {
+            double intensity = ((double)gray_image.at<unsigned char>(p))/255.0;
+            unsigned char label = mask.at<unsigned char>(p);
+            cv::Vec3d color;
+            if (label == cv::GC_BGD || label == cv::GC_PR_BGD) {
+                color = cv::Vec3d(1.0, 0.0, 0.0)*intensity;
+            } else if (label == cv::GC_FGD || label == cv::GC_PR_FGD) {
+                color = cv::Vec3d(0.0, 0.0, 1.0)*intensity;
+            } else {
+                ASSERT(false);
+            }
+            out_image.at<cv::Vec3d>(p) = color;
+        }
+    }
+    return out_image;
+}
+
 inline void ShowImage(const cv::Mat& im) {
     cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
-    cv::imshow("Display window", im*(255/3));
+    if (im.depth() == CV_8U)
+        cv::imshow("Display window", im*(255/3));
+    else
+        cv::imshow("Display window", im);
     cv::waitKey(0);
 }
 

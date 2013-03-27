@@ -112,6 +112,7 @@ class HigherOrderWrapper {
             ho.ToQuadratic(qr);
             qr.MergeParallelEdges();
             qr.Solve();
+            qr.ComputeWeakPersistencies();
         }
     private:
         HO ho;

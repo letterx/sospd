@@ -406,12 +406,17 @@ void        eval_prediction(long exnum, EXAMPLE ex, LABEL ypred,
     }
 
     const std::string& name = data(ypred)->m_name;
+    cv::Mat color_image = MaskToColor(data(ypred)->m_gt, data(ex.x)->m_image);
     if (sparm->show_images)
-        ShowImage(data(ypred)->m_gt);
+        ShowImage(color_image);
 
     if (sparm->output_dir[0] != 0) {
         std::string out_filename = std::string(sparm->output_dir) + "/" + name;
         cv::imwrite(out_filename, (data(ypred)->m_gt)*(255/3));
+        out_filename = std::string(sparm->output_dir) + "/fancy-" + name;
+        cv::Mat write_image;
+        color_image.convertTo(write_image, CV_8U, 255.0);
+        cv::imwrite(out_filename, write_image);
     }
 }
 
