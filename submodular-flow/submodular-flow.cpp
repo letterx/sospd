@@ -197,7 +197,7 @@ void SubmodularFlow::PushRelabelStep()
         NodeId i = *u_iter;
         remove_from_active_list(i);
         Discharge(i);
-        if (work_since_last_update * 1 > 6*(m_num_nodes + 2) + num_edges) {
+        if (work_since_last_update * 1 > 100*(m_num_nodes + 2) + num_edges) {
             SubmodularFlow::GlobalRelabel();
             work_since_last_update = 0;
         }
