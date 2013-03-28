@@ -312,13 +312,14 @@ void SubmodularFlow::Push(Arc& arc) {
 void SubmodularFlow::Relabel(NodeId i) {
     current_arc[i] = m_arc_list[i].begin();
     work_since_last_update += 12; // constant beta in boost
-    dis[i] = std::numeric_limits<int>::max();
+    int new_distance = std::numeric_limits<int>::max();
     for(Arc& arc : m_arc_list[i]) {
         ++work_since_last_update;
-        if (dis[arc.j] < dis[i] - 1 && NonzeroCap(arc)) {
-            dis[i] = dis[arc.j] + 1;
+        if (dis[arc.j] < new_distance && NonzeroCap(arc)) {
+            new_distance = dis[arc.j];
         }
     }
+    dis[i] = new_distance+1;
     ASSERT(dis[i] < std::numeric_limits<int>::max());
     if (dis[i] >= dis[s])
         excess[i] = 0;
