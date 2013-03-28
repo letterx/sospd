@@ -183,6 +183,8 @@ void TestNonnegativeCapacities(const SubmodularFlow& sf) {
 
 void TestExcess(const SubmodularFlow& sf) {
     const auto& excess = sf.GetExcess();
+    const auto& dis = sf.GetDis();
+    const auto s = sf.GetS();
     const auto& phi_si = sf.GetPhi_si();
     const auto& phi_it = sf.GetPhi_it();
     const auto& cliques = sf.GetCliques();
@@ -197,7 +199,10 @@ void TestExcess(const SubmodularFlow& sf) {
             expected_excess -= c.AlphaCi()[clique_index];
         }
         BOOST_REQUIRE_GE(excess[i], 0);
-        BOOST_REQUIRE_EQUAL(expected_excess, excess[i]);
+        if (dis[i] < dis[s])
+            BOOST_REQUIRE_EQUAL(expected_excess, excess[i]);
+        else 
+            BOOST_REQUIRE_EQUAL(excess[i], 0);
     }
 }
 

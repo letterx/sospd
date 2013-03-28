@@ -320,6 +320,8 @@ void SubmodularFlow::Relabel(NodeId i) {
         }
     }
     ASSERT(dis[i] < std::numeric_limits<int>::max());
+    if (dis[i] >= dis[s])
+        excess[i] = 0;
     // if (dis[i] < dis[s])
     // Adding all active vertices back for now.
 }
@@ -328,8 +330,15 @@ void SubmodularFlow::Relabel(NodeId i) {
 
 void SubmodularFlow::GlobalRelabel() {
     m_num_global_relabels++;
+    // Reset layers and max_active/min_active
+    max_active = 0; min_active = m_num_nodes + 2;
+    for (auto& l : layers)
+        l.active_vertices.clear();
+
+    // Initialize all nodes to unreachable from t
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         dis[i] = m_num_nodes + 3;
+        layer_list_ptr[i] = list_iterator();
     }
     dis[t] = 0;
     // curr is the current level of nodes to be visited;
@@ -355,12 +364,18 @@ void SubmodularFlow::GlobalRelabel() {
                         && dis[arc.i] == m_num_nodes + 3) {
                     next.push(arc.i);
                     dis[arc.i] = level;
+                    if (excess[arc.i] > 0)
+                        add_to_active_list(arc.i, layers[dis[arc.i]]);
                 }
                 std::swap(arc.i, arc.j);
                 std::swap(arc.i_idx, arc.j_idx);
             }
         }
         ++level;
+    }
+    for (NodeId i = 0; i < m_num_nodes; ++i) {
+        if (dis[i] >= dis[s])
+            excess[i] = 0;
     }
 }
 
