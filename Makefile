@@ -12,7 +12,8 @@ LIB_DIR = ./lib
 TEST_SRCS = $(wildcard $(TEST_DIR)/*.cpp)
 TEST_OBJS = $(TEST_SRCS:.cpp=.o)
 CORE_SRCS = submodular-flow/submodular-flow.cpp \
-			submodular-flow/gen-random.cpp
+			submodular-flow/gen-random.cpp \
+			submodular-flow/alpha-expansion.cpp
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
 QPBO_DIR = ./higher-order-energy/qpbo
