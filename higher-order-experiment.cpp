@@ -12,8 +12,8 @@ int main(int argc, char **argv) {
     typedef std::chrono::system_clock::time_point TimePt;
     typedef std::chrono::duration<double> Duration;
 
-    const NodeId n = 10000;
-    const size_t m = 10000;
+    const NodeId n = 20000;
+    const size_t m = 20000;
     const size_t k = 4;
 
     TimePt ho_start = std::chrono::system_clock::now();

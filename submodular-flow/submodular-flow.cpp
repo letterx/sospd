@@ -348,15 +348,16 @@ void SubmodularFlow::GlobalRelabel() {
             NodeId u = curr.front();
             curr.pop();
             // Not iterating by reference, since we need to get reverse arc
-            for (Arc arc : m_arc_list[u]) {
-                arc.i = arc.j;
-                arc.j = u;
+            for (Arc& arc : m_arc_list[u]) {
+                std::swap(arc.i, arc.j);
                 std::swap(arc.i_idx, arc.j_idx);
                 if (NonzeroCap(arc) && arc.i != s && arc.i != t
                         && dis[arc.i] == m_num_nodes + 3) {
                     next.push(arc.i);
                     dis[arc.i] = level;
                 }
+                std::swap(arc.i, arc.j);
+                std::swap(arc.i_idx, arc.j_idx);
             }
         }
         ++level;
@@ -528,8 +529,8 @@ void EnergyTableClique::ComputeMinTightSets() {
     for (Assignment assgn = bound-1; assgn >= 1; --assgn) {
         if (m_alpha_energy[assgn] == 0) {
             for (size_t i = 0; i < n; ++i) {
-                ASSERT(m_alpha_energy[m_min_tight_set[i] & assgn] == 0);
-                ASSERT(m_alpha_energy[m_min_tight_set[i] | assgn] == 0);
+                //ASSERT(m_alpha_energy[m_min_tight_set[i] & assgn] == 0);
+                //ASSERT(m_alpha_energy[m_min_tight_set[i] | assgn] == 0);
                 if ((assgn & (1 << i)) != 0)
                     m_min_tight_set[i] = assgn;
             }
