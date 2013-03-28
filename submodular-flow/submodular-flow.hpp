@@ -7,12 +7,14 @@
 
 typedef int64_t REAL;
 
+class EnergyTableClique;
+
 class SubmodularFlow {
     public:
         typedef int NodeId;
         typedef int CliqueId;
         struct Clique;
-        typedef std::shared_ptr<Clique> CliquePtr;
+        typedef std::shared_ptr<EnergyTableClique> CliquePtr;
         typedef std::vector<CliquePtr> CliqueVec;
         struct arc {
 	        NodeId i, j;
@@ -75,6 +77,7 @@ class SubmodularFlow {
 
             // Returns the energy of the given labeling for this clique function
             virtual REAL ComputeEnergy(const std::vector<int>& labels) const = 0;
+            /*
             // Returns the exchange capacity between nodes u and v
             virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const = 0;
             virtual bool NonzeroCapacity(size_t u_idx, size_t v_idx) const = 0;
@@ -84,6 +87,7 @@ class SubmodularFlow {
             virtual void NormalizeEnergy(SubmodularFlow& sf) = 0;
             // Push delta units of flow from u to v
             virtual void Push(size_t u_idx, size_t v_idx, REAL delta) = 0;
+            */
 
             const std::vector<NodeId>& Nodes() const { return m_nodes; }
             size_t Size() const { return m_nodes.size(); }
@@ -213,11 +217,13 @@ class EnergyTableClique : public SubmodularFlow::Clique {
             ASSERT(nodes.size() <= 31); 
         }
 
+        // Virtual overrides
         virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
-        virtual REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
-        virtual bool NonzeroCapacity(size_t u_idx, size_t v_idx) const;
-        virtual void NormalizeEnergy(SubmodularFlow& sf);
-        virtual void Push(size_t u_idx, size_t v_idx, REAL delta);
+        REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
+        bool NonzeroCapacity(size_t u_idx, size_t v_idx) const;
+        void NormalizeEnergy(SubmodularFlow& sf);
+        void Push(size_t u_idx, size_t v_idx, REAL delta);
+
         void ComputeMinTightSets();
         void EnforceSubmodularity();
 

@@ -294,7 +294,7 @@ void SubmodularFlow::Push(Arc& arc) {
         m_num_clique_pushes++;
         delta = std::min(excess[arc.i], ResCap(arc));
         //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
-        Clique& c = *m_cliques[arc.c];
+        auto& c = *m_cliques[arc.c];
         c.Push(arc.i_idx, arc.j_idx, delta);
         c.Time()++;
     }
