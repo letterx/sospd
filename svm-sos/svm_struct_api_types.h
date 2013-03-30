@@ -107,6 +107,7 @@ typedef struct struct_learn_parm {
   char output_dir[256]; // Directory to write predicted values to
   // Flags for which features to use
   int grabcut_unary;
+  int distance_unary;
   int pairwise_feature;
   int contrast_pairwise_feature;
   int submodular_feature;

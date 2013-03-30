@@ -293,6 +293,61 @@ class GMMFeature : public FeatureGroup {
 };
 
 BOOST_CLASS_EXPORT_GUID(GMMFeature, "GMMFeature")
+
+class DistanceFeature : public FeatureGroup {
+    public:
+    double m_scale;
+    DistanceFeature() : m_scale(1.0) { }
+    explicit DistanceFeature(double scale) : m_scale(0.1*scale) { }
+
+    static constexpr int numBins = 10;
+
+    virtual size_t NumFeatures() const { return numBins*numBins*2; }
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+        std::vector<FVAL> psi(NumFeatures(), 0);
+        cv::Point pt;
+        for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
+            for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
+                unsigned char label = l.m_gt.at<unsigned char>(pt);
+                int feature = p.m_dist_feature.at<int>(pt);
+                psi[feature] += m_scale*LabelDiff(label, cv::GC_FGD);
+                psi[feature+numBins*numBins] += m_scale*LabelDiff(label, cv::GC_BGD);
+            }
+        }
+        ImageCIterate(p.m_tri, l.m_gt,
+            [&](const unsigned char& tri_label, const unsigned char& label) {
+                if (tri_label == cv::GC_BGD)
+                    psi[1] += m_scale*LabelDiff(label, cv::GC_BGD);
+                if (tri_label == cv::GC_FGD)
+                    psi[2] += m_scale*LabelDiff(label, cv::GC_FGD);
+            });
+        for (auto& v : psi)
+            v = -v;
+        return psi;
+    }
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
+        cv::Point pt;
+        for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
+            for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
+                CRF::NodeId id = pt.y * p.m_image.cols + pt.x;
+                int feature = p.m_dist_feature.at<int>(pt);
+                double E0 = m_scale*w[feature];
+                double E1 = m_scale*w[feature+numBins*numBins];
+                crf.AddUnaryTerm(id, doubleToREAL(E0), doubleToREAL(E1));
+            }
+        }
+    }
+    private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version) {
+        //std::cout << "Serializing DistanceFeature\n";
+        ar & boost::serialization::base_object<FeatureGroup>(*this);
+        ar & m_scale;
+    }
+};
+
+BOOST_CLASS_EXPORT_GUID(DistanceFeature, "DistanceFeature")
                 
 void CalcUnaries(PatternData& p) {
     static constexpr double prob_epsilon = 0.00001;
@@ -330,7 +385,20 @@ static void BFS(const cv::Mat& tri, std::queue<cv::Point>& queue, cv::Mat& dist)
     }
 }
 
-void CalcDistances(const cv::Mat& tri, cv::Mat& fgdDist, cv::Mat& bgdDist, cv::Mat& closerMap) {
+uint32_t CalcFeature(int fgdDist, int bgdDist, int fgdBins, int bgdBins) {
+    int i, j;
+    // Quadratic binning for distance feature
+    for (i = 0; i < fgdBins; ++i) {
+        if (fgdDist <= i*i) break;
+    }
+    for (j = 0; j < bgdBins; ++j) {
+        if (bgdDist <= j*j) break;
+    }
+    return i*bgdBins + j;
+}
+
+
+void CalcDistances(const cv::Mat& tri, cv::Mat& fgdDist, cv::Mat& bgdDist, cv::Mat& distFeature) {
     typedef std::queue<cv::Point> Queue;
     Queue fgdQueue;
     Queue bgdQueue;
@@ -360,16 +428,7 @@ void CalcDistances(const cv::Mat& tri, cv::Mat& fgdDist, cv::Mat& bgdDist, cv::M
         for (p.x = 0; p.x < tri.cols; ++p.x) {
             int f_dist = fgdDist.at<int>(p);
             int b_dist = bgdDist.at<int>(p);
-            unsigned char label = tri.at<unsigned char>(p);
-            if (label == cv::GC_FGD) {
-                closerMap.at<unsigned char>(p) = cv::GC_FGD;
-            } else if (label == cv::GC_BGD) {
-                closerMap.at<unsigned char>(p) = cv::GC_BGD;
-            } else if (b_dist < f_dist) {
-                closerMap.at<unsigned char>(p) = cv::GC_PR_BGD;
-            } else {
-                closerMap.at<unsigned char>(p) = cv::GC_PR_FGD;
-            }
+            distFeature.at<uint32_t>(p) = CalcFeature(f_dist, b_dist, 10, 10);
         }
     }
 }
@@ -377,6 +436,8 @@ void CalcDistances(const cv::Mat& tri, cv::Mat& fgdDist, cv::Mat& bgdDist, cv::M
 std::vector<boost::shared_ptr<FeatureGroup>> GetFeaturesFromParam(STRUCT_LEARN_PARM* sparm) {
     std::vector<boost::shared_ptr<FeatureGroup>> features;
     features.push_back(boost::shared_ptr<FeatureGroup>(new GMMFeature(sparm->feature_scale)));
+    if (sparm->distance_unary)
+        features.push_back(boost::shared_ptr<FeatureGroup>(new DistanceFeature(sparm->feature_scale)));
     if (sparm->pairwise_feature) {
         std::cout << "Adding PairwiseFeature\n";
         features.push_back(boost::shared_ptr<FeatureGroup>(new PairwiseFeature(sparm->feature_scale)));

@@ -17,11 +17,11 @@ PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv
 
     m_fgdDist.create(m_image.rows, m_image.cols, CV_32SC1);
     m_bgdDist.create(m_image.rows, m_image.cols, CV_32SC1);
-    m_closerMask.create(m_image.rows, m_image.cols, CV_8UC1);
-    CalcDistances(m_tri, m_fgdDist, m_bgdDist, m_closerMask);
+    m_dist_feature.create(m_image.rows, m_image.cols, CV_32SC1);
+    CalcDistances(m_tri, m_fgdDist, m_bgdDist, m_dist_feature);
 
     cv::Mat grabcutResult;
-    m_closerMask.copyTo(grabcutResult);
+    m_tri.copyTo(grabcutResult);
     if (sparm->grabcut_unary)
         cv::grabCut(m_image, grabcutResult, cv::Rect(), m_bgdModel, m_fgdModel, sparm->grabcut_unary, cv::GC_INIT_WITH_MASK);
 
