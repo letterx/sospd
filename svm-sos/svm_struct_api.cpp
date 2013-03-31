@@ -29,20 +29,16 @@ extern "C" {
 #include "svm_struct_options.hpp"
 #include "stats.hpp"
 
-PatternData* data(PATTERN& p) { return (PatternData*)p.data; }
 PATTERN MakePattern(PatternData* d) {
     PATTERN p;
     p.data = d;
     return p;
 }
-LabelData* data(LABEL& l) { return (LabelData*)l.data; }
 LABEL MakeLabel(LabelData* d) {
     LABEL l;
     l.data = d;
     return l;
 }
-ModelData* data(STRUCTMODEL& sm) { return (ModelData*)sm.data; }
-ModelData* data(STRUCTMODEL* sm) { return (ModelData*)sm->data; }
 
 void        svm_struct_learn_api_init(int argc, char* argv[])
 {
@@ -138,11 +134,11 @@ void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
      weights that can be learned. Later, the weight vector w will
      contain the learned weights for the model. */
     sm->data = new ModelData;
-    data(sm)->InitFeatures(sparm);
+    sm->data->InitFeatures(sparm);
 
     sm->test_stats = new TestStats;
 
-    sm->sizePsi=data(sm)->NumFeatures(); /* replace by appropriate number of features */
+    sm->sizePsi=sm->data->NumFeatures(); /* replace by appropriate number of features */
 }
 
 CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm, 
@@ -160,7 +156,7 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
 
     FeatureGroup::Constr constrs;
     size_t feature_base = 1; 
-    for (auto fgp : data(sm)->m_features) {
+    for (auto fgp : sm->data->m_features) {
         FeatureGroup::Constr new_constrs = fgp->CollectConstrs(feature_base, sparm->constraint_scale);
         constrs.insert(constrs.end(), new_constrs.begin(), new_constrs.end());
         feature_base += fgp->NumFeatures();
@@ -207,13 +203,13 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
 
     if (sparm->grabcut_classify) {
         y.data = new LabelData;
-        data(y)->m_name = data(x)->m_name;
-        data(x)->m_tri.copyTo(data(y)->m_gt);
+        y.data->m_name = x.data->m_name;
+        x.data->m_tri.copyTo(y.data->m_gt);
         cv::Mat bgdModel;
         cv::Mat fgdModel;
-        cv::grabCut(data(x)->m_image, data(y)->m_gt, cv::Rect(), bgdModel, fgdModel, sparm->grabcut_classify);
+        cv::grabCut(x.data->m_image, y.data->m_gt, cv::Rect(), bgdModel, fgdModel, sparm->grabcut_classify);
     } else {
-        y.data = data(sm)->Classify(*data(x), sm, sparm);
+        y.data = sm->data->Classify(*x.data, sm, sparm);
     }
 
     sm->test_stats->StopTimer();
@@ -283,7 +279,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     LABEL ybar;
 
     /* insert your code for computing the label ybar here */
-    ybar.data = data(sm)->FindMostViolatedConstraint(*data(x), *data(y), sm, sparm);
+    ybar.data = sm->data->FindMostViolatedConstraint(*x.data, *y.data, sm, sparm);
 
     return(ybar);
 }
@@ -327,8 +323,8 @@ SVECTOR     *psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
     std::vector<WORD> words;
     FNUM fnum = 1;
     WORD w;
-    for (auto fgp : data(sm)->m_features) {
-        std::vector<FVAL> values = fgp->Psi(*data(x), *data(y));
+    for (auto fgp : sm->data->m_features) {
+        std::vector<FVAL> values = fgp->Psi(*x.data, *y.data);
         ASSERT(values.size() == fgp->NumFeatures());
         for (FVAL v : values) {
             w.wnum = fnum++;
@@ -350,13 +346,13 @@ double      loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
      y==ybar has to be zero. sparm->loss_function is set with the -l option. */
   if(sparm->loss_function == 0) { /* type 0 loss: 0/1 loss */
                                   /* return 0, if y==ybar. return 1 else */
-      return 1.0 - (double)(*data(y) == *data(ybar));
+      return 1.0 - (double)(*y.data == *ybar.data);
   }
   else {
     /* Put your code for different loss functions here. But then
        find_most_violated_constraint_???(x, y, sm) has to return the
        highest scoring label with the largest loss. */
-      return data(y)->Loss(*data(ybar), sparm->loss_scale);
+      return y.data->Loss(*ybar.data, sparm->loss_scale);
   }
 }
 
@@ -368,7 +364,7 @@ int         finalize_iteration(double ceps, int cached_constraint,
   /* This function is called just before the end of each cutting plane iteration. ceps is the amount by which the most violated constraint found in the current iteration was violated. cached_constraint is true if the added constraint was constructed from the cache. If the return value is FALSE, then the algorithm is allowed to terminate. If it is TRUE, the algorithm will keep iterating even if the desired precision sparm->epsilon is already reached. */
     /*
     std::cout << "w = ";
-    for (int i = 1; i <= data(sm)->NumFeatures(); ++i) {
+    for (int i = 1; i <= sm->data->NumFeatures(); ++i) {
         std::cout << sm->w[i] << ", ";
     }
     std::cout << "\n";
@@ -384,7 +380,7 @@ void        print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm,
      the model sm. But primarly it allows computing and printing any
      kind of statistic (e.g. training error) you might want. */
     std::cout << "Final w = {";
-    for (int i = 1; i <= data(sm)->NumFeatures(); ++i) {
+    for (int i = 1; i <= sm->data->NumFeatures(); ++i) {
         std::cout << sm->w[i] << ", ";
     }
     std::cout << "}\n";
@@ -415,17 +411,17 @@ void        eval_prediction(long exnum, EXAMPLE ex, LABEL ypred,
               called. So initialize the teststats */
     }
 
-    double loss = 100.0* data(ex.y)->Loss(*data(ypred), sparm->loss_scale) / sparm->loss_scale;
+    double loss = 100.0* ex.y.data->Loss(*ypred.data, sparm->loss_scale) / sparm->loss_scale;
     sm->test_stats->Add(TestStats::ImageStats(loss, sm->test_stats->LastTime()));
 
-    const std::string& name = data(ypred)->m_name;
-    cv::Mat color_image = MaskToColor(data(ypred)->m_gt, data(ex.x)->m_image);
+    const std::string& name = ypred.data->m_name;
+    cv::Mat color_image = MaskToColor(ypred.data->m_gt, ex.x.data->m_image);
     if (sparm->show_images)
         ShowImage(color_image);
 
     if (sparm->output_dir[0] != 0) {
         std::string out_filename = std::string(sparm->output_dir) + "/" + name;
-        cv::imwrite(out_filename, (data(ypred)->m_gt)*(255/3));
+        cv::imwrite(out_filename, (ypred.data->m_gt)*(255/3));
         out_filename = std::string(sparm->output_dir) + "/fancy-" + name;
         cv::Mat write_image;
         color_image.convertTo(write_image, CV_8U, 255.0);
@@ -470,7 +466,7 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
     ar & sv_num;
     ar & model->b;
 
-    ar & *data(sm);
+    ar & *sm->data;
 
     for(i=1;i<model->sv_num;i++) {
     for(v=model->supvec[i]->fvec;v;v=v->next) {
@@ -535,7 +531,7 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 
 
     sm.data = new ModelData;
-    ar & *data(sm);
+    ar & *sm.data;
 
     for(int i = 1; i < model->sv_num; i++) {
         long kernel_id;
@@ -566,11 +562,11 @@ void        write_label(FILE* fp, LABEL y)
 } 
 
 void        free_pattern(PATTERN x) {
-    delete data(x);
+    delete x.data;
 }
 
 void        free_label(LABEL y) {
-    delete data(y);
+    delete y.data;
 }
 
 void        free_struct_model(STRUCTMODEL sm) 
@@ -579,7 +575,7 @@ void        free_struct_model(STRUCTMODEL sm)
   /* if(sm.w) free(sm.w); */ /* this is free'd in free_model */
   if(sm.svm_model) free_model(sm.svm_model,1);
   /* add free calls for user defined data here */
-  delete data(sm);
+  delete sm.data;
   delete sm.test_stats;
 }
 
