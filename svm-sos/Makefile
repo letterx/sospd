@@ -67,7 +67,7 @@ gmm.o: gmm.cpp gmm.hpp
 svm_struct_options.o: svm_struct_options.cpp svm_struct_options.hpp svm_struct_api_types.h
 	$(CXX) -c $(CFLAGS) svm_struct_options.cpp -o svm_struct_options.o
 
-feature.o: feature.hpp svm_c++.hpp image_manip.hpp
+feature.o: feature.hpp feature.cpp svm_c++.hpp image_manip.hpp
 	$(CXX) -c $(CFLAGS) feature.cpp -o feature.o
 
 lib:

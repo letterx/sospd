@@ -388,10 +388,10 @@ static void BFS(const cv::Mat& tri, std::queue<cv::Point>& queue, cv::Mat& dist)
 uint32_t CalcFeature(int fgdDist, int bgdDist, int fgdBins, int bgdBins) {
     int i, j;
     // Quadratic binning for distance feature
-    for (i = 0; i < fgdBins; ++i) {
+    for (i = 0; i < fgdBins-1; ++i) {
         if (fgdDist <= i*i) break;
     }
-    for (j = 0; j < bgdBins; ++j) {
+    for (j = 0; j < bgdBins-1; ++j) {
         if (bgdDist <= j*j) break;
     }
     return i*bgdBins + j;
