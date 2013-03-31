@@ -10,15 +10,32 @@ LD = $(CXX)
 
 OPT ?= -g
 CFLAGS =   $(SFLAGS) $(OPT) -ffast-math -Wall -std=c++11 -I../submodular-flow/ -I../higher-order-energy/qpbo/ -I../higher-order-energy/include/
-LDFLAGS =  $(SFLAGS) $(OPT) -lm -Wall -lopencv_core -lopencv_highgui -lopencv_imgproc -L../lib -lsubmodular-flow -lboost_serialization -lboost_program_options
+LDFLAGS =  $(SFLAGS) $(OPT)  -L../lib 
+LIBS = -lm -Wall -lopencv_core -lopencv_highgui -lopencv_imgproc -lsubmodular-flow -lboost_serialization -lboost_program_options
 #CFLAGS =  $(SFLAGS) -pg -Wall
 #LDFLAGS = $(SFLAGS) -pg -lm -Wall 
 
+SVM_STRUCT_OBJS = svm_struct/svm_struct_learn.o \
+			      svm_struct/svm_struct_common.o
+SVM_LIGHT_OBJS = svm_light/svm_hideo.o \
+				 svm_light/svm_learn.o \
+				 svm_light/svm_common.o
+SRCS = svm_struct_learn_custom.cpp \
+	   svm_struct_api.cpp \
+	   svm_c++.cpp \
+	   gmm.cpp \
+	   svm_struct_options.cpp \
+	   feature.cpp
+OBJS = $(SRCS:.cpp=.o)
+LEARN_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_main.o
+CLASSIFY_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_classify.o
+
+.PHONY:
 all: svm_sos_learn svm_sos_classify
 
 .PHONY: clean
 clean: svm_light_clean svm_struct_clean
-	rm -f *.o *.tcov *.d core gmon.out *.stackdump 
+	rm -f *.o *.tcov *.d core gmon.out *.stackdump *.P
 	cd ..; make clean
 
 #-----------------------#
@@ -45,12 +62,11 @@ svm_struct_clean:
 #----  SVM sos API  ----#
 #-------------------------#
 
-svm_sos_classify: svm_light_hideo_noexe svm_struct_noexe svm_struct_api.o svm_struct/svm_struct_classify.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o svm_c++.o gmm.o svm_struct_options.o feature.o lib 
-	$(LD) svm_struct_api.o svm_struct/svm_struct_classify.o svm_light/svm_common.o svm_struct/svm_struct_common.o svm_c++.o gmm.o svm_struct_options.o feature.o -o svm_sos_classify $(LIBS) $(LDFLAGS)
+svm_sos_classify: svm_light_hideo_noexe svm_struct_noexe $(OBJS) lib
+	$(LD) $(LDFLAGS) $(CLASSIFY_OBJS) -o svm_sos_classify $(LIBS)
 
-svm_sos_learn: svm_light_hideo_noexe svm_struct_noexe svm_struct_api.o svm_struct_learn_custom.o svm_struct/svm_struct_learn.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o svm_c++.o gmm.o svm_struct_options.o feature.o lib
-	$(LD) svm_struct/svm_struct_learn.o svm_struct_learn_custom.o svm_struct_api.o svm_light/svm_hideo.o svm_light/svm_learn.o svm_light/svm_common.o svm_struct/svm_struct_common.o svm_struct/svm_struct_main.o svm_c++.o gmm.o svm_struct_options.o feature.o -o svm_sos_learn $(LIBS) $(LDFLAGS)
-
+svm_sos_learn: svm_light_hideo_noexe svm_struct_noexe $(OBJS) lib
+	$(LD) $(LDFLAGS) $(LEARN_OBJS) -o svm_sos_learn $(LIBS)
 
 svm_struct_api.o: svm_struct_api.cpp svm_struct_api.h svm_struct_api_types.h svm_struct/svm_struct_common.h image_manip.hpp
 	$(CXX) -c $(CFLAGS) svm_struct_api.cpp -o svm_struct_api.o
@@ -58,17 +74,14 @@ svm_struct_api.o: svm_struct_api.cpp svm_struct_api.h svm_struct_api_types.h svm
 svm_struct_learn_custom.o: svm_struct_learn_custom.cpp svm_struct_api.h svm_light/svm_common.h svm_struct_api_types.h svm_struct/svm_struct_common.h
 	$(CXX) -c $(CFLAGS) svm_struct_learn_custom.cpp -o svm_struct_learn_custom.o
 
-svm_c++.o: svm_c++.cpp svm_c++.hpp image_manip.hpp gmm.o
-	$(CXX) -c $(CFLAGS) svm_c++.cpp -o svm_c++.o
+%.o: %.cpp
+	$(CXX) $(CFLAGS) -MMD -o $@ -c $<
+	@cp $*.d $*.P; \
+	 sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+    	 -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $*.P; \
+	 rm $*.d
 
-gmm.o: gmm.cpp gmm.hpp
-	$(CXX) -c $(CFLAGS) gmm.cpp -o gmm.o
-
-svm_struct_options.o: svm_struct_options.cpp svm_struct_options.hpp svm_struct_api_types.h
-	$(CXX) -c $(CFLAGS) svm_struct_options.cpp -o svm_struct_options.o
-
-feature.o: feature.hpp feature.cpp svm_c++.hpp image_manip.hpp
-	$(CXX) -c $(CFLAGS) feature.cpp -o feature.o
+-include $(SRCS:.cpp=.P)
 
 lib:
 	cd ..; make
