@@ -25,8 +25,9 @@ extern "C" {
 }
 #include "svm_c++.hpp"
 #include "feature.hpp"
-#include "svm_struct_options.hpp"
 #include "image_manip.hpp"
+#include "svm_struct_options.hpp"
+#include "stats.hpp"
 
 PatternData* data(PATTERN& p) { return (PatternData*)p.data; }
 PATTERN MakePattern(PatternData* d) {
@@ -138,6 +139,8 @@ void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
     sm->data = new ModelData;
     data(sm)->InitFeatures(sparm);
 
+    sm->test_stats = new TestStats;
+
     sm->sizePsi=data(sm)->NumFeatures(); /* replace by appropriate number of features */
 }
 
@@ -199,6 +202,8 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
      recognized by the function empty_label(y). */
     LABEL y;
 
+    sm->test_stats->ResetTimer();
+
     if (sparm->grabcut_classify) {
         y.data = new LabelData;
         data(y)->m_name = data(x)->m_name;
@@ -209,6 +214,8 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
     } else {
         y.data = data(sm)->Classify(*data(x), sm, sparm);
     }
+
+    sm->test_stats->StopTimer();
 
     return(y);
 }
@@ -405,6 +412,9 @@ void        eval_prediction(long exnum, EXAMPLE ex, LABEL ypred,
               called. So initialize the teststats */
     }
 
+    double loss = 100.0* data(ex.y)->Loss(*data(ypred), sparm->loss_scale) / sparm->loss_scale;
+    sm->test_stats->Add(TestStats::ImageStats(loss, sm->test_stats->LastTime()));
+
     const std::string& name = data(ypred)->m_name;
     cv::Mat color_image = MaskToColor(data(ypred)->m_gt, data(ex.x)->m_image);
     if (sparm->show_images)
@@ -488,6 +498,8 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
     std::ifstream ifs(file);
     boost::archive::text_iarchive ar(ifs);
 
+    sm.test_stats = new TestStats;
+
     sm.svm_model = (MODEL*)my_malloc(sizeof(MODEL));
     MODEL* model = sm.svm_model;
 
@@ -563,6 +575,7 @@ void        free_struct_model(STRUCTMODEL sm)
   if(sm.svm_model) free_model(sm.svm_model,1);
   /* add free calls for user defined data here */
   delete data(sm);
+  delete sm.test_stats;
 }
 
 void        free_struct_sample(SAMPLE s)
