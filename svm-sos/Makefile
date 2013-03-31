@@ -24,6 +24,7 @@ SRCS = svm_struct_learn_custom.cpp \
 	   svm_struct_api.cpp \
 	   svm_c++.cpp \
 	   gmm.cpp \
+	   interactive_seg_app.cpp \
 	   svm_struct_options.cpp \
 	   feature.cpp \
 	   stats.cpp

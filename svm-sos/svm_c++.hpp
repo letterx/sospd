@@ -24,6 +24,39 @@ extern "C" {
 #include "QPBO.h"
 #include "gmm.hpp"
 
+class SVM_Struct_Application {
+    public:
+        SVM_Struct_Application(STRUCT_LEARN_PARM* sparm);
+
+        static SVM_Struct_Application* InitApplication(STRUCT_LEARN_PARM* sparm);
+
+        // Forwarding functions for api
+        void svm_struct_learn_api_exit();
+        void svm_struct_classify_api_exit();
+        SAMPLE read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm);
+        void init_struct_model(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm, KERNEL_PARM *kparm);
+        CONSTSET init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
+        LABEL classify_struct_example(PATTERN x, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
+        LABEL find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
+        LABEL find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
+        int empty_label(LABEL y);
+        SVECTOR* psi(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
+        double loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm);
+        int finalize_iteration(double ceps, int cached_constraint, SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm);
+        void print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm);
+        void print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats);
+        void eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats);
+        void write_struct_model(char *file, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
+        STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm);
+        void write_label(FILE* fp, LABEL y);
+
+    protected:
+        STRUCT_LEARN_PARM* m_sparm;
+
+};
+
+extern SVM_Struct_Application* g_application;
+
 inline REAL doubleToREAL(double d) { return (REAL)(d * 500000.0); }
 
 class PatternData {
