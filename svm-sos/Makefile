@@ -25,7 +25,8 @@ SRCS = svm_struct_learn_custom.cpp \
 	   svm_c++.cpp \
 	   gmm.cpp \
 	   svm_struct_options.cpp \
-	   feature.cpp
+	   feature.cpp \
+	   stats.cpp
 OBJS = $(SRCS:.cpp=.o)
 LEARN_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_main.o
 CLASSIFY_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_classify.o
@@ -67,12 +68,6 @@ svm_sos_classify: svm_light_hideo_noexe svm_struct_noexe $(OBJS) lib
 
 svm_sos_learn: svm_light_hideo_noexe svm_struct_noexe $(OBJS) lib
 	$(LD) $(LDFLAGS) $(LEARN_OBJS) -o svm_sos_learn $(LIBS)
-
-svm_struct_api.o: svm_struct_api.cpp svm_struct_api.h svm_struct_api_types.h svm_struct/svm_struct_common.h image_manip.hpp
-	$(CXX) -c $(CFLAGS) svm_struct_api.cpp -o svm_struct_api.o
-
-svm_struct_learn_custom.o: svm_struct_learn_custom.cpp svm_struct_api.h svm_light/svm_common.h svm_struct_api_types.h svm_struct/svm_struct_common.h
-	$(CXX) -c $(CFLAGS) svm_struct_learn_custom.cpp -o svm_struct_learn_custom.o
 
 %.o: %.cpp
 	$(CXX) $(CFLAGS) -MMD -o $@ -c $<

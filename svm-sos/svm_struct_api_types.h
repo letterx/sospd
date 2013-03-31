@@ -103,6 +103,8 @@ typedef struct struct_learn_parm {
 				  functions via -l command line
 				  option */
   /* further parameters that are passed to init_struct_model() */
+  char data_file[256];
+  char model_file[256];
   int grabcut_classify; // zero if normal classify, number of iterations otherwise
   int show_images; // [0,1] if we show each image after classification
   int crf; // 0 for SubmodularFlow, 1 for HigherOrder

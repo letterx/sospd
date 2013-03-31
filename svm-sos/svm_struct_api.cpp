@@ -76,6 +76,7 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
   EXAMPLE  *examples;
   size_t n = 0;       /* number of examples */
 
+  strcpy(sparm->data_file, file);
   std::ifstream main_file(file);
 
   std::string images_dir;
@@ -497,6 +498,8 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
     STRUCTMODEL sm;
     std::ifstream ifs(file);
     boost::archive::text_iarchive ar(ifs);
+    
+    strcpy(sparm->model_file, file);
 
     sm.test_stats = new TestStats;
 
