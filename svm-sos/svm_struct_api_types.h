@@ -109,6 +109,7 @@ typedef struct struct_learn_parm {
   int show_images; // [0,1] if we show each image after classification
   int crf; // 0 for SubmodularFlow, 1 for HigherOrder
   char output_dir[256]; // Directory to write predicted values to
+  char stats_file[256]; // Filename to store stats to
   // Flags for which features to use
   int grabcut_unary;
   int distance_unary;

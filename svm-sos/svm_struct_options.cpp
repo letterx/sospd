@@ -10,6 +10,7 @@ static po::options_description GetCommonOptions() {
     po::options_description desc("Custom SVM options");
     desc.add_options()
         ("crf", po::value<std::string>(), "[ho | sf] -> Set CRF optimizer. (default sf)")
+        ("stats-file", po::value<std::string>(), "Output file for statistics")
     ;
 
     return desc;
@@ -92,6 +93,15 @@ void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
         sparm->feature_scale = vm["feature-scale"].as<double>();
     if (vm.count("loss-scale"))
         sparm->loss_scale = vm["loss-scale"].as<double>();
+    if (vm.count("stats-file")) {
+        strncpy(sparm->stats_file, vm["stats-file"].as<std::string>().c_str(), 256);
+        if (sparm->stats_file[255] != 0) {
+            std::cout << "Output-directory name too long!\n";
+            exit(-1);
+        }
+    } else {
+        sparm->stats_file[0] = 0;
+    }
 
 }
 
@@ -138,6 +148,15 @@ void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
         }
     } else {
         sparm->output_dir[0] = 0;
+    }
+    if (vm.count("stats-file")) {
+        strncpy(sparm->stats_file, vm["stats-file"].as<std::string>().c_str(), 256);
+        if (sparm->stats_file[255] != 0) {
+            std::cout << "Output-directory name too long!\n";
+            exit(-1);
+        }
+    } else {
+        sparm->stats_file[0] = 0;
     }
 }
 

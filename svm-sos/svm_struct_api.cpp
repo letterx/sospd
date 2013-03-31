@@ -399,6 +399,7 @@ void        print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm,
      evaluation (e.g. precision/recall) you might want. You can use
      the function eval_prediction to accumulate the necessary
      statistics for each prediction. */
+    sm->test_stats->Write(sparm->stats_file);
 }
 
 void        eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, 
