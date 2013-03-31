@@ -30,9 +30,10 @@ SRCS = svm_struct_learn_custom.cpp \
 OBJS = $(SRCS:.cpp=.o)
 LEARN_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_main.o
 CLASSIFY_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_classify.o
+PROCESS_STATS_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) process_stats.o
 
 .PHONY:
-all: svm_sos_learn svm_sos_classify
+all: svm_sos_learn svm_sos_classify process_stats
 
 .PHONY: clean
 clean: svm_light_clean svm_struct_clean
@@ -68,6 +69,9 @@ svm_sos_classify: svm_light_hideo_noexe svm_struct_noexe $(OBJS) lib
 
 svm_sos_learn: svm_light_hideo_noexe svm_struct_noexe $(OBJS) lib
 	$(LD) $(LDFLAGS) $(LEARN_OBJS) -o svm_sos_learn $(LIBS)
+
+process_stats: $(OBJS) process_stats.o
+	$(LD) $(LDFLAGS) $(PROCESS_STATS_OBJS) -o process_stats $(LIBS)
 
 %.o: %.cpp
 	$(CXX) $(CFLAGS) -MMD -o $@ -c $<

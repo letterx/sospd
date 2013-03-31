@@ -29,11 +29,13 @@ void TestStats::Write(const std::string& fname) const {
     {
         boost::interprocess::scoped_lock<boost::interprocess::file_lock> l(flock);
 
-        std::ifstream ifs(fname);
         std::vector<TestStats> stats_list;
-        boost::archive::text_iarchive iar(ifs);
-        iar & stats_list;
-        ifs.close();
+        try {
+            std::ifstream ifs(fname);
+            boost::archive::text_iarchive iar(ifs);
+            iar & stats_list;
+            ifs.close();
+        } catch (boost::archive::archive_exception& e) { }
 
         stats_list.push_back(*this);
 
