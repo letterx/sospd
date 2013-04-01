@@ -3,10 +3,12 @@
 
 #include "svm_struct_api.h"
 
-void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm);
+class SVM_App_Base;
+
+SVM_App_Base* ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm);
 void PrintStructLearnHelp();
 
-void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm);
+SVM_App_Base* ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm);
 void PrintStructClassifyHelp();
 
 #endif

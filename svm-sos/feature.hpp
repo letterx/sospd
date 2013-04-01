@@ -6,14 +6,11 @@ extern "C" {
 #include "svm_struct/svm_struct_common.h"
 }
 #include <vector>
-#include <boost/shared_ptr.hpp>
 #include <boost/serialization/access.hpp>
-#include <opencv2/core/core.hpp>
 
-class PatternData;
-class LabelData;
 class CRF;
 
+template <typename PatternData, typename LabelData>
 class FeatureGroup {
     public:
         virtual size_t NumFeatures() const = 0;
@@ -28,8 +25,10 @@ class FeatureGroup {
         void serialize(const Archive& ar, const unsigned int version) { }
 };
 
+/*
 std::vector<boost::shared_ptr<FeatureGroup>> GetFeaturesFromParam(STRUCT_LEARN_PARM* sparm);
 void CalcUnaries(PatternData& p);
 void CalcDistances(const cv::Mat& tri, cv::Mat& fgdDist, cv::Mat& bgdDist, cv::Mat& closerMap);
+*/
 
 #endif

@@ -167,7 +167,6 @@ void        free_struct_model(STRUCTMODEL sm)
   /* if(sm.w) free(sm.w); */ /* this is free'd in free_model */
   if(sm.svm_model) free_model(sm.svm_model,1);
   /* add free calls for user defined data here */
-  delete sm.data;
 }
 
 void        free_struct_sample(SAMPLE s)

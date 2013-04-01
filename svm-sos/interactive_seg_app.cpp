@@ -1,20 +1,85 @@
 #include <cmath>
+#include <fstream>
+#include "interactive_seg_app.hpp"
 #include "svm_c++.hpp"
 #include "image_manip.hpp"
 #include "feature.hpp"
+#include "crf.hpp"
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 
-PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv::Mat& trimap, STRUCT_LEARN_PARM* sparm) 
-    : m_name(name), 
-    m_image(image),
-    m_bgdModel(),
-    m_bgdGMM(m_bgdModel),
-    m_fgdModel(),
-    m_fgdGMM(m_fgdModel)
+void InteractiveSegApp::ReadExamples(const std::string& file, std::vector<PatternData*>& patterns, std::vector<LabelData*>& labels) {
+    std::ifstream main_file(file);
+
+    std::string images_dir;
+    std::string trimap_dir;
+    std::string gt_dir;
+    std::string line;
+
+    size_t n = 0;
+
+    do {
+        std::getline(main_file, images_dir);
+    } while (images_dir[0] == '#');
+    do {
+        std::getline(main_file, trimap_dir);
+    } while (trimap_dir[0] == '#');
+    do {
+        std::getline(main_file, gt_dir);
+    } while (gt_dir[0] == '#');
+              
+    while (main_file.good()) {
+        std::getline(main_file, line);
+        if (!line.empty() && line[0] != '#') {
+            n++;
+            if (n % 10 == 0) {
+                std::cout << ".";
+                std::cout.flush();
+            }
+            cv::Mat image = cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR);
+            cv::Mat trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR);
+            cv::Mat gt = cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
+            ValidateExample(image, trimap, gt);
+            patterns.push_back(new IS_PatternData(line, image, trimap));
+            labels.push_back(new IS_LabelData(line, gt));
+        }
+    }
+    main_file.close();
+}
+
+
+
+
+
+inline double LabelDiff(unsigned char l1, unsigned char l2) {
+    if (l1 == cv::GC_BGD || l1 == cv::GC_PR_BGD) {
+        if (l2 == cv::GC_FGD || l2 == cv::GC_PR_FGD)
+            return 1.0;
+        else if (l2 == (unsigned char)-1)
+            return 0.5;
+        else 
+            return 0.0;
+    } else if (l1 == cv::GC_FGD || l1 == cv::GC_PR_FGD) {
+        if (l2 == cv::GC_BGD || l2 == cv::GC_PR_BGD)
+            return 1.0;
+        else if (l2 == (unsigned char)-1)
+            return 0.5;
+        else 
+            return 0.0;
+    } else if (l1 == l2)
+        return 0.0;
+    else
+        return 0.5;
+}
+
+
+IS_PatternData::IS_PatternData(const std::string& name, const cv::Mat& image, const cv::Mat& trimap) 
+    : PatternData(name),
+    m_image(image)
 {
     ConvertToMask(trimap, m_tri);
 
+    /*
     m_fgdDist.create(m_image.rows, m_image.cols, CV_32SC1);
     m_bgdDist.create(m_image.rows, m_image.cols, CV_32SC1);
     m_dist_feature.create(m_image.rows, m_image.cols, CV_32SC1);
@@ -44,48 +109,46 @@ PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv
     };
     ImageIterate(m_image, m_downW, cv::Point(0.0, 1.0), calcExpDiff);
     ImageIterate(m_image, m_rightW, cv::Point(1.0, 0.0), calcExpDiff);
-
+    */
 }
 
-LabelData::LabelData(const std::string& name, const cv::Mat& gt)
-    : m_name(name)
+IS_LabelData::IS_LabelData(const std::string& name, const cv::Mat& gt)
+    : LabelData(name)
 { 
     ConvertGreyToMask(gt, m_gt);
 }
 
-bool LabelData::operator==(const LabelData& l) const {
+bool IS_LabelData::operator==(const IS_LabelData& l) const {
     ASSERT(m_gt.size() == l.m_gt.size());
-    cv::MatConstIterator_<unsigned char> i1, e1, i2;
-    i1 = m_gt.begin<unsigned char>();
-    e1 = m_gt.end<unsigned char>();
-    i2 = l.m_gt.begin<unsigned char>();
-    for (; i1 != e1; ++i1, ++i2) {
-        if (*i1 != *i2) {
-            return false;
+    cv::Point pt;
+    for (pt.y = 0; pt.y < m_gt.rows; ++pt.y) {
+        for (pt.x = 0; pt.x < m_gt.cols; ++pt.x) {
+            if (m_gt.at<unsigned char>(pt) != l.m_gt.at<unsigned char>(pt))
+                return false;
         }
     }
     return true;
 }
 
-double LabelData::Loss(const LabelData& l, double scale) const {
-    ASSERT(m_gt.size() == l.m_gt.size());
+double InteractiveSegApp::Loss(const IS_LabelData& l1, const IS_LabelData& l2, double scale) const {
+    ASSERT(l1.m_gt.size() == l2.m_gt.size());
     double loss = 0;
-    ImageCIterate(m_gt, l.m_gt, 
-            [&](const unsigned char& c1, const unsigned char& c2) {
-                loss += LabelDiff(c1, c2);
-            });
-    loss /= (m_gt.rows*m_gt.cols);
+    cv::Point pt;
+    for (pt.y = 0; pt.y < l1.m_gt.rows; ++pt.y) {
+        for (pt.x = 0; pt.x < l1.m_gt.cols; ++pt.x) {
+            loss += LabelDiff(l1.m_gt.at<unsigned char>(pt), l2.m_gt.at<unsigned char>(pt));
+        }
+    }
+    loss /= (l1.m_gt.rows*l1.m_gt.cols);
     return loss*scale;
 }
 
 
-ModelData::ModelData() { }
+void InteractiveSegApp::InitFeatures(const Parameters& param) {
 
-void ModelData::InitFeatures(STRUCT_LEARN_PARM* sparm) {
-    m_features = GetFeaturesFromParam(sparm);
 }
 
-long ModelData::NumFeatures() const {
+long InteractiveSegApp::NumFeatures() const {
     long n = 0;
     for (auto fgp : m_features) {
         n += fgp->NumFeatures();
@@ -93,12 +156,12 @@ long ModelData::NumFeatures() const {
     return n;
 }
 
-void ModelData::InitializeCRF(CRF& crf, const PatternData& p) const {
+void InteractiveSegApp::InitializeCRF(CRF& crf, const IS_PatternData& p) const {
     crf.AddNode(p.m_image.rows*p.m_image.cols);
 
 }
 
-void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l, double scale) const {
+void InteractiveSegApp::AddLossToCRF(CRF& crf, const IS_PatternData& p, const IS_LabelData& l, double scale) const {
     double mult = scale/(p.m_image.rows*p.m_image.cols);
     cv::Point pt;
     for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
@@ -113,9 +176,8 @@ void ModelData::AddLossToCRF(CRF& crf, const PatternData& p, const LabelData& l,
     }
 }
 
-LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
-    LabelData* lp = new LabelData;
-    lp->m_name = x.m_name;
+IS_LabelData* InteractiveSegApp::ExtractLabel(const CRF& crf, const IS_PatternData& x) const {
+    IS_LabelData* lp = new IS_LabelData(x.Name());
     lp->m_gt.create(x.m_image.rows, x.m_image.cols, CV_8UC1);
     CRF::NodeId id = 0;
     ImageIterate(lp->m_gt, 
@@ -132,34 +194,43 @@ LabelData* ModelData::ExtractLabel(const CRF& crf, const PatternData& x) const {
     return lp;
 }
 
-LabelData* ModelData::Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
-    CRF crf;
-    SubmodularFlow sf;
-    HigherOrderWrapper ho;
-    if (sparm->crf == 0) {
-        crf.Wrap(&sf);
+IS_LabelData* InteractiveSegApp::Classify(const IS_PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+    if (sparm->grabcut_classify) {
+        IS_LabelData* y = new IS_LabelData(x.Name());
+        x.m_tri.copyTo(y->m_gt);
+        cv::Mat bgdModel;
+        cv::Mat fgdModel;
+        cv::grabCut(x.m_image, y->m_gt, cv::Rect(), bgdModel, fgdModel, sparm->grabcut_classify);
+        return y;
     } else {
-        crf.Wrap(&ho);
-    }
-    InitializeCRF(crf, x);
-    size_t feature_base = 1;
-    for (auto fgp : m_features) {
-        double violation = fgp->Violation(feature_base, sm->w);
-        double w2 = 0;
-        for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
-            w2 += sm->w[i] * sm->w[i];
-        if (violation > 0.0001 * w2) {
-            std::cout << "*** Max Violation: " << violation << ", |w|^2: " << w2 << "***";
-            std::cout.flush();
+        CRF crf;
+        SubmodularFlow sf;
+        HigherOrderWrapper ho;
+        if (sparm->crf == 0) {
+            crf.Wrap(&sf);
+        } else {
+            crf.Wrap(&ho);
         }
-        fgp->AddToCRF(crf, x, sm->w + feature_base );
-        feature_base += fgp->NumFeatures();
+        InitializeCRF(crf, x);
+        size_t feature_base = 1;
+        for (auto fgp : m_features) {
+            double violation = fgp->Violation(feature_base, sm->w);
+            double w2 = 0;
+            for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
+                w2 += sm->w[i] * sm->w[i];
+            if (violation > 0.0001 * w2) {
+                std::cout << "*** Max Violation: " << violation << ", |w|^2: " << w2 << "***";
+                std::cout.flush();
+            }
+            fgp->AddToCRF(crf, x, sm->w + feature_base );
+            feature_base += fgp->NumFeatures();
+        }
+        crf.Solve();
+        return ExtractLabel(crf, x);
     }
-    crf.Solve();
-    return ExtractLabel(crf, x);
 }
 
-LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+IS_LabelData* InteractiveSegApp::FindMostViolatedConstraint(const IS_PatternData& x, const IS_LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
     CRF crf;
     SubmodularFlow sf;
     HigherOrderWrapper ho;
@@ -185,4 +256,20 @@ LabelData* ModelData::FindMostViolatedConstraint(const PatternData& x, const Lab
     AddLossToCRF(crf, x, y, sparm->loss_scale);
     crf.Solve();
     return ExtractLabel(crf, x);
+}
+
+void InteractiveSegApp::EvalPrediction(const IS_PatternData& x, const IS_LabelData& y, const IS_LabelData& ypred) const {
+    const std::string& name = ypred.Name();
+    cv::Mat color_image = MaskToColor(ypred.m_gt, x.m_image);
+    if (m_params.show_images)
+        ShowImage(color_image);
+
+    if (m_params.output_dir != std::string("")) {
+        std::string out_filename = m_params.output_dir + "/" + name;
+        cv::imwrite(out_filename, (ypred.m_gt)*(255/3));
+        out_filename = m_params.output_dir + "/fancy-" + name;
+        cv::Mat write_image;
+        color_image.convertTo(write_image, CV_8U, 255.0);
+        cv::imwrite(out_filename, write_image);
+    }
 }

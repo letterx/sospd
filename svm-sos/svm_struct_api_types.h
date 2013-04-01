@@ -24,7 +24,7 @@
 # include "svm_light/svm_learn.h"
 
 # define INST_NAME          "Sum-of-Submodular SVM API"
-# define INST_VERSION       "V0.10"
+# define INST_VERSION       "V0.20"
 # define INST_VERSION_DATE  "03.12.13"
 
 /* default precision for solving the optimization problem */
@@ -68,7 +68,6 @@ typedef struct label {
 } LABEL;
 
 struct TestStats;
-struct ModelData;
 typedef struct structmodel {
   double *w;          /* pointer to the learned weights */
   MODEL  *svm_model;  /* the learned SVM model */
@@ -76,7 +75,6 @@ typedef struct structmodel {
   double walpha;
   /* other information that is needed for the stuctural model can be
      added here, e.g. the grammar rules for NLP parsing */
-  struct ModelData *data;
   struct TestStats *test_stats;
 } STRUCTMODEL;
 

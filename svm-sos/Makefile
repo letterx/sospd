@@ -23,10 +23,9 @@ SVM_LIGHT_OBJS = svm_light/svm_hideo.o \
 SRCS = svm_struct_learn_custom.cpp \
 	   svm_struct_api.cpp \
 	   svm_c++.cpp \
-	   gmm.cpp \
 	   interactive_seg_app.cpp \
+	   gmm.cpp \
 	   svm_struct_options.cpp \
-	   feature.cpp \
 	   stats.cpp
 OBJS = $(SRCS:.cpp=.o)
 LEARN_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_main.o

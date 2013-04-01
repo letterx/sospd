@@ -1,16 +1,19 @@
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
+#include <fstream>
 extern "C" {
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"
 }
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include "sos-common.hpp"
 #include "svm_c++.hpp"
-#include "feature.hpp"
-#include "image_manip.hpp"
 #include "svm_struct_options.hpp"
 #include "stats.hpp"
 
-SVM_Struct_Application* g_application = nullptr;
+SVM_App_Base* g_application = nullptr;
 
 PATTERN MakePattern(PatternData* d) {
     PATTERN p;
@@ -23,19 +26,22 @@ LABEL MakeLabel(LabelData* d) {
     return l;
 }
 
-void SVM_Struct_Application::svm_struct_learn_api_exit()
+template <class Derived>
+void SVM_App<Derived>::svm_struct_learn_api_exit()
 {
   /* Called in learning part at the very end to allow any clean-up
      that might be necessary. */
 }
 
-void SVM_Struct_Application::svm_struct_classify_api_exit()
+template <class Derived>
+void SVM_App<Derived>::svm_struct_classify_api_exit()
 {
   /* Called in prediction part at the very end to allow any clean-up
      that might be necessary. */
 }
 
-SAMPLE SVM_Struct_Application::read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
+template <class Derived>
+SAMPLE SVM_App<Derived>::read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
 {
   /* Reads struct examples and returns them in sample. The number of
      examples must be written into sample.n */
@@ -43,44 +49,12 @@ SAMPLE SVM_Struct_Application::read_struct_examples(char *file, STRUCT_LEARN_PAR
   EXAMPLE  *examples;
   size_t n = 0;       /* number of examples */
 
-  strcpy(sparm->data_file, file);
-  std::ifstream main_file(file);
-
-  std::string images_dir;
-  std::string trimap_dir;
-  std::string gt_dir;
-  std::string line;
-
-  do {
-      std::getline(main_file, images_dir);
-  } while (images_dir[0] == '#');
-  do {
-      std::getline(main_file, trimap_dir);
-  } while (trimap_dir[0] == '#');
-  do {
-      std::getline(main_file, gt_dir);
-  } while (gt_dir[0] == '#');
-
   std::vector<PatternData*> patterns;
   std::vector<LabelData*> labels;
 
-  while (main_file.good()) {
-      std::getline(main_file, line);
-      if (!line.empty() && line[0] != '#') {
-          n++;
-          if (n % 10 == 0) {
-              std::cout << ".";
-              std::cout.flush();
-          }
-          cv::Mat image = cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR);
-          cv::Mat trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR);
-          cv::Mat gt = cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
-          ValidateExample(image, trimap, gt);
-          patterns.push_back(new PatternData(line, image, trimap, sparm));
-          labels.push_back(new LabelData(line, gt));
-      }
-  }
-  main_file.close();
+  strcpy(sparm->data_file, file);
+
+  m_derived->ReadExamples(file, patterns, labels);
 
   examples=(EXAMPLE *)my_malloc(sizeof(EXAMPLE)*n);
   for (size_t i = 0; i < n; ++i) {
@@ -95,7 +69,8 @@ SAMPLE SVM_Struct_Application::read_struct_examples(char *file, STRUCT_LEARN_PAR
   return(sample);
 }
 
-void SVM_Struct_Application::init_struct_model(SAMPLE sample, STRUCTMODEL *sm, 
+template <class Derived>
+void SVM_App<Derived>::init_struct_model(SAMPLE sample, STRUCTMODEL *sm, 
 			      STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm, 
 			      KERNEL_PARM *kparm)
 {
@@ -104,15 +79,11 @@ void SVM_Struct_Application::init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
      feature space in sizePsi. This is the maximum number of different
      weights that can be learned. Later, the weight vector w will
      contain the learned weights for the model. */
-    sm->data = new ModelData;
-    sm->data->InitFeatures(sparm);
-
-    sm->test_stats = new TestStats;
-
-    sm->sizePsi=sm->data->NumFeatures(); /* replace by appropriate number of features */
+    sm->sizePsi=m_derived->NumFeatures(); /* replace by appropriate number of features */
 }
 
-CONSTSET SVM_Struct_Application::init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm, 
+template <class Derived>
+CONSTSET SVM_App<Derived>::init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm, 
 				    STRUCT_LEARN_PARM *sparm)
 {
   /* Initializes the optimization problem. Typically, you do not need
@@ -125,10 +96,11 @@ CONSTSET SVM_Struct_Application::init_struct_constraints(SAMPLE sample, STRUCTMO
      set of constraints. */
     CONSTSET c;
 
-    FeatureGroup::Constr constrs;
+    typedef typename AppTraits<Derived>::FG::Constr Constr;
+    Constr constrs;
     size_t feature_base = 1; 
-    for (auto fgp : sm->data->m_features) {
-        FeatureGroup::Constr new_constrs = fgp->CollectConstrs(feature_base, sparm->constraint_scale);
+    for (auto fgp : m_derived->Features()) {
+        Constr new_constrs = fgp->CollectConstrs(feature_base, sparm->constraint_scale);
         constrs.insert(constrs.end(), new_constrs.begin(), new_constrs.end());
         feature_base += fgp->NumFeatures();
     }
@@ -158,7 +130,8 @@ CONSTSET SVM_Struct_Application::init_struct_constraints(SAMPLE sample, STRUCTMO
   return(c);
 }
 
-LABEL SVM_Struct_Application::classify_struct_example(PATTERN x, STRUCTMODEL *sm, 
+template <class Derived>
+LABEL SVM_App<Derived>::classify_struct_example(PATTERN x, STRUCTMODEL *sm, 
 				    STRUCT_LEARN_PARM *sparm)
 {
   /* Finds the label yhat for pattern x that scores the highest
@@ -172,23 +145,15 @@ LABEL SVM_Struct_Application::classify_struct_example(PATTERN x, STRUCTMODEL *sm
 
     sm->test_stats->ResetTimer();
 
-    if (sparm->grabcut_classify) {
-        y.data = new LabelData;
-        y.data->m_name = x.data->m_name;
-        x.data->m_tri.copyTo(y.data->m_gt);
-        cv::Mat bgdModel;
-        cv::Mat fgdModel;
-        cv::grabCut(x.data->m_image, y.data->m_gt, cv::Rect(), bgdModel, fgdModel, sparm->grabcut_classify);
-    } else {
-        y.data = sm->data->Classify(*x.data, sm, sparm);
-    }
+    y.data = m_derived->Classify(*Downcast(x.data), sm, sparm);
 
     sm->test_stats->StopTimer();
 
     return(y);
 }
 
-LABEL SVM_Struct_Application::find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, 
+template <class Derived>
+LABEL SVM_App<Derived>::find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, 
 						     STRUCTMODEL *sm, 
 						     STRUCT_LEARN_PARM *sparm)
 {
@@ -222,7 +187,8 @@ LABEL SVM_Struct_Application::find_most_violated_constraint_slackrescaling(PATTE
   return(ybar);
 }
 
-LABEL SVM_Struct_Application::find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, 
+template <class Derived>
+LABEL SVM_App<Derived>::find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, 
 						     STRUCTMODEL *sm, 
 						     STRUCT_LEARN_PARM *sparm)
 {
@@ -250,12 +216,13 @@ LABEL SVM_Struct_Application::find_most_violated_constraint_marginrescaling(PATT
     LABEL ybar;
 
     /* insert your code for computing the label ybar here */
-    ybar.data = sm->data->FindMostViolatedConstraint(*x.data, *y.data, sm, sparm);
+    ybar.data = m_derived->FindMostViolatedConstraint(*Downcast(x.data), *Downcast(y.data), sm, sparm);
 
     return(ybar);
 }
 
-int SVM_Struct_Application::empty_label(LABEL y)
+template <class Derived>
+int SVM_App<Derived>::empty_label(LABEL y)
 {
   /* Returns true, if y is an empty label. An empty label might be
      returned by find_most_violated_constraint_???(x, y, sm) if there
@@ -264,7 +231,8 @@ int SVM_Struct_Application::empty_label(LABEL y)
   return(0);
 }
 
-SVECTOR* SVM_Struct_Application::psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
+template <class Derived>
+SVECTOR* SVM_App<Derived>::psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
 		 STRUCT_LEARN_PARM *sparm)
 {
   /* Returns a feature vector describing the match between pattern x
@@ -294,8 +262,8 @@ SVECTOR* SVM_Struct_Application::psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
     std::vector<WORD> words;
     FNUM fnum = 1;
     WORD w;
-    for (auto fgp : sm->data->m_features) {
-        std::vector<FVAL> values = fgp->Psi(*x.data, *y.data);
+    for (auto fgp : m_derived->Features()) {
+        std::vector<FVAL> values = fgp->Psi(*Downcast(x.data), *Downcast(y.data));
         ASSERT(values.size() == fgp->NumFeatures());
         for (FVAL v : values) {
             w.wnum = fnum++;
@@ -311,23 +279,25 @@ SVECTOR* SVM_Struct_Application::psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
     return(fvec);
 }
 
-double SVM_Struct_Application::loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
+template <class Derived>
+double SVM_App<Derived>::loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
 {
   /* loss for correct label y and predicted label ybar. The loss for
      y==ybar has to be zero. sparm->loss_function is set with the -l option. */
   if(sparm->loss_function == 0) { /* type 0 loss: 0/1 loss */
                                   /* return 0, if y==ybar. return 1 else */
-      return 1.0 - (double)(*y.data == *ybar.data);
+      return 1.0 - (double)(*Downcast(y.data) == *Downcast(ybar.data));
   }
   else {
     /* Put your code for different loss functions here. But then
        find_most_violated_constraint_???(x, y, sm) has to return the
        highest scoring label with the largest loss. */
-      return y.data->Loss(*ybar.data, sparm->loss_scale);
+      return m_derived->Loss(*Downcast(y.data), *Downcast(ybar.data), sparm->loss_scale);
   }
 }
 
-int SVM_Struct_Application::finalize_iteration(double ceps, int cached_constraint,
+template <class Derived>
+int SVM_App<Derived>::finalize_iteration(double ceps, int cached_constraint,
 			       SAMPLE sample, STRUCTMODEL *sm,
 			       CONSTSET cset, double *alpha, 
 			       STRUCT_LEARN_PARM *sparm)
@@ -343,7 +313,8 @@ int SVM_Struct_Application::finalize_iteration(double ceps, int cached_constrain
   return(0);
 }
 
-void SVM_Struct_Application::print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm,
+template <class Derived>
+void SVM_App<Derived>::print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm,
 					CONSTSET cset, double *alpha, 
 					STRUCT_LEARN_PARM *sparm)
 {
@@ -351,13 +322,14 @@ void SVM_Struct_Application::print_struct_learning_stats(SAMPLE sample, STRUCTMO
      the model sm. But primarly it allows computing and printing any
      kind of statistic (e.g. training error) you might want. */
     std::cout << "Final w = {";
-    for (int i = 1; i <= sm->data->NumFeatures(); ++i) {
+    for (long i = 1; i <= m_derived->NumFeatures(); ++i) {
         std::cout << sm->w[i] << ", ";
     }
     std::cout << "}\n";
 }
 
-void SVM_Struct_Application::print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm,
+template <class Derived>
+void SVM_App<Derived>::print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm,
 				       STRUCT_LEARN_PARM *sparm, 
 				       STRUCT_TEST_STATS *teststats)
 {
@@ -370,7 +342,8 @@ void SVM_Struct_Application::print_struct_testing_stats(SAMPLE sample, STRUCTMOD
         sm->test_stats->Write(sparm->stats_file);
 }
 
-void SVM_Struct_Application::eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, 
+template <class Derived>
+void SVM_App<Derived>::eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, 
 			    STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, 
 			    STRUCT_TEST_STATS *teststats)
 {
@@ -382,25 +355,14 @@ void SVM_Struct_Application::eval_prediction(long exnum, EXAMPLE ex, LABEL ypred
               called. So initialize the teststats */
     }
 
-    double loss = 100.0* ex.y.data->Loss(*ypred.data, sparm->loss_scale) / sparm->loss_scale;
+    double loss = m_derived->Loss(*Downcast(ex.y.data), *Downcast(ypred.data), sparm->loss_scale)*100.0 / sparm->loss_scale;
     sm->test_stats->Add(TestStats::ImageStats(loss, sm->test_stats->LastTime()));
 
-    const std::string& name = ypred.data->m_name;
-    cv::Mat color_image = MaskToColor(ypred.data->m_gt, ex.x.data->m_image);
-    if (sparm->show_images)
-        ShowImage(color_image);
-
-    if (sparm->output_dir[0] != 0) {
-        std::string out_filename = std::string(sparm->output_dir) + "/" + name;
-        cv::imwrite(out_filename, (ypred.data->m_gt)*(255/3));
-        out_filename = std::string(sparm->output_dir) + "/fancy-" + name;
-        cv::Mat write_image;
-        color_image.convertTo(write_image, CV_8U, 255.0);
-        cv::imwrite(out_filename, write_image);
-    }
+    m_derived->EvalPrediction(*Downcast(ex.x.data), *Downcast(ex.y.data), *Downcast(ypred.data));
 }
 
-void SVM_Struct_Application::write_struct_model(char *file, STRUCTMODEL *sm, 
+template <class Derived>
+void SVM_App<Derived>::write_struct_model(char *file, STRUCTMODEL *sm, 
 			       STRUCT_LEARN_PARM *sparm)
 {
   /* Writes structural model sm to file file. */
@@ -437,8 +399,6 @@ void SVM_Struct_Application::write_struct_model(char *file, STRUCTMODEL *sm,
     ar & sv_num;
     ar & model->b;
 
-    ar & *sm->data;
-
     for(i=1;i<model->sv_num;i++) {
     for(v=model->supvec[i]->fvec;v;v=v->next) {
         double factor = (model->alpha[i]*v->factor);
@@ -460,7 +420,8 @@ void SVM_Struct_Application::write_struct_model(char *file, STRUCTMODEL *sm,
     ofs.close();
 }
 
-STRUCTMODEL SVM_Struct_Application::read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
+template <class Derived>
+STRUCTMODEL SVM_App<Derived>::read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 {
   /* Reads structural model sm from file file. This function is used
      only in the prediction module, not in the learning module. */
@@ -501,9 +462,6 @@ STRUCTMODEL SVM_Struct_Application::read_struct_model(char *file, STRUCT_LEARN_P
     model->lin_weights=NULL;
 
 
-    sm.data = new ModelData;
-    ar & *sm.data;
-
     for(int i = 1; i < model->sv_num; i++) {
         long kernel_id;
         size_t num_words;
@@ -526,9 +484,12 @@ STRUCTMODEL SVM_Struct_Application::read_struct_model(char *file, STRUCT_LEARN_P
     return sm;
 }
 
-void SVM_Struct_Application::write_label(FILE* fp, LABEL y)
+template <class Derived>
+void SVM_App<Derived>::write_label(FILE* fp, LABEL y)
 {
   /* Writes label y to file handle fp. */
 
 } 
 
+#include "interactive_seg_app.hpp"
+InteractiveSegApp is_app;

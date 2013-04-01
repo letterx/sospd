@@ -3,6 +3,8 @@
 #include <cstring>
 #include <iostream>
 #include <boost/program_options.hpp>
+#include "svm_c++.hpp"
+#include "interactive_seg_app.hpp"
 
 namespace po = boost::program_options;
 
@@ -42,7 +44,7 @@ static po::options_description GetClassifyOptions() {
 }
 
 
-void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
+SVM_App_Base* ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     sparm->grabcut_classify = 0;
     sparm->crf = 0;
     sparm->grabcut_unary = 0;
@@ -102,14 +104,14 @@ void ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     } else {
         sparm->stats_file[0] = 0;
     }
-
+    return new InteractiveSegApp();
 }
 
 void PrintStructLearnHelp() {
     std::cout << GetLearnOptions() << "\n";
 }
 
-void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
+SVM_App_Base* ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
     sparm->show_images = false;
     sparm->grabcut_classify = 0;
     sparm->crf = 0;
@@ -158,6 +160,7 @@ void ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
     } else {
         sparm->stats_file[0] = 0;
     }
+    return new InteractiveSegApp();
 }
 
 void PrintStructClassifyHelp() {
