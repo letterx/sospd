@@ -492,4 +492,4 @@ void SVM_App<Derived>::write_label(FILE* fp, LABEL y)
 } 
 
 #include "interactive_seg_app.hpp"
-InteractiveSegApp is_app;
+InteractiveSegApp is_app(InteractiveSegApp::ParseLearnOptions(std::vector<std::string>()));

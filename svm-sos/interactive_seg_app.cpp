@@ -273,3 +273,136 @@ void InteractiveSegApp::EvalPrediction(const IS_PatternData& x, const IS_LabelDa
         cv::imwrite(out_filename, write_image);
     }
 }
+
+
+namespace po = boost::program_options;
+
+po::options_description InteractiveSegApp::GetCommonOptions() {
+    po::options_description desc("Interactive Segmentation Options");
+    desc.add_options()
+        ("crf", po::value<std::string>(), "[ho | sf] -> Set CRF optimizer. (default sf)")
+        ("stats-file", po::value<std::string>(), "Output file for statistics")
+    ;
+
+    return desc;
+}
+
+po::options_description InteractiveSegApp::GetLearnOptions() {
+    po::options_description desc = GetCommonOptions();
+    desc.add_options()
+        ("grabcut-unary", po::value<int>(), "[0..] Use n iterations of grabcut to initialize GMM unary features (default 0)")
+        ("distance-unary", po::value<int>(), "[0,1] If 1, use distance features for unary potentials")
+        ("pairwise", po::value<int>(), "[0, 1] -> Use pairwise edge features. (default 0)")
+        ("contrast-pairwise", po::value<int>(), "[0, 1] -> Use contrast-sensitive pairwise features. (default 0)")
+        ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 1)")
+        ("constraint-scale", po::value<double>(), "Scaling factor for constraint violations")
+        ("feature-scale", po::value<double>(), "Scaling factor for Psi")
+        ("loss-scale", po::value<double>(), "Scaling factor for Delta (loss function")
+    ;
+    return desc;
+}
+
+po::options_description InteractiveSegApp::GetClassifyOptions() {
+    po::options_description desc = GetCommonOptions();
+    desc.add_options()
+        ("grabcut", po::value<int>(), "[0..] -> If nonzero, run n iterations of grabcut as the classifier instead. (default 0)")
+        ("show", po::value<int>(), "[0,1] -> If nonzero, display each image after it is classified. (default 0)")
+        ("output-dir", po::value<std::string>(), "Write predicted images to directory.")
+    ;
+    return desc;
+}
+
+
+InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::vector<std::string>& args) {
+    Parameters params;
+    params.grabcut_classify = 0;
+    params.crf = 0;
+    params.grabcut_unary = 0;
+    params.distance_unary = 1;
+    params.pairwise_feature = 0;
+    params.contrast_pairwise_feature = 0;
+    params.submodular_feature = 1;
+    params.stats_file = std::string();
+
+    po::options_description desc = GetLearnOptions();
+    po::variables_map vm;
+    po::store(po::command_line_parser(args).options(desc).run(), vm);
+
+    if (vm.count("crf")) {
+        std::string type = vm["crf"].as<std::string>();
+        if (type == "sf") {
+            std::cout << "SubmodularFlow optimizer\n";
+            params.crf = 0;
+        } else if (type == "ho") {
+            std::cout << "HigherOrder optimizer\n";
+            params.crf = 1;
+        } else {
+            std::cout << "Unrecognized optimizer\n";
+            exit(-1);
+        }
+    }
+    if (vm.count("grabcut-unary")) 
+        params.grabcut_unary = vm["grabcut-unary"].as<int>();
+    if (vm.count("distance-unary"))
+        params.distance_unary = vm["distance-unary"].as<int>();
+    if (vm.count("pairwise")) {
+        params.pairwise_feature = vm["pairwise"].as<int>();
+        std::cout << "Pairwise Feature = " << params.pairwise_feature << "\n";
+    }
+    if (vm.count("contrast-pairwise")) {
+        params.contrast_pairwise_feature = vm["contrast-pairwise"].as<int>();
+        std::cout << "Contrast Pairwise Feature = " << params.contrast_pairwise_feature << "\n";
+    }
+    if (vm.count("submodular")) {
+        params.submodular_feature = vm["submodular"].as<int>();
+        std::cout << "Submodular Feature = " << params.submodular_feature << "\n";
+    }
+    if (vm.count("stats-file")) {
+        params.stats_file = vm["stats-file"].as<std::string>();
+    }
+    return params;
+}
+
+InteractiveSegApp::Parameters InteractiveSegApp::ParseClassifyOptions(const std::vector<std::string>& args) {
+    Parameters params;
+
+    params.show_images = false;
+    params.grabcut_classify = 0;
+    params.crf = 0;
+    params.grabcut_unary = 0;
+    params.output_dir = std::string();
+    params.stats_file = std::string();
+
+    po::options_description desc = GetClassifyOptions();
+    po::variables_map vm;
+    po::store(po::command_line_parser(args).options(desc).run(), vm);
+
+    if (vm.count("crf")) {
+        std::string type = vm["crf"].as<std::string>();
+        if (type == "sf") {
+            std::cout << "SubmodularFlow optimizer\n";
+            params.crf = 0;
+        } else if (type == "ho") {
+            std::cout << "HigherOrder optimizer\n";
+            params.crf = 1;
+        } else {
+            std::cout << "Unrecognized optimizer\n";
+            exit(-1);
+        }
+    }
+    if (vm.count("show")) {
+        params.show_images = vm["show"].as<int>();
+        std::cout << "Show Images = " << params.show_images << "\n";
+    }
+    if (vm.count("grabcut")) {
+        params.grabcut_classify = vm["grabcut"].as<int>();
+        std::cout << "Grabcut iterations = " << params.grabcut_classify << "\n";
+    }
+    if (vm.count("output-dir")) {
+        params.output_dir = vm["output-dir"].as<std::string>();
+    }
+    if (vm.count("stats-file")) {
+        params.stats_file = vm["stats-file"].as<std::string>();
+    }
+    return params;
+}

@@ -7,6 +7,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <opencv2/core/core.hpp>
+#include <boost/program_options.hpp>
 
 class IS_PatternData : public PatternData {
     public:
@@ -56,11 +57,21 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
         struct Parameters {
             bool show_images;
             std::string output_dir;
+            std::string stats_file;
+            int grabcut_classify;
+            int crf;
+            int grabcut_unary;
+            bool distance_unary;
+            bool pairwise_feature;
+            bool contrast_pairwise_feature;
+            bool submodular_feature;
         };
 
         typedef FeatureGroup<IS_PatternData, IS_LabelData> FG;
 
-        InteractiveSegApp() : SVM_App<InteractiveSegApp>(this) { }
+        InteractiveSegApp(const Parameters& params) 
+            : SVM_App<InteractiveSegApp>(this),
+            m_params(params) { }
         void ReadExamples(const std::string& file, std::vector<PatternData*>& patterns, std::vector<LabelData*>& labels);
         long NumFeatures() const;
         const std::vector<boost::shared_ptr<FG>>& Features() const { return m_features; }
@@ -68,11 +79,17 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
         IS_LabelData* FindMostViolatedConstraint(const IS_PatternData& x, const IS_LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         double Loss(const IS_LabelData& y, const IS_LabelData& ybar, double loss_scale) const;
         void EvalPrediction(const IS_PatternData& x, const IS_LabelData& y, const IS_LabelData& ypred) const;
+
+        static boost::program_options::options_description GetLearnOptions();
+        static boost::program_options::options_description GetClassifyOptions();
+        static Parameters ParseLearnOptions(const std::vector<std::string>& args);
+        static Parameters ParseClassifyOptions(const std::vector<std::string>& args);
     private:
         void InitFeatures(const Parameters& p);
         void InitializeCRF(CRF& crf, const IS_PatternData& x) const;
         void AddLossToCRF(CRF& crf, const IS_PatternData& x, const IS_LabelData& y, double scale) const;
         IS_LabelData* ExtractLabel(const CRF& crf, const IS_PatternData& x) const;
+        static boost::program_options::options_description GetCommonOptions();
 
         Parameters m_params;
         std::vector<boost::shared_ptr<FG>> m_features;
