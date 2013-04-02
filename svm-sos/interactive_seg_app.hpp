@@ -64,6 +64,7 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
             bool pairwise_feature;
             bool contrast_pairwise_feature;
             bool submodular_feature;
+            bool contrast_submodular_feature;
         };
 
         typedef FeatureGroup<IS_PatternData, IS_LabelData> FG;

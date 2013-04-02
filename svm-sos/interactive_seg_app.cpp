@@ -9,6 +9,7 @@
 #include "gmm-feature.hpp"
 #include "distance-feature.hpp"
 #include "pairwise-feature.hpp"
+#include "contrast-submodular.hpp"
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
@@ -110,6 +111,10 @@ void InteractiveSegApp::InitFeatures(const Parameters& param) {
         m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature(feature_scale)));
     if (param.contrast_pairwise_feature || param.all_features)
         m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature(feature_scale)));
+    if (param.contrast_submodular_feature || param.all_features) {
+        std::cout << "Using Contrast Submodular Feature!\n";
+        m_features.push_back(boost::shared_ptr<FG>(new ContrastSubmodularFeature(feature_scale)));
+    }
 
     if (param.eval_dir != std::string("")) {
         for (auto fp : m_features) {
@@ -266,7 +271,8 @@ po::options_description InteractiveSegApp::GetLearnOptions() {
         ("distance-unary", po::value<int>(), "[0,1] If 1, use distance features for unary potentials")
         ("pairwise", po::value<int>(), "[0, 1] -> Use pairwise edge features. (default 0)")
         ("contrast-pairwise", po::value<int>(), "[0, 1] -> Use contrast-sensitive pairwise features. (default 0)")
-        ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 1)")
+        ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 0)")
+        ("contrast-submodular", po::value<bool>(), "[0, 1] -> Use contrast-submodular features. (default 1)")
         ("constraint-scale", po::value<double>(), "Scaling factor for constraint violations")
         ("feature-scale", po::value<double>(), "Scaling factor for Psi")
         ("loss-scale", po::value<double>(), "Scaling factor for Delta (loss function")
@@ -294,7 +300,8 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
     params.distance_unary = 1;
     params.pairwise_feature = 0;
     params.contrast_pairwise_feature = 0;
-    params.submodular_feature = 1;
+    params.submodular_feature = 0;
+    params.contrast_submodular_feature = 1;
     params.stats_file = std::string();
 
     po::options_description desc = GetLearnOptions();
@@ -329,6 +336,9 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
     if (vm.count("submodular")) {
         params.submodular_feature = vm["submodular"].as<int>();
         std::cout << "Submodular Feature = " << params.submodular_feature << "\n";
+    }
+    if (vm.count("contrast-submodular")) {
+        params.contrast_submodular_feature = vm["contrast-submodular"].as<bool>();
     }
     if (vm.count("stats-file")) {
         params.stats_file = vm["stats-file"].as<std::string>();
