@@ -36,6 +36,8 @@ class SVM_App_Base {
         SVM_App_Base() { }
         virtual ~SVM_App_Base() { }
 
+        virtual void train_features(const std::string& train_file, const std::string& eval_file, const std::string& output_dir) = 0;
+
         // Forwarding functions for api
         virtual void svm_struct_learn_api_exit() = 0;
         virtual void svm_struct_classify_api_exit() = 0;
@@ -73,6 +75,8 @@ class SVM_App : public SVM_App_Base {
         Derived* m_derived;
         static DPatternData* Downcast(PatternData* p) { return static_cast<DPatternData*>(p); }
         static DLabelData* Downcast(LabelData* p) { return static_cast<DLabelData*>(p); }
+
+        virtual void train_features(const std::string& train_file, const std::string& eval_file, const std::string& output_dir) override;
 
         // Forwarding functions for api
         virtual void svm_struct_learn_api_exit() override;

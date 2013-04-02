@@ -3,12 +3,21 @@
 #include "interactive_seg_app.hpp"
 #include "svm_c++.hpp"
 #include "image_manip.hpp"
-#include "feature.hpp"
 #include "crf.hpp"
+#include "feature.hpp"
+#include "submodular-feature.hpp"
+
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 
-void InteractiveSegApp::ReadExamples(const std::string& file, std::vector<PatternData*>& patterns, std::vector<LabelData*>& labels) {
+InteractiveSegApp::InteractiveSegApp(const Parameters& params) 
+    : SVM_App<InteractiveSegApp>(this),
+    m_params(params) 
+{
+    InitFeatures(params);        
+}
+
+void InteractiveSegApp::ReadExamples(const std::string& file, std::vector<IS_PatternData*>& patterns, std::vector<IS_LabelData*>& labels) {
     std::ifstream main_file(file);
 
     std::string images_dir;
@@ -46,10 +55,6 @@ void InteractiveSegApp::ReadExamples(const std::string& file, std::vector<Patter
     }
     main_file.close();
 }
-
-
-
-
 
 inline double LabelDiff(unsigned char l1, unsigned char l2) {
     if (l1 == cv::GC_BGD || l1 == cv::GC_PR_BGD) {
@@ -145,7 +150,10 @@ double InteractiveSegApp::Loss(const IS_LabelData& l1, const IS_LabelData& l2, d
 
 
 void InteractiveSegApp::InitFeatures(const Parameters& param) {
-
+    constexpr double feature_scale = 1.0;
+    if (param.submodular_feature)
+        m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature(feature_scale)));
+    
 }
 
 long InteractiveSegApp::NumFeatures() const {

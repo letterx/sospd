@@ -69,10 +69,8 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
 
         typedef FeatureGroup<IS_PatternData, IS_LabelData> FG;
 
-        InteractiveSegApp(const Parameters& params) 
-            : SVM_App<InteractiveSegApp>(this),
-            m_params(params) { }
-        void ReadExamples(const std::string& file, std::vector<PatternData*>& patterns, std::vector<LabelData*>& labels);
+        InteractiveSegApp(const Parameters& params);
+        void ReadExamples(const std::string& file, std::vector<IS_PatternData*>& patterns, std::vector<IS_LabelData*>& labels);
         long NumFeatures() const;
         const std::vector<boost::shared_ptr<FG>>& Features() const { return m_features; }
         IS_LabelData* Classify(const IS_PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;

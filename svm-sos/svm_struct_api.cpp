@@ -190,7 +190,7 @@ void        print_struct_help()
 void         parse_struct_parameters(STRUCT_LEARN_PARM *sparm)
 {
   /* Parses the command line parameters that start with -- */
-    ParseStructLearnParameters(sparm);
+    g_application = ParseStructLearnParameters(sparm);
 }
 
 void        print_struct_help_classify()
@@ -204,6 +204,6 @@ void         parse_struct_parameters_classify(STRUCT_LEARN_PARM *sparm)
 {
   /* Parses the command line parameters that start with -- for the
      classification module */
-    ParseStructClassifyParameters(sparm);
+    g_application = ParseStructClassifyParameters(sparm);
 }
 

@@ -27,6 +27,24 @@ LABEL MakeLabel(LabelData* d) {
 }
 
 template <class Derived>
+void SVM_App<Derived>::train_features(const std::string& train_file, const std::string& eval_file, const std::string& output_dir) {
+  std::vector<typename AppTraits<Derived>::PatternData*> train_patterns;
+  std::vector<typename AppTraits<Derived>::LabelData*> train_labels;
+  std::vector<typename AppTraits<Derived>::PatternData*> eval_patterns;
+  std::vector<typename AppTraits<Derived>::LabelData*> eval_labels;
+  m_derived->ReadExamples(train_file, train_patterns, train_labels);
+  m_derived->ReadExamples(eval_file, eval_patterns, eval_labels);
+
+  for (auto fgp : m_derived->Features()) {
+      fgp->Train(train_patterns, train_labels);
+  }
+  for (auto fgp : m_derived->Features()) {
+      fgp->Evaluate(eval_patterns);
+      fgp->SaveEvaluation(output_dir);
+  }
+}
+
+template <class Derived>
 void SVM_App<Derived>::svm_struct_learn_api_exit()
 {
   /* Called in learning part at the very end to allow any clean-up
@@ -49,8 +67,8 @@ SAMPLE SVM_App<Derived>::read_struct_examples(char *file, STRUCT_LEARN_PARM *spa
   EXAMPLE  *examples;
   size_t n = 0;       /* number of examples */
 
-  std::vector<PatternData*> patterns;
-  std::vector<LabelData*> labels;
+  std::vector<typename AppTraits<Derived>::PatternData*> patterns;
+  std::vector<typename AppTraits<Derived>::LabelData*> labels;
 
   strcpy(sparm->data_file, file);
 

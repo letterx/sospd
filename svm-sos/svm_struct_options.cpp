@@ -63,6 +63,42 @@ SVM_App_Base* ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     return app;
 }
 
+SVM_App_Base* ParseFeatureTrainParameters(int argc, char** argv, std::string& train_file, std::string& eval_file, std::string& output_dir) {
+    SVM_App_Base* app;
+    std::string app_name;
+    
+    try {
+
+        po::options_description desc;
+        desc.add_options()
+            ("app", po::value<std::string>(&app_name)->required(), "Application to train features for")
+            ("train-file", po::value<std::string>(&train_file)->required(), "Example file for training instances")
+            ("eval-file", po::value<std::string>(&eval_file)->required(), "Example file for evaluated instances")
+            ("output-dir", po::value<std::string>(&output_dir)->required(), "Output directory for evaluated instances")
+        ;
+
+        po::variables_map vm;
+        po::parsed_options parsed = po::command_line_parser(argc, argv).
+            options(desc).
+            allow_unregistered().
+            run();
+        std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::exclude_positional);
+        po::store(parsed, vm);
+        po::notify(vm);
+
+        if (vm["app"].as<std::string>() == std::string("interactive-seg"))
+            app = new InteractiveSegApp(InteractiveSegApp::ParseLearnOptions(pass_onwards));
+        else {
+            std::cout << "Unrecognized application: " << vm["app"].as<std::string>() << "\n";
+                exit(-1);
+        }
+    } catch (std::exception& e) {
+        std::cout << "Error: " << e.what() << "\n";
+        exit(-1);
+    }
+    return app;
+}
+
 SVM_App_Base* ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
     SVM_App_Base* app;
 
