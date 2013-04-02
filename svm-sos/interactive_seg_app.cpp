@@ -189,20 +189,28 @@ IS_LabelData* InteractiveSegApp::Classify(const IS_PatternData& x, STRUCTMODEL* 
         InitializeCRF(crf, x);
         size_t feature_base = 1;
         for (auto fgp : m_features) {
-            double violation = fgp->Violation(feature_base, sm->w);
-            double w2 = 0;
-            for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
-                w2 += sm->w[i] * sm->w[i];
-            if (violation > 0.0001 * w2) {
-                std::cout << "*** Max Violation: " << violation << ", |w|^2: " << w2 << "***";
-                std::cout.flush();
-            }
             fgp->AddToCRF(crf, x, sm->w + feature_base );
             feature_base += fgp->NumFeatures();
         }
         crf.Solve();
         return ExtractLabel(crf, x);
     }
+}
+
+bool InteractiveSegApp::FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+    size_t feature_base = 1;
+    for (auto fgp : m_features) {
+        double violation = fgp->Violation(feature_base, sm->w);
+        double w2 = 0;
+        for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
+            w2 += sm->w[i] * sm->w[i];
+        if (violation > 0.001 * w2) {
+            std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|^2 = " << w2 << "\n";
+            return true;
+        }
+        feature_base += fgp->NumFeatures();
+    }
+    return false;
 }
 
 IS_LabelData* InteractiveSegApp::FindMostViolatedConstraint(const IS_PatternData& x, const IS_LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
@@ -217,14 +225,6 @@ IS_LabelData* InteractiveSegApp::FindMostViolatedConstraint(const IS_PatternData
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
-        double violation = fgp->Violation(feature_base, sm->w);
-        double w2 = 0;
-        for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
-            w2 += sm->w[i] * sm->w[i];
-        if (violation > 0.0001 * w2) {
-            std::cout << "*** Max Violation: " << violation << ", |w|^2: " << w2 << "***";
-            std::cout.flush();
-        }
         fgp->AddToCRF(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }

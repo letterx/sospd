@@ -329,7 +329,7 @@ int SVM_App<Derived>::finalize_iteration(double ceps, int cached_constraint,
     }
     std::cout << "\n";
     */
-  return(0);
+    return m_derived->FinalizeIteration(sm, sparm);
 }
 
 template <class Derived>
