@@ -2,8 +2,11 @@
 #define _PAIRWISE_FEATURE_HPP_
 
 #include "feature.hpp"
+#include "interactive_seg_app.hpp"
+#include <map>
 
-class PairwiseFeature : public FeatureGroup {
+
+class PairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
     public:
     typedef FeatureGroup::Constr Constr;
     double m_scale;
@@ -12,7 +15,7 @@ class PairwiseFeature : public FeatureGroup {
     explicit PairwiseFeature(double scale) : m_scale(scale) { }
 
     virtual size_t NumFeatures() const { return 1; }
-    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const {
         std::vector<FVAL> psi = {0.0};
         auto constPairwise = [&](const unsigned char& l1, const unsigned char& l2) {
             psi[0] += m_scale*LabelDiff(l1, l2);
@@ -24,7 +27,7 @@ class PairwiseFeature : public FeatureGroup {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
+    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const {
         auto constPairwise = [&](long l1, long l2) {
             crf.AddPairwiseTerm(l1, l2, 0, doubleToREAL(m_scale*w[0]), doubleToREAL(m_scale*w[0]), 0);
         };
@@ -49,7 +52,7 @@ class PairwiseFeature : public FeatureGroup {
 
 BOOST_CLASS_EXPORT_GUID(PairwiseFeature, "PairwiseFeature")
 
-class ContrastPairwiseFeature : public FeatureGroup {
+class ContrastPairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
     public:
     typedef FeatureGroup::Constr Constr;
     double m_scale;
@@ -58,22 +61,26 @@ class ContrastPairwiseFeature : public FeatureGroup {
     explicit ContrastPairwiseFeature(double scale) : m_scale(scale) { }
 
     virtual size_t NumFeatures() const { return 1; }
-    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
+    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const {
+        const cv::Mat& downW = m_downW[p.Name()];
+        const cv::Mat& rightW = m_rightW[p.Name()];
         std::vector<FVAL> psi = {0.0};
         std::function<void(const double&, const double&, const unsigned char&, const unsigned char&)>
             gradientPairwise = [&](const double& d1, const double& d2, const unsigned char& l1, const unsigned char& l2)
             {
                 psi[0] += m_scale*d1*LabelDiff(l1, l2);
             };
-        ImageIterate(p.m_downW, l.m_gt, cv::Point(0.0, 1.0), gradientPairwise);
-        ImageIterate(p.m_rightW, l.m_gt, cv::Point(1.0, 0.0), gradientPairwise);
+        ImageIterate(downW, l.m_gt, cv::Point(0.0, 1.0), gradientPairwise);
+        ImageIterate(rightW, l.m_gt, cv::Point(1.0, 0.0), gradientPairwise);
 
         for (auto& v : psi)
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
+    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const {
         cv::Mat gradWeight;
+        const cv::Mat& downW = m_downW[p.Name()];
+        const cv::Mat& rightW = m_rightW[p.Name()];
         std::function<void(const cv::Point&, const cv::Point&)> gradientPairwise = 
             [&](const cv::Point& p1, const cv::Point& p2)
             {
@@ -82,9 +89,9 @@ class ContrastPairwiseFeature : public FeatureGroup {
                 CRF::NodeId i2 = p2.y*p.m_image.cols + p2.x;
                 crf.AddPairwiseTerm(i1, i2, 0, weight, weight, 0);
             };
-        gradWeight = p.m_downW;
+        gradWeight = downW;
         ImageIterp(p.m_image, cv::Point(0.0, 1.0), gradientPairwise);
-        gradWeight = p.m_rightW;
+        gradWeight = rightW;
         ImageIterp(p.m_image, cv::Point(1.0, 0.0), gradientPairwise);
     }
     virtual Constr CollectConstrs(size_t feature_base, double constraint_scale) const {
@@ -92,6 +99,43 @@ class ContrastPairwiseFeature : public FeatureGroup {
         std::pair<std::vector<std::pair<size_t, double>>, double> c = {{{feature_base, constraint_scale}}, 0.0};
         ret.push_back(c);
         return ret;
+    }
+    virtual void Evaluate(const std::vector<IS_PatternData*>& patterns) {
+        std::cout << "Evaluating Pairwise Features...";
+        std::cout.flush();
+        for (const IS_PatternData* xp : patterns) {
+            const IS_PatternData& x = *xp;
+            cv::Mat& downW = m_downW[x.Name()];
+            cv::Mat& rightW = m_rightW[x.Name()];
+            double beta = calcBeta(x.m_image);
+            downW.create(x.m_image.rows, x.m_image.cols, CV_64FC1);
+            rightW.create(x.m_image.rows, x.m_image.cols, CV_64FC1);
+            std::function<void(const cv::Vec3b&, const cv::Vec3b&, double&, double&)> calcExpDiff = 
+                [&](const cv::Vec3b& color1, const cv::Vec3b& color2, double& d1, double& d2) {
+                    cv::Vec3d c1 = color1;
+                    cv::Vec3d c2 = color2;
+                    cv::Vec3d diff = c1-c2;
+                    d1 = exp(-beta*diff.dot(diff));
+                    //d1 = abs(diff[0]) + abs(diff[1]) + abs(diff[2]);
+            };
+            ImageIterate(x.m_image, downW, cv::Point(0.0, 1.0), calcExpDiff);
+            ImageIterate(x.m_image, rightW, cv::Point(1.0, 0.0), calcExpDiff);
+        }
+        std::cout << "Done!\n";
+    }
+    virtual void SaveEvaluation(const std::string& output_dir) const {
+        std::string outfile = output_dir + "/pairwise-feature.dat";
+        std::ofstream os(outfile, std::ios_base::binary);
+        boost::archive::binary_oarchive ar(os);
+        ar & m_rightW;
+        ar & m_downW;
+    }
+    virtual void LoadEvaluation(const std::string& output_dir) {
+        std::string infile = output_dir + "/pairwise-feature.dat";
+        std::ifstream is(infile, std::ios_base::binary);
+        boost::archive::binary_iarchive ar(is);
+        ar & m_rightW;
+        ar & m_downW;
     }
     private:
     friend class boost::serialization::access;
@@ -101,6 +145,9 @@ class ContrastPairwiseFeature : public FeatureGroup {
         ar & boost::serialization::base_object<FeatureGroup>(*this);
         ar & m_scale;
     }
+
+    mutable std::map<std::string, cv::Mat> m_downW;
+    mutable std::map<std::string, cv::Mat> m_rightW;
 };
 
 BOOST_CLASS_EXPORT_GUID(ContrastPairwiseFeature, "ContrastPairwiseFeature")

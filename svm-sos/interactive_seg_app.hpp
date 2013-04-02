@@ -56,6 +56,7 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
             std::string eval_dir;
             std::string output_dir;
             std::string stats_file;
+            bool all_features;
             int grabcut_classify;
             int crf;
             int grabcut_unary;

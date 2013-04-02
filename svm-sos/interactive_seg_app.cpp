@@ -7,6 +7,8 @@
 #include "feature.hpp"
 #include "submodular-feature.hpp"
 #include "gmm-feature.hpp"
+#include "distance-feature.hpp"
+#include "pairwise-feature.hpp"
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
@@ -63,38 +65,6 @@ IS_PatternData::IS_PatternData(const std::string& name, const cv::Mat& image, co
     m_image(image)
 {
     ConvertToMask(trimap, m_tri);
-
-    /*
-    m_fgdDist.create(m_image.rows, m_image.cols, CV_32SC1);
-    m_bgdDist.create(m_image.rows, m_image.cols, CV_32SC1);
-    m_dist_feature.create(m_image.rows, m_image.cols, CV_32SC1);
-    CalcDistances(m_tri, m_fgdDist, m_bgdDist, m_dist_feature);
-
-    cv::Mat grabcutResult;
-    m_tri.copyTo(grabcutResult);
-    if (sparm->grabcut_unary)
-        cv::grabCut(m_image, grabcutResult, cv::Rect(), m_bgdModel, m_fgdModel, sparm->grabcut_unary, cv::GC_INIT_WITH_MASK);
-
-    learnGMMs(m_image, grabcutResult, m_bgdGMM, m_fgdGMM);
-
-    m_fgdUnaries.create(m_image.rows, m_image.cols, CV_64FC1);
-    m_bgdUnaries.create(m_image.rows, m_image.cols, CV_64FC1);
-    CalcUnaries(*this);
-
-    m_beta = calcBeta(m_image);
-    m_downW.create(m_image.rows, m_image.cols, CV_64FC1);
-    m_rightW.create(m_image.rows, m_image.cols, CV_64FC1);
-    std::function<void(const cv::Vec3b&, const cv::Vec3b&, double&, double&)> calcExpDiff = 
-        [&](const cv::Vec3b& color1, const cv::Vec3b& color2, double& d1, double& d2) {
-            cv::Vec3d c1 = color1;
-            cv::Vec3d c2 = color2;
-            cv::Vec3d diff = c1-c2;
-            d1 = exp(-m_beta*diff.dot(diff));
-            //d1 = abs(diff[0]) + abs(diff[1]) + abs(diff[2]);
-    };
-    ImageIterate(m_image, m_downW, cv::Point(0.0, 1.0), calcExpDiff);
-    ImageIterate(m_image, m_rightW, cv::Point(1.0, 0.0), calcExpDiff);
-    */
 }
 
 IS_LabelData::IS_LabelData(const std::string& name, const cv::Mat& gt)
@@ -132,8 +102,14 @@ double InteractiveSegApp::Loss(const IS_LabelData& l1, const IS_LabelData& l2, d
 void InteractiveSegApp::InitFeatures(const Parameters& param) {
     constexpr double feature_scale = 0.01;
     m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale)));
-    if (param.submodular_feature)
+    if (param.distance_unary || param.all_features)
+        m_features.push_back(boost::shared_ptr<FG>(new DistanceFeature(feature_scale)));
+    if (param.submodular_feature || param.all_features)
         m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature(feature_scale)));
+    if (param.pairwise_feature || param.all_features)
+        m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature(feature_scale)));
+    if (param.contrast_pairwise_feature || param.all_features)
+        m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature(feature_scale)));
 
     if (param.eval_dir != std::string("")) {
         for (auto fp : m_features) {
@@ -285,6 +261,7 @@ po::options_description InteractiveSegApp::GetCommonOptions() {
 po::options_description InteractiveSegApp::GetLearnOptions() {
     po::options_description desc = GetCommonOptions();
     desc.add_options()
+        ("all-features", po::value<bool>(), "Turn on all features (for use with feature-train)")
         ("grabcut-unary", po::value<int>(), "[0..] Use n iterations of grabcut to initialize GMM unary features (default 0)")
         ("distance-unary", po::value<int>(), "[0,1] If 1, use distance features for unary potentials")
         ("pairwise", po::value<int>(), "[0, 1] -> Use pairwise edge features. (default 0)")
@@ -310,6 +287,7 @@ po::options_description InteractiveSegApp::GetClassifyOptions() {
 
 InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::vector<std::string>& args) {
     Parameters params;
+    params.all_features = false;
     params.grabcut_classify = 0;
     params.crf = 0;
     params.grabcut_unary = 0;
@@ -358,6 +336,8 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
     if (vm.count("eval-dir")) {
         params.eval_dir = vm["eval-dir"].as<std::string>();
     }
+    if (vm.count("all-features"))
+        params.all_features = vm["all-features"].as<bool>();
     return params;
 }
 
