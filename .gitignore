@@ -35,6 +35,7 @@ process_stats
 *.predictions
 nohup.out
 stats.out
+*.dat
 
 # images
 *.ppm

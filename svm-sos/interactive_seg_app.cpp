@@ -130,7 +130,7 @@ double InteractiveSegApp::Loss(const IS_LabelData& l1, const IS_LabelData& l2, d
 
 
 void InteractiveSegApp::InitFeatures(const Parameters& param) {
-    constexpr double feature_scale = 1.0;
+    constexpr double feature_scale = 0.01;
     m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale)));
     if (param.submodular_feature)
         m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature(feature_scale)));
@@ -189,18 +189,18 @@ IS_LabelData* InteractiveSegApp::ExtractLabel(const CRF& crf, const IS_PatternDa
 }
 
 IS_LabelData* InteractiveSegApp::Classify(const IS_PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
-    if (sparm->grabcut_classify) {
+    if (m_params.grabcut_classify) {
         IS_LabelData* y = new IS_LabelData(x.Name());
         x.m_tri.copyTo(y->m_gt);
         cv::Mat bgdModel;
         cv::Mat fgdModel;
-        cv::grabCut(x.m_image, y->m_gt, cv::Rect(), bgdModel, fgdModel, sparm->grabcut_classify);
+        cv::grabCut(x.m_image, y->m_gt, cv::Rect(), bgdModel, fgdModel, m_params.grabcut_classify);
         return y;
     } else {
         CRF crf;
         SubmodularFlow sf;
         HigherOrderWrapper ho;
-        if (sparm->crf == 0) {
+        if (m_params.crf == 0) {
             crf.Wrap(&sf);
         } else {
             crf.Wrap(&ho);
@@ -228,7 +228,7 @@ IS_LabelData* InteractiveSegApp::FindMostViolatedConstraint(const IS_PatternData
     CRF crf;
     SubmodularFlow sf;
     HigherOrderWrapper ho;
-    if (sparm->crf == 0) {
+    if (m_params.crf == 0) {
         crf.Wrap(&sf);
     } else {
         crf.Wrap(&ho);

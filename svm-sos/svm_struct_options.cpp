@@ -31,7 +31,6 @@ SVM_App_Base* ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     SVM_App_Base* app;
 
     sparm->constraint_scale = 100000.0;
-    sparm->feature_scale = 1.0;
     sparm->loss_scale = 1000.0;
 
     po::options_description desc = GetStructLearnParameters();

@@ -73,6 +73,7 @@ SAMPLE SVM_App<Derived>::read_struct_examples(char *file, STRUCT_LEARN_PARM *spa
   strcpy(sparm->data_file, file);
 
   m_derived->ReadExamples(file, patterns, labels);
+  n = patterns.size();
 
   examples=(EXAMPLE *)my_malloc(sizeof(EXAMPLE)*n);
   for (size_t i = 0; i < n; ++i) {
@@ -399,7 +400,6 @@ void SVM_App<Derived>::write_struct_model(char *file, STRUCTMODEL *sm,
     ar & sparm->constraint_scale;
     ar & sparm->feature_scale;
     ar & sparm->loss_scale;
-    ar & sparm->grabcut_unary;
     ar & model->kernel_parm.kernel_type;
     ar & model->kernel_parm.poly_degree;
     ar & model->kernel_parm.rbf_gamma;
@@ -461,7 +461,6 @@ STRUCTMODEL SVM_App<Derived>::read_struct_model(char *file, STRUCT_LEARN_PARM *s
     ar & sparm->constraint_scale;
     ar & sparm->feature_scale;
     ar & sparm->loss_scale;
-    ar & sparm->grabcut_unary;
     ar & model->kernel_parm.kernel_type;
     ar & model->kernel_parm.poly_degree;
     ar & model->kernel_parm.rbf_gamma;
