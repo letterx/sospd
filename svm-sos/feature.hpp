@@ -24,11 +24,11 @@ class FeatureGroup {
 
         virtual void Train(const std::vector<PatternData*>& patterns, const std::vector<LabelData*>& labels) { }
         virtual void LoadTraining(const std::string& train_dir) { }
-        virtual void SaveTraining(const std::string& train_dir) { }
+        virtual void SaveTraining(const std::string& train_dir) const { }
 
         virtual void Evaluate(const std::vector<PatternData*>& patterns) { }
         virtual void LoadEvaluation(const std::string& train_dir) { }
-        virtual void SaveEvaluation(const std::string& train_dir) { }
+        virtual void SaveEvaluation(const std::string& train_dir) const { }
     private:
         friend class boost::serialization::access;
         template <typename Archive>

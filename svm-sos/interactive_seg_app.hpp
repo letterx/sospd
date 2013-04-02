@@ -7,6 +7,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <boost/program_options.hpp>
 
 class IS_PatternData : public PatternData {
@@ -15,10 +16,6 @@ class IS_PatternData : public PatternData {
         cv::Mat m_image;
         cv::Mat m_tri;
         /*
-        cv::Mat m_bgdModel;
-        GMM m_bgdGMM;
-        cv::Mat m_fgdModel;
-        GMM m_fgdGMM;
         double m_beta;
         cv::Mat m_fgdUnaries;
         cv::Mat m_bgdUnaries;
@@ -56,6 +53,7 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
     public:
         struct Parameters {
             bool show_images;
+            std::string eval_dir;
             std::string output_dir;
             std::string stats_file;
             int grabcut_classify;
@@ -92,5 +90,26 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
         Parameters m_params;
         std::vector<boost::shared_ptr<FG>> m_features;
 };
+
+inline double LabelDiff(unsigned char l1, unsigned char l2) {
+    if (l1 == cv::GC_BGD || l1 == cv::GC_PR_BGD) {
+        if (l2 == cv::GC_FGD || l2 == cv::GC_PR_FGD)
+            return 1.0;
+        else if (l2 == (unsigned char)-1)
+            return 0.5;
+        else 
+            return 0.0;
+    } else if (l1 == cv::GC_FGD || l1 == cv::GC_PR_FGD) {
+        if (l2 == cv::GC_BGD || l2 == cv::GC_PR_BGD)
+            return 1.0;
+        else if (l2 == (unsigned char)-1)
+            return 0.5;
+        else 
+            return 0.0;
+    } else if (l1 == l2)
+        return 0.0;
+    else
+        return 0.5;
+}
 
 #endif

@@ -6,6 +6,7 @@
 #include "crf.hpp"
 #include "feature.hpp"
 #include "submodular-feature.hpp"
+#include "gmm-feature.hpp"
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
@@ -54,27 +55,6 @@ void InteractiveSegApp::ReadExamples(const std::string& file, std::vector<IS_Pat
         }
     }
     main_file.close();
-}
-
-inline double LabelDiff(unsigned char l1, unsigned char l2) {
-    if (l1 == cv::GC_BGD || l1 == cv::GC_PR_BGD) {
-        if (l2 == cv::GC_FGD || l2 == cv::GC_PR_FGD)
-            return 1.0;
-        else if (l2 == (unsigned char)-1)
-            return 0.5;
-        else 
-            return 0.0;
-    } else if (l1 == cv::GC_FGD || l1 == cv::GC_PR_FGD) {
-        if (l2 == cv::GC_BGD || l2 == cv::GC_PR_BGD)
-            return 1.0;
-        else if (l2 == (unsigned char)-1)
-            return 0.5;
-        else 
-            return 0.0;
-    } else if (l1 == l2)
-        return 0.0;
-    else
-        return 0.5;
 }
 
 
@@ -151,9 +131,15 @@ double InteractiveSegApp::Loss(const IS_LabelData& l1, const IS_LabelData& l2, d
 
 void InteractiveSegApp::InitFeatures(const Parameters& param) {
     constexpr double feature_scale = 1.0;
+    m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale)));
     if (param.submodular_feature)
         m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature(feature_scale)));
-    
+
+    if (param.eval_dir != std::string("")) {
+        for (auto fp : m_features) {
+            fp->LoadEvaluation(param.eval_dir);
+        }
+    }
 }
 
 long InteractiveSegApp::NumFeatures() const {
@@ -290,6 +276,7 @@ po::options_description InteractiveSegApp::GetCommonOptions() {
     desc.add_options()
         ("crf", po::value<std::string>(), "[ho | sf] -> Set CRF optimizer. (default sf)")
         ("stats-file", po::value<std::string>(), "Output file for statistics")
+        ("eval-dir", po::value<std::string>(), "Directory for feature evaluation caching")
     ;
 
     return desc;
@@ -368,6 +355,9 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
     if (vm.count("stats-file")) {
         params.stats_file = vm["stats-file"].as<std::string>();
     }
+    if (vm.count("eval-dir")) {
+        params.eval_dir = vm["eval-dir"].as<std::string>();
+    }
     return params;
 }
 
@@ -411,6 +401,9 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseClassifyOptions(const std:
     }
     if (vm.count("stats-file")) {
         params.stats_file = vm["stats-file"].as<std::string>();
+    }
+    if (vm.count("eval-dir")) {
+        params.eval_dir = vm["eval-dir"].as<std::string>();
     }
     return params;
 }

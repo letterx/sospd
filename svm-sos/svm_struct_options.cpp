@@ -40,7 +40,7 @@ SVM_App_Base* ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
         options(desc).
         allow_unregistered().
         run();
-    std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::exclude_positional);
+    std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::include_positional);
     po::store(parsed, vm);
 
     if (vm.count("app")) {
@@ -82,7 +82,7 @@ SVM_App_Base* ParseFeatureTrainParameters(int argc, char** argv, std::string& tr
             options(desc).
             allow_unregistered().
             run();
-        std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::exclude_positional);
+        std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::include_positional);
         po::store(parsed, vm);
         po::notify(vm);
 
@@ -108,7 +108,7 @@ SVM_App_Base* ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
         options(desc).
         allow_unregistered().
         run();
-    std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::exclude_positional);
+    std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::include_positional);
     po::store(parsed, vm);
 
     if (vm.count("app")) {

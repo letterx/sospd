@@ -9,6 +9,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/serialization/split_free.hpp>
+#include <boost/serialization/vector.hpp>
 
 template <typename Fn>
 inline void ImageIterate(cv::Mat& im, Fn f) {
@@ -289,27 +290,27 @@ namespace boost {
 namespace serialization {
 template <typename Archive>
 void save(Archive& ar, const cv::Mat& im, const unsigned int version) {
+    size_t elem_size = im.elemSize();
+    size_t elem_type = im.type();
     ar & im.rows;
     ar & im.cols;
-    int channels = im.channels();
-    ar & channels;
-    unsigned char* data = im.data;
-    for (int i = 0; i < im.rows*im.cols*im.channels(); ++i) {
-        ar & data[i];
-    }
+    ar & elem_size;
+    ar & elem_type;
+    const size_t data_size = im.cols * im.rows * elem_size;
+    ar & boost::serialization::make_array(im.ptr(), data_size);
 }
 
 template <typename Archive>
 void load(Archive& ar, cv::Mat& im, const unsigned int version) {
-    int rows, cols, channels;
+    int rows, cols;
+    size_t elem_size, elem_type;
     ar & rows;
     ar & cols;
-    ar & channels;
-    im.create(rows, cols*channels, CV_8UC1);
-    unsigned char* data = im.data;
-    for (int i = 0; i < rows*cols*channels; ++i) {
-        ar & data[i];
-    }
+    ar & elem_size;
+    ar & elem_type;
+    im.create(rows, cols, elem_type);
+    const size_t data_size = im.cols * im.rows * elem_size;
+    ar & boost::serialization::make_array(im.ptr(), data_size);
 }
 
 template <typename Archive>
