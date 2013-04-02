@@ -273,9 +273,6 @@ po::options_description InteractiveSegApp::GetLearnOptions() {
         ("contrast-pairwise", po::value<int>(), "[0, 1] -> Use contrast-sensitive pairwise features. (default 0)")
         ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 0)")
         ("contrast-submodular", po::value<bool>(), "[0, 1] -> Use contrast-submodular features. (default 1)")
-        ("constraint-scale", po::value<double>(), "Scaling factor for constraint violations")
-        ("feature-scale", po::value<double>(), "Scaling factor for Psi")
-        ("loss-scale", po::value<double>(), "Scaling factor for Delta (loss function")
     ;
     return desc;
 }
