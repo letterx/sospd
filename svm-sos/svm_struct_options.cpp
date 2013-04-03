@@ -5,6 +5,7 @@
 #include <boost/program_options.hpp>
 #include "svm_c++.hpp"
 #include "interactive_seg_app.hpp"
+#include "semantic_seg_app.hpp"
 
 namespace po = boost::program_options;
 
@@ -87,6 +88,8 @@ SVM_App_Base* ParseFeatureTrainParameters(int argc, char** argv, std::string& tr
 
         if (vm["app"].as<std::string>() == std::string("interactive-seg"))
             app = new InteractiveSegApp(InteractiveSegApp::ParseLearnOptions(pass_onwards));
+        else if (vm["app"].as<std::string>() == std::string("semantic-seg"))
+            app = new SemanticSegApp(SemanticSegApp::ParseLearnOptions(pass_onwards));
         else {
             std::cout << "Unrecognized application: " << vm["app"].as<std::string>() << "\n";
                 exit(-1);

@@ -25,6 +25,7 @@ SRCS = svm_struct_learn_custom.cpp \
 	   svm_c++.cpp \
 	   interactive_seg_app.cpp \
 	   gmm.cpp \
+	   semantic_seg_app.cpp \
 	   svm_struct_options.cpp \
 	   stats.cpp
 OBJS = $(SRCS:.cpp=.o)

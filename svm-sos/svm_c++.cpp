@@ -509,4 +509,8 @@ void SVM_App<Derived>::write_label(FILE* fp, LABEL y)
 } 
 
 #include "interactive_seg_app.hpp"
-InteractiveSegApp is_app(InteractiveSegApp::ParseLearnOptions(std::vector<std::string>()));
+#include "semantic_seg_app.hpp"
+void _instantiate_apps() {
+    InteractiveSegApp is_app(InteractiveSegApp::ParseLearnOptions(std::vector<std::string>()));
+    SemanticSegApp sem_app(SemanticSegApp::ParseLearnOptions(std::vector<std::string>()));
+}

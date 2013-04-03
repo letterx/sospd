@@ -7,7 +7,7 @@
 
 class MultiLabelCRF {
     public:
-        typedef size_t Label;
+        typedef int Label;
         typedef int NodeId;
         struct Clique;
         typedef std::shared_ptr<Clique> CliquePtr;
@@ -63,7 +63,30 @@ class MultiLabelCRF {
 };
 
 
+class SeparableClique : public MultiLabelCRF::Clique {
+    public:
+        typedef MultiLabelCRF::NodeId NodeId;
+        typedef MultiLabelCRF::Label Label;
+        typedef uint32_t Assgn;
+        typedef std::vector<std::vector<REAL>> EnergyTable;
 
+        SeparableClique(const std::vector<NodeId>& nodes, const EnergyTable& energy_table)
+            : MultiLabelCRF::Clique(nodes),
+            m_energy_table(energy_table) { }
+
+        virtual REAL Energy(const std::vector<Label>& labels) const override {
+            const Label num_labels = m_energy_table.size();
+            std::vector<Assgn> per_label(num_labels, 0);
+            for (size_t i = 0; i < labels.size(); ++i)
+                per_label[labels[i]] |= 1 << i;
+            REAL e = 0;
+            for (Label l = 0; l < num_labels; ++l)
+                e += m_energy_table[l][per_label[l]];
+            return e;
+        }
+    private:
+        EnergyTable m_energy_table;
+};
 
 
 
