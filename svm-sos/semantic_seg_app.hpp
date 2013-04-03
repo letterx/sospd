@@ -41,21 +41,33 @@ class MultiLabelCRF;
 class SemanticSegApp : public SVM_App<SemanticSegApp> {
     public:
         struct Parameters {
-            bool show_images;
+            // The following are serialized with the model
             std::string eval_dir;
-            std::string output_dir;
-            std::string stats_file;
             bool all_features;
-            int crf;
             bool pairwise_feature;
             bool contrast_pairwise_feature;
             bool submodular_feature;
             bool contrast_submodular_feature;
+            // Classify-only options
+            bool show_images;
+            std::string output_dir;
+            std::string stats_file;
+            int crf;
         };
+        template <typename Archive>
+        void SerializeParams(Archive& ar) {
+            ar &  m_params.eval_dir;
+            ar &  m_params.all_features;
+            ar &  m_params.pairwise_feature;
+            ar &  m_params.contrast_pairwise_feature;
+            ar &  m_params.submodular_feature;
+            ar &  m_params.contrast_submodular_feature;
+        }
 
         typedef FeatureGroup<Sem_PatternData, Sem_LabelData, MultiLabelCRF> FG;
 
         SemanticSegApp(const Parameters& params);
+        void InitFeatures(const Parameters& p);
         void ReadExamples(const std::string& file, std::vector<Sem_PatternData*>& patterns, std::vector<Sem_LabelData*>& labels);
         long NumFeatures() const;
         const std::vector<boost::shared_ptr<FG>>& Features() const { return m_features; }
@@ -64,15 +76,14 @@ class SemanticSegApp : public SVM_App<SemanticSegApp> {
         double Loss(const Sem_LabelData& y, const Sem_LabelData& ybar, double loss_scale) const;
         void EvalPrediction(const Sem_PatternData& x, const Sem_LabelData& y, const Sem_LabelData& ypred) const;
         bool FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
+        const Parameters& Params() const { return m_params; }
 
         static boost::program_options::options_description GetLearnOptions();
         static boost::program_options::options_description GetClassifyOptions();
         static Parameters ParseLearnOptions(const std::vector<std::string>& args);
         static Parameters ParseClassifyOptions(const std::vector<std::string>& args);
-        const Parameters& Params() const { return m_params; }
     private:
         typedef int Label;
-        void InitFeatures(const Parameters& p);
         void InitializeCRF(MultiLabelCRF& crf, const Sem_PatternData& x) const;
         void AddLossToCRF(MultiLabelCRF& crf, const Sem_PatternData& x, const Sem_LabelData& y, double scale) const;
         Sem_LabelData* ExtractLabel(const MultiLabelCRF& crf, const Sem_PatternData& x) const;
