@@ -37,6 +37,8 @@ feature_train
 nohup.out
 stats.out
 *.dat
+sum-of-submodular.tar
+
 
 # images
 *.ppm

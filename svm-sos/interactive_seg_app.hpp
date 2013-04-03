@@ -69,14 +69,15 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
         };
         template <typename Archive>
         void SerializeParams(Archive& ar) {
-            ar &  m_params.eval_dir;
-            ar &  m_params.all_features;
-            ar &  m_params.grabcut_classify;
-            ar &  m_params.grabcut_unary;
-            ar &  m_params.distance_unary;
-            ar &  m_params.pairwise_feature;
-            ar &  m_params.contrast_pairwise_feature;
-            ar &  m_params.contrast_submodular_feature;
+            ar & m_params.eval_dir;
+            ar & m_params.all_features;
+            ar & m_params.grabcut_classify;
+            ar & m_params.grabcut_unary;
+            ar & m_params.distance_unary;
+            ar & m_params.pairwise_feature;
+            ar & m_params.contrast_pairwise_feature;
+            ar & m_params.submodular_feature;
+            ar & m_params.contrast_submodular_feature;
         }
 
         typedef FeatureGroup<IS_PatternData, IS_LabelData, CRF> FG;

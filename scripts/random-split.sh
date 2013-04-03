@@ -29,6 +29,9 @@ num_splits=$2
 split_size=`expr $num_files / $num_splits`
 echo "Split size: $split_size"
 
+cat $1/header.txt > $1/data-all.dat
+cat $1/random-order.dat >> $1/data-all.dat
+
 for i in $(seq 1 $num_splits)
 do
     small_file=$1/data-$i-$num_splits-small.dat
