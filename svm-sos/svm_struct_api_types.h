@@ -106,7 +106,6 @@ typedef struct struct_learn_parm {
   /* further parameters that are passed to init_struct_model() */
   char data_file[256];
   char model_file[256];
-  char stats_file[256]; // Filename to store stats to
   // Flags for which features to use
   double constraint_scale;
   double feature_scale;

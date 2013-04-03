@@ -83,6 +83,7 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
         static boost::program_options::options_description GetClassifyOptions();
         static Parameters ParseLearnOptions(const std::vector<std::string>& args);
         static Parameters ParseClassifyOptions(const std::vector<std::string>& args);
+        const Parameters& Params() const { return m_params; }
     private:
         void InitFeatures(const Parameters& p);
         void InitializeCRF(CRF& crf, const IS_PatternData& x) const;

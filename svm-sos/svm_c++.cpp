@@ -357,8 +357,8 @@ void SVM_App<Derived>::print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm
      evaluation (e.g. precision/recall) you might want. You can use
      the function eval_prediction to accumulate the necessary
      statistics for each prediction. */
-    if (sparm->stats_file[0] != 0)
-        sm->test_stats->Write(sparm->stats_file);
+    if (m_derived->Params().stats_file != std::string())
+        sm->test_stats->Write(m_derived->Params().stats_file);
 }
 
 template <class Derived>
