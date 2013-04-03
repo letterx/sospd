@@ -206,6 +206,7 @@ void SemanticSegApp::EvalPrediction(const Sem_PatternData& x, const Sem_LabelDat
     if (m_params.show_images) {
         cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
         cv::imshow("Display window", color_image);
+        cv::waitKey(0);
     }
 
     if (m_params.output_dir != std::string("")) {
@@ -255,7 +256,7 @@ void SemanticSegApp::ConvertLabelToColor(const cv::Mat& label_image, cv::Mat& co
 namespace po = boost::program_options;
 
 po::options_description SemanticSegApp::GetCommonOptions() {
-    po::options_description desc("Interactive Segmentation Options");
+    po::options_description desc("Semantic Segmentation Options");
     desc.add_options()
         ("crf", po::value<std::string>(), "[ho | sf] -> Set CRF optimizer. (default sf)")
         ("stats-file", po::value<std::string>(), "Output file for statistics")
