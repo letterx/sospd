@@ -5,6 +5,7 @@
 #include "image_manip.hpp"
 #include "crf.hpp"
 #include "feature.hpp"
+#include "cluster-color-feature.hpp"
 #include "alpha-expansion.hpp"
 
 #include <boost/serialization/base_object.hpp>
@@ -93,6 +94,8 @@ double SemanticSegApp::Loss(const Sem_LabelData& l1, const Sem_LabelData& l2, do
 
 void SemanticSegApp::InitFeatures(const Parameters& param) {
     constexpr double feature_scale = 0.01;
+    m_num_labels = 3;
+    m_features.push_back(boost::shared_ptr<FG>(new ClusterColorFeature(feature_scale, m_num_labels)));
     /*
     m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale)));
     if (param.distance_unary || param.all_features)
