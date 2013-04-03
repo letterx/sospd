@@ -83,8 +83,7 @@ class SemanticSegApp : public SVM_App<SemanticSegApp> {
 
         Parameters m_params;
         std::vector<boost::shared_ptr<FG>> m_features;
-        std::map<cv::Vec3b, Label> m_label_map;
-        std::vector<cv::Vec3b> m_color_vec;
+        mutable std::vector<cv::Vec3b> m_color_vec;
         Label m_num_labels;
 };
 

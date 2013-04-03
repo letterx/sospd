@@ -214,6 +214,43 @@ void SemanticSegApp::EvalPrediction(const Sem_PatternData& x, const Sem_LabelDat
     }
 }
 
+void SemanticSegApp::ValidateExample(const cv::Mat& image, const cv::Mat& gt) const {
+    ASSERT(image.data != NULL);
+    ASSERT(image.type() == CV_8UC3);
+    ASSERT(gt.data != NULL);
+    ASSERT(gt.type() == CV_8UC3);
+    ASSERT(image.rows == gt.rows);
+    ASSERT(image.cols == gt.cols);
+}
+
+void SemanticSegApp::ConvertColorToLabel(const cv::Mat& color_image, cv::Mat& label_image) const {
+    label_image.create(color_image.rows, color_image.cols, CV_32SC1);
+    cv::Point p;
+    for (p.y = 0; p.y < label_image.rows; ++p.y) {
+        for (p.x = 0; p.x < label_image.cols; ++p.x) {
+            const cv::Vec3b& color = color_image.at<cv::Vec3b>(p);
+            auto iter = std::find(m_color_vec.begin(), m_color_vec.end(), color);
+            if (iter != m_color_vec.end()) {
+                label_image.at<Label>(p) = iter - m_color_vec.begin();
+            } else {
+                Label l = m_color_vec.size();
+                m_color_vec.push_back(color);
+                label_image.at<Label>(p) = l;
+            }
+        }
+    }
+}
+
+void SemanticSegApp::ConvertLabelToColor(const cv::Mat& label_image, cv::Mat& color_image) const {
+    color_image.create(label_image.rows, label_image.cols, CV_8UC3);
+    cv::Point p;
+    for (p.y = 0; p.y < label_image.rows; ++p.y) {
+        for (p.x = 0; p.x < label_image.cols; ++p.x) {
+            Label l = label_image.at<Label>(p);
+            color_image.at<cv::Vec3b>(p) = m_color_vec[l];
+        }
+    }
+}
 
 namespace po = boost::program_options;
 
