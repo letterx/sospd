@@ -90,7 +90,7 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
         IS_LabelData* FindMostViolatedConstraint(const IS_PatternData& x, const IS_LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         double Loss(const IS_LabelData& y, const IS_LabelData& ybar, double loss_scale) const;
         void EvalPrediction(const IS_PatternData& x, const IS_LabelData& y, const IS_LabelData& ypred) const;
-        bool FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
+        bool FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         const Parameters& Params() const { return m_params; }
 
         static boost::program_options::options_description GetLearnOptions();

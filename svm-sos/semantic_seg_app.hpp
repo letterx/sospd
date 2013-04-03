@@ -75,7 +75,7 @@ class SemanticSegApp : public SVM_App<SemanticSegApp> {
         Sem_LabelData* FindMostViolatedConstraint(const Sem_PatternData& x, const Sem_LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         double Loss(const Sem_LabelData& y, const Sem_LabelData& ybar, double loss_scale) const;
         void EvalPrediction(const Sem_PatternData& x, const Sem_LabelData& y, const Sem_LabelData& ypred) const;
-        bool FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
+        bool FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         const Parameters& Params() const { return m_params; }
 
         static boost::program_options::options_description GetLearnOptions();

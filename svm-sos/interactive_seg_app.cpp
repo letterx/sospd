@@ -242,7 +242,7 @@ void InteractiveSegApp::EvalPrediction(const IS_PatternData& x, const IS_LabelDa
     }
 }
 
-bool InteractiveSegApp::FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+bool InteractiveSegApp::FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
     size_t feature_base = 1;
     for (auto fgp : m_features) {
         double violation = fgp->Violation(feature_base, sm->w);
@@ -250,7 +250,9 @@ bool InteractiveSegApp::FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sp
         for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
             w2 += sm->w[i] * sm->w[i];
         if (violation > 0.001 * w2) {
-            std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|^2 = " << w2 << "\n";
+            if (eps < sparm->epsilon)
+                sparm->epsilon *= 0.49999;
+            std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|^2 = " << w2 << " New eps = " << sparm->epsilon << "\n";
             return true;
         }
         feature_base += fgp->NumFeatures();
