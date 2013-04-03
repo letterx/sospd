@@ -17,9 +17,7 @@
 InteractiveSegApp::InteractiveSegApp(const Parameters& params) 
     : SVM_App<InteractiveSegApp>(this),
     m_params(params) 
-{
-    InitFeatures(params);        
-}
+{ }
 
 void InteractiveSegApp::ReadExamples(const std::string& file, std::vector<IS_PatternData*>& patterns, std::vector<IS_LabelData*>& labels) {
     std::ifstream main_file(file);
@@ -197,22 +195,6 @@ IS_LabelData* InteractiveSegApp::Classify(const IS_PatternData& x, STRUCTMODEL* 
     }
 }
 
-bool InteractiveSegApp::FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
-    size_t feature_base = 1;
-    for (auto fgp : m_features) {
-        double violation = fgp->Violation(feature_base, sm->w);
-        double w2 = 0;
-        for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
-            w2 += sm->w[i] * sm->w[i];
-        if (violation > 0.001 * w2) {
-            std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|^2 = " << w2 << "\n";
-            return true;
-        }
-        feature_base += fgp->NumFeatures();
-    }
-    return false;
-}
-
 IS_LabelData* InteractiveSegApp::FindMostViolatedConstraint(const IS_PatternData& x, const IS_LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
     CRF crf;
     SubmodularFlow sf;
@@ -249,6 +231,21 @@ void InteractiveSegApp::EvalPrediction(const IS_PatternData& x, const IS_LabelDa
     }
 }
 
+bool InteractiveSegApp::FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+    size_t feature_base = 1;
+    for (auto fgp : m_features) {
+        double violation = fgp->Violation(feature_base, sm->w);
+        double w2 = 0;
+        for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
+            w2 += sm->w[i] * sm->w[i];
+        if (violation > 0.001 * w2) {
+            std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|^2 = " << w2 << "\n";
+            return true;
+        }
+        feature_base += fgp->NumFeatures();
+    }
+    return false;
+}
 
 namespace po = boost::program_options;
 

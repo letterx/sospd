@@ -98,6 +98,7 @@ void SVM_App<Derived>::init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
      feature space in sizePsi. This is the maximum number of different
      weights that can be learned. Later, the weight vector w will
      contain the learned weights for the model. */
+    m_derived->InitFeatures(m_derived->Parameters());
     sm->sizePsi=m_derived->NumFeatures(); /* replace by appropriate number of features */
 }
 
@@ -409,6 +410,8 @@ void SVM_App<Derived>::write_struct_model(char *file, STRUCTMODEL *sm,
     ar & model->totwords;
     ar & model->totdoc;
 
+    m_derived->SerializeParams(ar);
+
     sv_num=1;
     for(i=1;i<model->sv_num;i++) {
     for(v=model->supvec[i]->fvec;v;v=v->next) 
@@ -469,6 +472,9 @@ STRUCTMODEL SVM_App<Derived>::read_struct_model(char *file, STRUCT_LEARN_PARM *s
     ar & model->kernel_parm.custom;
     ar & model->totwords;
     ar & model->totdoc;
+
+    m_derived->SerializeParams(ar);
+    m_derived->InitFeatures(m_derived->Parameters());
 
     ar & model->sv_num;
     ar & model->b;

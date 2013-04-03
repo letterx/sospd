@@ -52,24 +52,38 @@ class CRF;
 class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
     public:
         struct Parameters {
-            bool show_images;
+            // The following are saved/loaded in model serialization
             std::string eval_dir;
-            std::string output_dir;
-            std::string stats_file;
             bool all_features;
             int grabcut_classify;
-            int crf;
             int grabcut_unary;
             bool distance_unary;
             bool pairwise_feature;
             bool contrast_pairwise_feature;
             bool submodular_feature;
             bool contrast_submodular_feature;
+            // These parameters are classify-specific
+            bool show_images;
+            std::string output_dir;
+            std::string stats_file;
+            int crf;
         };
+        template <typename Archive>
+        void SerializeParams(Archive& ar) {
+            ar & eval_dir;
+            ar & all_features;
+            ar & grabcut_classify;
+            ar & grabcut_unary;
+            ar & distance_unary;
+            ar & pariwise_feature;
+            ar & contrast_pairwise_feature;
+            ar & contrast_submodular_feature;
+        }
 
         typedef FeatureGroup<IS_PatternData, IS_LabelData> FG;
 
         InteractiveSegApp(const Parameters& params);
+        void InitFeatures(const Parameters& p);
         void ReadExamples(const std::string& file, std::vector<IS_PatternData*>& patterns, std::vector<IS_LabelData*>& labels);
         long NumFeatures() const;
         const std::vector<boost::shared_ptr<FG>>& Features() const { return m_features; }
@@ -78,14 +92,13 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
         double Loss(const IS_LabelData& y, const IS_LabelData& ybar, double loss_scale) const;
         void EvalPrediction(const IS_PatternData& x, const IS_LabelData& y, const IS_LabelData& ypred) const;
         bool FinalizeIteration(STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
+        const Parameters& Params() const { return m_params; }
 
         static boost::program_options::options_description GetLearnOptions();
         static boost::program_options::options_description GetClassifyOptions();
         static Parameters ParseLearnOptions(const std::vector<std::string>& args);
         static Parameters ParseClassifyOptions(const std::vector<std::string>& args);
-        const Parameters& Params() const { return m_params; }
     private:
-        void InitFeatures(const Parameters& p);
         void InitializeCRF(CRF& crf, const IS_PatternData& x) const;
         void AddLossToCRF(CRF& crf, const IS_PatternData& x, const IS_LabelData& y, double scale) const;
         IS_LabelData* ExtractLabel(const CRF& crf, const IS_PatternData& x) const;
