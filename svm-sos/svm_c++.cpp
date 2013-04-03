@@ -34,6 +34,7 @@ void SVM_App<Derived>::train_features(const std::string& train_file, const std::
   std::vector<typename AppTraits<Derived>::LabelData*> eval_labels;
   m_derived->ReadExamples(train_file, train_patterns, train_labels);
   m_derived->ReadExamples(eval_file, eval_patterns, eval_labels);
+  m_derived->InitFeatures(m_derived->Params());
 
   for (auto fgp : m_derived->Features()) {
       fgp->Train(train_patterns, train_labels);

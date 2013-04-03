@@ -14,9 +14,7 @@
 SemanticSegApp::SemanticSegApp(const Parameters& params) 
     : SVM_App<SemanticSegApp>(this),
     m_params(params) 
-{
-    InitFeatures(params);        
-}
+{ }
 
 void SemanticSegApp::ReadExamples(const std::string& file, std::vector<Sem_PatternData*>& patterns, std::vector<Sem_LabelData*>& labels) {
     std::ifstream main_file(file);
@@ -93,9 +91,11 @@ double SemanticSegApp::Loss(const Sem_LabelData& l1, const Sem_LabelData& l2, do
 
 
 void SemanticSegApp::InitFeatures(const Parameters& param) {
+    std::cout << "\nFeatures: "; 
     constexpr double feature_scale = 0.01;
     m_num_labels = 3;
     m_features.push_back(boost::shared_ptr<FG>(new ClusterColorFeature(feature_scale, m_num_labels)));
+    std::cout << "ColorClusterFeature ";
     /*
     m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale)));
     if (param.distance_unary || param.all_features)
@@ -111,6 +111,7 @@ void SemanticSegApp::InitFeatures(const Parameters& param) {
         m_features.push_back(boost::shared_ptr<FG>(new ContrastSubmodularFeature(feature_scale)));
     }
     */
+    std::cout << "\n";
 
     if (param.eval_dir != std::string("")) {
         for (auto fp : m_features) {

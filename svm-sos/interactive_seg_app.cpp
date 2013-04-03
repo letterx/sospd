@@ -99,20 +99,31 @@ double InteractiveSegApp::Loss(const IS_LabelData& l1, const IS_LabelData& l2, d
 
 
 void InteractiveSegApp::InitFeatures(const Parameters& param) {
+    std::cout << "\nFeatures: ";
     constexpr double feature_scale = 0.01;
     m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale)));
-    if (param.distance_unary || param.all_features)
+    std::cout << "GMMFeature ";
+    if (param.distance_unary || param.all_features) {
         m_features.push_back(boost::shared_ptr<FG>(new DistanceFeature(feature_scale)));
-    if (param.submodular_feature || param.all_features)
-        m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature(feature_scale)));
-    if (param.pairwise_feature || param.all_features)
-        m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature(feature_scale)));
-    if (param.contrast_pairwise_feature || param.all_features)
-        m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature(feature_scale)));
-    if (param.contrast_submodular_feature || param.all_features) {
-        std::cout << "Using Contrast Submodular Feature!\n";
-        m_features.push_back(boost::shared_ptr<FG>(new ContrastSubmodularFeature(feature_scale)));
+        std::cout << "DistanceFeature ";
     }
+    if (param.submodular_feature || param.all_features) {
+        m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature(feature_scale)));
+        std::cout << "SubmodularFeature ";
+    }
+    if (param.pairwise_feature || param.all_features) {
+        m_features.push_back(boost::shared_ptr<FG>(new PairwiseFeature(feature_scale)));
+        std::cout << "PairwiseFeature ";
+    }
+    if (param.contrast_pairwise_feature || param.all_features) {
+        m_features.push_back(boost::shared_ptr<FG>(new ContrastPairwiseFeature(feature_scale)));
+        std::cout << "ContrastPairwiseFeature ";
+    }
+    if (param.contrast_submodular_feature || param.all_features) {
+        m_features.push_back(boost::shared_ptr<FG>(new ContrastSubmodularFeature(feature_scale)));
+        std::cout << "ContrastSubmodularFeature ";
+    }
+    std::cout << "\n";
 
     if (param.eval_dir != std::string("")) {
         for (auto fp : m_features) {
