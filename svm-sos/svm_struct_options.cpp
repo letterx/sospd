@@ -46,6 +46,8 @@ SVM_App_Base* ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     if (vm.count("app")) {
         if (vm["app"].as<std::string>() == std::string("interactive-seg"))
             app = new InteractiveSegApp(InteractiveSegApp::ParseLearnOptions(pass_onwards));
+        else if (vm["app"].as<std::string>() == std::string("semantic-seg"))
+            app = new SemanticSegApp(SemanticSegApp::ParseLearnOptions(pass_onwards));
         else {
             std::cout << "Unrecognized application: " << vm["app"].as<std::string>() << "\n";
             exit(-1);
@@ -116,6 +118,8 @@ SVM_App_Base* ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
     if (vm.count("app")) {
         if (vm["app"].as<std::string>() == std::string("interactive-seg"))
             app = new InteractiveSegApp(InteractiveSegApp::ParseClassifyOptions(pass_onwards));
+        else if (vm["app"].as<std::string>() == std::string("semantic-seg"))
+            app = new SemanticSegApp(SemanticSegApp::ParseLearnOptions(pass_onwards));
         else {
             std::cout << "Unrecognized application: " << vm["app"].as<std::string>() << "\n";
             exit(-1);

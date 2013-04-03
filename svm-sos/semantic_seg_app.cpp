@@ -21,7 +21,6 @@ void SemanticSegApp::ReadExamples(const std::string& file, std::vector<Sem_Patte
     std::ifstream main_file(file);
 
     std::string images_dir;
-    std::string trimap_dir;
     std::string gt_dir;
     std::string line;
 
@@ -30,9 +29,6 @@ void SemanticSegApp::ReadExamples(const std::string& file, std::vector<Sem_Patte
     do {
         std::getline(main_file, images_dir);
     } while (images_dir[0] == '#');
-    do {
-        std::getline(main_file, trimap_dir);
-    } while (trimap_dir[0] == '#');
     do {
         std::getline(main_file, gt_dir);
     } while (gt_dir[0] == '#');
@@ -54,6 +50,7 @@ void SemanticSegApp::ReadExamples(const std::string& file, std::vector<Sem_Patte
             labels.push_back(new Sem_LabelData(line, label_gt));
         }
     }
+    m_num_labels = m_color_vec.size();
     main_file.close();
 }
 
