@@ -389,7 +389,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
     /**** WARNING: If positivity constraints are used, then the
           maximum slack id is larger than what is allocated
           below ****/
-    slacks=(double *)my_malloc(sizeof(double)*(n+101));
+    slacks=(double *)my_malloc(sizeof(double)*(n+10000));
     for(i=0; i<=n+100; i++) { 
       slacks[i]=0;
     }
