@@ -125,8 +125,11 @@ CONSTSET SVM_App<Derived>::init_struct_constraints(SAMPLE sample, STRUCTMODEL *s
         feature_base += fgp->NumFeatures();
     }
     c.m = constrs.size();
-    if (c.m == 0)
+    if (c.m == 0) {
+        c.lhs = NULL;
+        c.rhs = NULL;
         return c;
+    }
     c.lhs = (DOC**)my_malloc(sizeof(DOC*)*(constrs.size()));
     c.rhs = (double*)my_malloc(sizeof(double)*(constrs.size()));
     size_t i = 0;
@@ -515,4 +518,8 @@ void SVM_App<Derived>::write_label(FILE* fp, LABEL y)
 } 
 
 #include "interactive_seg_app.hpp"
-InteractiveSegApp is_app(InteractiveSegApp::ParseLearnOptions(std::vector<std::string>()));
+#include "semantic_seg_app.hpp"
+void _instantiate_apps() {
+    InteractiveSegApp is_app(InteractiveSegApp::ParseLearnOptions(std::vector<std::string>()));
+    SemanticSegApp sem_app(SemanticSegApp::ParseLearnOptions(std::vector<std::string>()));
+}

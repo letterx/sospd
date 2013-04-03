@@ -9,9 +9,7 @@ extern "C" {
 #include <string>
 #include <boost/serialization/access.hpp>
 
-class CRF;
-
-template <typename PatternData, typename LabelData>
+template <typename PatternData, typename LabelData, typename CRF>
 class FeatureGroup {
     public:
         typedef std::vector<std::pair<std::vector<std::pair<size_t, double>>, double>> Constr;
@@ -34,11 +32,5 @@ class FeatureGroup {
         template <typename Archive>
         void serialize(const Archive& ar, const unsigned int version) { }
 };
-
-/*
-std::vector<boost::shared_ptr<FeatureGroup>> GetFeaturesFromParam(STRUCT_LEARN_PARM* sparm);
-void CalcUnaries(PatternData& p);
-void CalcDistances(const cv::Mat& tri, cv::Mat& fgdDist, cv::Mat& bgdDist, cv::Mat& closerMap);
-*/
 
 #endif

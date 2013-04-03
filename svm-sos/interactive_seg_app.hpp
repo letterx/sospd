@@ -4,6 +4,7 @@
 #include "svm_c++.hpp"
 #include "feature.hpp"
 #include "gmm.hpp"
+#include "crf.hpp"
 
 #include <boost/shared_ptr.hpp>
 #include <opencv2/core/core.hpp>
@@ -44,10 +45,8 @@ template <>
 struct AppTraits<InteractiveSegApp> {
     typedef IS_PatternData PatternData;
     typedef IS_LabelData LabelData;
-    typedef FeatureGroup<IS_PatternData, IS_LabelData> FG;
+    typedef FeatureGroup<IS_PatternData, IS_LabelData, CRF> FG;
 };
-
-class CRF;
 
 class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
     public:
@@ -80,7 +79,7 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
             ar & contrast_submodular_feature;
         }
 
-        typedef FeatureGroup<IS_PatternData, IS_LabelData> FG;
+        typedef FeatureGroup<IS_PatternData, IS_LabelData, CRF> FG;
 
         InteractiveSegApp(const Parameters& params);
         void InitFeatures(const Parameters& p);

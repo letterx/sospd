@@ -5,6 +5,7 @@
 #include <boost/program_options.hpp>
 #include "svm_c++.hpp"
 #include "interactive_seg_app.hpp"
+#include "semantic_seg_app.hpp"
 
 namespace po = boost::program_options;
 
@@ -45,6 +46,8 @@ SVM_App_Base* ParseStructLearnParameters(STRUCT_LEARN_PARM* sparm) {
     if (vm.count("app")) {
         if (vm["app"].as<std::string>() == std::string("interactive-seg"))
             app = new InteractiveSegApp(InteractiveSegApp::ParseLearnOptions(pass_onwards));
+        else if (vm["app"].as<std::string>() == std::string("semantic-seg"))
+            app = new SemanticSegApp(SemanticSegApp::ParseLearnOptions(pass_onwards));
         else {
             std::cout << "Unrecognized application: " << vm["app"].as<std::string>() << "\n";
             exit(-1);
@@ -87,6 +90,8 @@ SVM_App_Base* ParseFeatureTrainParameters(int argc, char** argv, std::string& tr
 
         if (vm["app"].as<std::string>() == std::string("interactive-seg"))
             app = new InteractiveSegApp(InteractiveSegApp::ParseLearnOptions(pass_onwards));
+        else if (vm["app"].as<std::string>() == std::string("semantic-seg"))
+            app = new SemanticSegApp(SemanticSegApp::ParseLearnOptions(pass_onwards));
         else {
             std::cout << "Unrecognized application: " << vm["app"].as<std::string>() << "\n";
                 exit(-1);
@@ -113,6 +118,8 @@ SVM_App_Base* ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
     if (vm.count("app")) {
         if (vm["app"].as<std::string>() == std::string("interactive-seg"))
             app = new InteractiveSegApp(InteractiveSegApp::ParseClassifyOptions(pass_onwards));
+        else if (vm["app"].as<std::string>() == std::string("semantic-seg"))
+            app = new SemanticSegApp(SemanticSegApp::ParseClassifyOptions(pass_onwards));
         else {
             std::cout << "Unrecognized application: " << vm["app"].as<std::string>() << "\n";
             exit(-1);
@@ -126,12 +133,12 @@ SVM_App_Base* ParseStructClassifyParameters(STRUCT_LEARN_PARM* sparm) {
 
 void PrintStructLearnHelp() {
     po::options_description desc;
-    desc.add(GetStructLearnParameters()).add(InteractiveSegApp::GetLearnOptions());
+    desc.add(GetStructLearnParameters()).add(InteractiveSegApp::GetLearnOptions()).add(SemanticSegApp::GetLearnOptions());
     std::cout << desc << "\n";
 }
 
 void PrintStructClassifyHelp() {
     po::options_description desc;
-    desc.add(GetStructClassifyParameters()).add(InteractiveSegApp::GetClassifyOptions());
+    desc.add(GetStructClassifyParameters()).add(InteractiveSegApp::GetClassifyOptions()).add(SemanticSegApp::GetClassifyOptions());
     std::cout << desc << "\n";
 }
