@@ -24,7 +24,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
 
     virtual size_t NumFeatures() const override { return per_cluster*num_clusters; }
     virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const override {
-        const cv::Mat& patch_feature = m_patch_feature[p.Name()];
+        cv::Mat patch_feature = m_patch_feature[p.Name()];
         const Assgn all_zeros = 0;
         const Assgn all_ones = (1 << clique_size) - 1;
         std::vector<FVAL> psi(NumFeatures(), 0);
@@ -52,7 +52,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         return psi;
     }
     virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const override {
-        const cv::Mat& patch_feature = m_patch_feature[p.Name()];
+        cv::Mat patch_feature = m_patch_feature[p.Name()];
         std::vector<std::vector<REAL>> costTables(num_clusters, std::vector<REAL>(per_cluster+2, 0));
         for (size_t i = 0; i < num_clusters; ++i) {
             for (size_t j = 0; j < per_cluster; ++j) {
@@ -145,7 +145,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         std::cout.flush();
         samples.create(0, filters, CV_32FC1);
         for (const IS_PatternData* xp : patterns) {
-            const cv::Mat& im = xp->m_image;
+            cv::Mat im = xp->m_image;
             cv::Mat response;
             GetResponse(im, response);
             samples.push_back(response);
@@ -153,14 +153,14 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         std::cout << samples.rows << " samples...";
         std::cout.flush();
         cv::Mat best_labels;
-        cv::kmeans(samples, num_clusters, best_labels, cv::TermCriteria(CV_TERMCRIT_EPS, 10, 0.2), 1, cv::KMEANS_RANDOM_CENTERS, m_centers);
+        cv::kmeans(samples, num_clusters, best_labels, cv::TermCriteria(CV_TERMCRIT_EPS, 10, 0.01), 1, cv::KMEANS_RANDOM_CENTERS, m_centers);
         std::cout << "Done!\n";
     }
     virtual void Evaluate(const std::vector<IS_PatternData*>& patterns) override {
         std::cout << "Evaluating Contrast Submodular Features...";
         std::cout.flush();
         for (const IS_PatternData* xp : patterns) {
-            const cv::Mat& im = xp->m_image;
+            cv::Mat im = xp->m_image;
             cv::Mat response;
             cv::Mat& features = m_patch_feature[xp->Name()];
             GetResponse(im, response);
@@ -183,7 +183,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
     }
     private:
     static constexpr size_t filters = 5;
-    void FilterResponse(const cv::Mat& im, cv::Mat& out) {
+    void FilterResponse(cv::Mat im, cv::Mat& out) {
         ASSERT(im.channels() == 1);
         ASSERT(im.type() == CV_32FC1);
         const size_t samples = im.rows*im.cols;
@@ -203,26 +203,31 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         all_filtered.push_back(filtered);
         for (int i = 0; i < 5; ++i) {
             filtered = all_filtered[i];
+            ASSERT(filtered.rows == im.rows);
+            ASSERT(filtered.cols == im.cols);
             cv::Point pf, po;
             po.x = i;
             po.y = 0;
             for (pf.y = 0; pf.y < im.rows; ++pf.y) {
                 for (pf.x = 0; pf.x < im.cols; ++pf.x) {
-                    out.at<double>(pf) = filtered.at<double>(pf);
+                    out.at<float>(po) = filtered.at<float>(pf);
                     po.y++;
                 }
             }
+            ASSERT(po.y == out.rows);
         }
     }
-    void GetResponse(const cv::Mat& im, cv::Mat& response) {
+    void GetResponse(cv::Mat im, cv::Mat& response) {
             cv::Mat tmp;
             im.convertTo(tmp, CV_32F);
             cv::Mat grayscale;
             cv::cvtColor(tmp, grayscale, CV_BGR2GRAY);
             grayscale *= 1./255;
             FilterResponse(grayscale, response);
+            ASSERT(response.rows == im.cols*im.rows);
+            ASSERT((size_t)response.cols == filters);
     }
-    void Subsample(const cv::Mat& in, cv::Mat& out, size_t num_samples) {
+    void Subsample(cv::Mat in, cv::Mat& out, size_t num_samples) {
         std::uniform_int_distribution<size_t> dist(0, in.rows-1);
         out.create(num_samples, in.cols, in.type());
         for (size_t i = 0; i < num_samples; ++i) {
@@ -230,13 +235,16 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
             in.row(r).copyTo(out.row(i));
         }
     }
-    void Classify(const cv::Mat& response, cv::Mat& out, const cv::Mat& centers) {
+    void Classify(cv::Mat response, cv::Mat& out, cv::Mat centers) {
         ASSERT((size_t)response.cols == filters);
         ASSERT((size_t)centers.cols == filters);
+        ASSERT((size_t)centers.rows == num_clusters);
+        std::vector<size_t> counts(num_clusters, 0);
         size_t i = 0;
         cv::Point p;
         for (p.y = 0; p.y < out.rows; ++p.y) {
             for (p.x = 0; p.x < out.cols; ++p.x) {
+                ASSERT(i < (size_t)response.rows);
                 cv::Mat row = response.row(i);
                 double min_dist = std::numeric_limits<double>::max();
                 int min_center = 0;
@@ -248,11 +256,16 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
                         min_center = j;
                     }
                 }
+                counts[min_center]++;
                 ASSERT(min_dist < std::numeric_limits<double>::max());
                 out.at<int>(p) = min_center;
                 i++;
             }
         }
+        std::cout << "Cluster counts: ";
+        for (auto c : counts)
+            std::cout << c << " ";
+        std::cout << "\n";
     }
     friend class boost::serialization::access;
     template <class Archive>
