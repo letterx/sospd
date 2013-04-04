@@ -86,13 +86,13 @@ class ClusterColorFeature : public SemanticSegApp::FG {
         std::cout << "Done!\n";
     }
     virtual void SaveEvaluation(const std::string& output_dir) const {
-        std::string outfile = output_dir + "/contrast-submodular-feature.dat";
+        std::string outfile = output_dir + "/cluster-contrast-feature.dat";
         std::ofstream os(outfile, std::ios_base::binary);
         boost::archive::binary_oarchive ar(os);
         ar & m_color_feature;
     }
     virtual void LoadEvaluation(const std::string& output_dir) {
-        std::string infile = output_dir + "/contrast-submodular-feature.dat";
+        std::string infile = output_dir + "/cluster-contrast-feature.dat";
         std::ifstream is(infile, std::ios_base::binary);
         boost::archive::binary_iarchive ar(is);
         ar & m_color_feature;
@@ -134,6 +134,7 @@ class ClusterColorFeature : public SemanticSegApp::FG {
         //std::cout << "Serializing ClusterColorFeature\n";
         ar & boost::serialization::base_object<FeatureGroup>(*this);
         ar & m_scale;
+        ar & m_num_labels;
     }
     mutable std::map<std::string, cv::Mat> m_color_feature;
     std::mt19937 gen;
