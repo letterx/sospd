@@ -50,7 +50,6 @@ void SemanticSegApp::ReadExamples(const std::string& file, std::vector<Sem_Patte
             labels.push_back(new Sem_LabelData(line, label_gt));
         }
     }
-    ASSERT(m_color_vec.size() <= m_num_labels);
     main_file.close();
 }
 
@@ -229,20 +228,33 @@ void SemanticSegApp::ValidateExample(const cv::Mat& image, const cv::Mat& gt) co
     ASSERT(image.cols == gt.cols);
 }
 
+// The following two functions from Lubor Ladicky's code
+void SemanticSegApp::ConvertColorToLabel(const cv::Vec3b& color, unsigned char& label) const {
+    label = 0;
+    for(int i = 0; i < 8; i++) label = (label << 3) | (((color[2] >> i) & 1) << 0) | (((color[1] >> i) & 1) << 1) | (((color[0] >> i) & 1) << 2);
+    label--;
+}
+
+void SemanticSegApp::ConvertLabelToColor(unsigned char label, cv::Vec3b& color) const {
+    label++;
+    color[0] = color[1] = color[2] = 0;
+    for(int i = 0; label > 0; i++, label >>= 3)
+    {
+        color[2] |= (unsigned char) (((label >> 0) & 1) << (7 - i));
+        color[1] |= (unsigned char) (((label >> 1) & 1) << (7 - i));
+        color[0] |= (unsigned char) (((label >> 2) & 1) << (7 - i));
+    }
+}
+
 void SemanticSegApp::ConvertColorToLabel(const cv::Mat& color_image, cv::Mat& label_image) const {
     label_image.create(color_image.rows, color_image.cols, CV_32SC1);
     cv::Point p;
     for (p.y = 0; p.y < label_image.rows; ++p.y) {
         for (p.x = 0; p.x < label_image.cols; ++p.x) {
             const cv::Vec3b& color = color_image.at<cv::Vec3b>(p);
-            auto iter = std::find(m_color_vec.begin(), m_color_vec.end(), color);
-            if (iter != m_color_vec.end()) {
-                label_image.at<Label>(p) = iter - m_color_vec.begin();
-            } else {
-                Label l = m_color_vec.size();
-                m_color_vec.push_back(color);
-                label_image.at<Label>(p) = l;
-            }
+            unsigned char label;
+            ConvertColorToLabel(color, label);
+            label_image.at<Label>(p) = label;
         }
     }
 }
@@ -253,7 +265,7 @@ void SemanticSegApp::ConvertLabelToColor(const cv::Mat& label_image, cv::Mat& co
     for (p.y = 0; p.y < label_image.rows; ++p.y) {
         for (p.x = 0; p.x < label_image.cols; ++p.x) {
             Label l = label_image.at<Label>(p);
-            color_image.at<cv::Vec3b>(p) = m_color_vec[l];
+            ConvertLabelToColor(l, color_image.at<cv::Vec3b>(p));
         }
     }
 }

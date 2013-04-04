@@ -89,6 +89,8 @@ class SemanticSegApp : public SVM_App<SemanticSegApp> {
         void InitializeCRF(MultiLabelCRF& crf, const Sem_PatternData& x) const;
         void AddLossToCRF(MultiLabelCRF& crf, const Sem_PatternData& x, const Sem_LabelData& y, double scale) const;
         Sem_LabelData* ExtractLabel(const MultiLabelCRF& crf, const Sem_PatternData& x) const;
+        void ConvertColorToLabel(const cv::Vec3b& color, unsigned char& label) const;
+        void ConvertLabelToColor(unsigned char label, cv::Vec3b& color) const;
         void ConvertColorToLabel(const cv::Mat& color_image, cv::Mat& label_image) const;
         void ConvertLabelToColor(const cv::Mat& label_image, cv::Mat& color_image) const;
         void ValidateExample(const cv::Mat& image, const cv::Mat& gt) const;
@@ -96,7 +98,6 @@ class SemanticSegApp : public SVM_App<SemanticSegApp> {
 
         Parameters m_params;
         std::vector<boost::shared_ptr<FG>> m_features;
-        mutable std::vector<cv::Vec3b> m_color_vec;
         static constexpr Label m_num_labels = 7;
 };
 
