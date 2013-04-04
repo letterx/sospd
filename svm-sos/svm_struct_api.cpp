@@ -116,6 +116,11 @@ int         finalize_iteration(double ceps, int cached_constraint,
     return g_application->finalize_iteration(ceps, cached_constraint, sample, sm, cset, alpha, sparm);
 }
 
+void        final_train_stats(double maxdiff, double epsilon, 
+                   double modellength, double slacksum) {
+    g_application->final_train_stats(maxdiff, epsilon, modellength, slacksum);
+}
+
 void        print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm,
 					CONSTSET cset, double *alpha, 
 					STRUCT_LEARN_PARM *sparm)

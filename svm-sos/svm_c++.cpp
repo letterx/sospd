@@ -68,6 +68,8 @@ SAMPLE SVM_App<Derived>::read_struct_examples(char *file, STRUCT_LEARN_PARM *spa
   EXAMPLE  *examples;
   size_t n = 0;       /* number of examples */
 
+  m_test_stats.ResetTimer();
+
   std::vector<typename AppTraits<Derived>::PatternData*> patterns;
   std::vector<typename AppTraits<Derived>::LabelData*> labels;
 
@@ -83,6 +85,8 @@ SAMPLE SVM_App<Derived>::read_struct_examples(char *file, STRUCT_LEARN_PARM *spa
   }
 
   std::cout << " (" << n << " examples)... ";
+
+  m_test_stats.m_num_examples = n;
 
   sample.n=n;
   sample.examples=examples;
@@ -239,6 +243,7 @@ LABEL SVM_App<Derived>::find_most_violated_constraint_marginrescaling(PATTERN x,
      empty_label(y). */
     LABEL ybar;
 
+    m_test_stats.m_num_inferences++;
     /* insert your code for computing the label ybar here */
     ybar.data = m_derived->FindMostViolatedConstraint(*Downcast(x.data), *Downcast(y.data), sm, sparm);
 
@@ -334,7 +339,19 @@ int SVM_App<Derived>::finalize_iteration(double ceps, int cached_constraint,
     }
     std::cout << "\n";
     */
+    m_test_stats.m_train_iters++;
     return m_derived->FinalizeIteration(ceps, sm, sparm);
+}
+
+template <class Derived>
+void SVM_App<Derived>::final_train_stats(double maxdiff, double epsilon, 
+                   double modellength, double slacksum) {
+    m_test_stats.StopTimer();
+    m_test_stats.m_train_time = m_test_stats.LastTime().count();
+    m_test_stats.m_maxdiff = maxdiff;
+    m_test_stats.m_epsilon = epsilon;
+    m_test_stats.m_modellength = modellength;
+    m_test_stats.m_slacksum = slacksum;
 }
 
 template <class Derived>

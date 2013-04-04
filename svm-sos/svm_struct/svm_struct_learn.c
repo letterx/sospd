@@ -442,6 +442,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
     printf("Runtime in cpu-seconds: %.2f (%.2f%% for QP, %.2f%% for Argmax, %.2f%% for Psi, %.2f%% for init)\n",
            rt_total/100.0, (100.0*rt_opt)/rt_total, (100.0*rt_viol)/rt_total, 
            (100.0*rt_psi)/rt_total, (100.0*rt_init)/rt_total);
+    final_train_stats(svmModel->maxdiff, epsilon, modellength, slacksum/n);
   }
   if(struct_verbosity>=4)
     printW(sm->w,sizePsi,n,lparm->svm_c);

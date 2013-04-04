@@ -42,6 +42,16 @@ class TestStats {
         void Write(const std::string& fname) const;
         static std::vector<TestStats> ReadStats(const std::string& fname);
 
+        // Training stats
+        size_t m_num_examples;
+        double m_train_time;
+        size_t m_train_iters;
+        size_t m_num_inferences;
+        double m_maxdiff;
+        double m_epsilon;
+        double m_modellength;
+        double m_slacksum;
+
     private:
         std::string m_data_file;
         std::string m_model_file;
@@ -66,6 +76,15 @@ void TestStats::serialize(Archive& ar, const unsigned int version) {
     ar & m_data_file;
     ar & m_model_file;
     ar & m_image_stats;
+    // Serialize training stats
+    ar & m_num_examples;
+    ar & m_train_time;
+    ar & m_train_iters;
+    ar & m_num_inferences;
+    ar & m_maxdiff;
+    ar & m_epsilon;
+    ar & m_modellength;
+    ar & m_slacksum;
 }
 
 

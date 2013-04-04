@@ -52,6 +52,7 @@ class SVM_App_Base {
         virtual SVECTOR* psi(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) = 0;
         virtual double loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm) = 0;
         virtual int finalize_iteration(double ceps, int cached_constraint, SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm) = 0;
+        virtual void final_train_stats(double maxdiff, double epsilon, double modellength, double slacksum) = 0;
         virtual void print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm) = 0;
         virtual void print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats) = 0;
         virtual void eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats) = 0;
@@ -93,6 +94,7 @@ class SVM_App : public SVM_App_Base {
         virtual SVECTOR* psi(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) override;
         virtual double loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm) override;
         virtual int finalize_iteration(double ceps, int cached_constraint, SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm) override;
+        virtual void final_train_stats(double maxdiff, double epsilon, double modellength, double slacksum) override;
         virtual void print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm) override;
         virtual void print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats) override;
         virtual void eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats) override;

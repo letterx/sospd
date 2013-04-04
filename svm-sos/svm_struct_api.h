@@ -49,6 +49,8 @@ int         finalize_iteration(double ceps, int cached_constraint,
 			       SAMPLE sample, STRUCTMODEL *sm,
 			       CONSTSET cset, double *alpha, 
 			       STRUCT_LEARN_PARM *sparm);
+void        final_train_stats(double maxdiff, double epsilon, 
+                   double modellength, double slacksum);
 void        print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm,
 					CONSTSET cset, double *alpha, 
 					STRUCT_LEARN_PARM *sparm);

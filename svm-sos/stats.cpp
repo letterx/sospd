@@ -7,7 +7,16 @@
 
 TestStats::TestStats(const std::string& data_file, const std::string& model_file, STRUCT_LEARN_PARM* sparm)
     : m_data_file(data_file),
-    m_model_file(model_file)
+    m_model_file(model_file),
+    m_image_stats(),
+    m_num_examples(0),
+    m_train_time(0),
+    m_train_iters(0),
+    m_num_inferences(0),
+    m_maxdiff(0),
+    m_epsilon(0),
+    m_modellength(0),
+    m_slacksum(0)
 { }
 
 void TestStats::Write(const std::string& fname) const {
