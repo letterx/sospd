@@ -6,6 +6,7 @@ extern "C" {
 #include "svm_struct/svm_struct_common.h"
 }
 #include <string>
+#include "stats.hpp"
 
 class PatternData {
     public:
@@ -73,6 +74,7 @@ class SVM_App : public SVM_App_Base {
 
     private:
         Derived* m_derived;
+        TestStats m_test_stats;
         static DPatternData* Downcast(PatternData* p) { return static_cast<DPatternData*>(p); }
         static DLabelData* Downcast(LabelData* p) { return static_cast<DLabelData*>(p); }
 

@@ -1,6 +1,5 @@
 #include "stats.hpp"
 #include <fstream>
-#include <boost/serialization/vector.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
@@ -10,20 +9,6 @@ TestStats::TestStats(const std::string& data_file, const std::string& model_file
     : m_data_file(data_file),
     m_model_file(model_file)
 { }
-
-template <typename Archive>
-void TestStats::ImageStats::serialize(Archive& ar, const unsigned int version) {
-    ar & name;
-    ar & loss;
-    ar & classify_time;
-}
-
-template <typename Archive>
-void TestStats::serialize(Archive& ar, const unsigned int version) {
-    ar & m_data_file;
-    ar & m_model_file;
-    ar & m_image_stats;
-}
 
 void TestStats::Write(const std::string& fname) const {
     boost::interprocess::file_lock flock(fname.c_str());

@@ -67,7 +67,6 @@ typedef struct label {
     struct LabelData *data;
 } LABEL;
 
-struct TestStats;
 typedef struct structmodel {
   double *w;          /* pointer to the learned weights */
   MODEL  *svm_model;  /* the learned SVM model */
@@ -75,7 +74,6 @@ typedef struct structmodel {
   double walpha;
   /* other information that is needed for the stuctural model can be
      added here, e.g. the grammar rules for NLP parsing */
-  struct TestStats *test_stats;
 } STRUCTMODEL;
 
 typedef struct struct_learn_parm {

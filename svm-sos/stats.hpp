@@ -9,6 +9,7 @@ extern "C" {
 #include <vector>
 #include <chrono>
 #include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
 
 class TestStats {
     public:
@@ -52,6 +53,20 @@ class TestStats {
         template <typename Archive>
         void serialize(Archive& ar, const unsigned int version);
 };
+
+template <typename Archive>
+void TestStats::ImageStats::serialize(Archive& ar, const unsigned int version) {
+    ar & name;
+    ar & loss;
+    ar & classify_time;
+}
+
+template <typename Archive>
+void TestStats::serialize(Archive& ar, const unsigned int version) {
+    ar & m_data_file;
+    ar & m_model_file;
+    ar & m_image_stats;
+}
 
 
 #endif

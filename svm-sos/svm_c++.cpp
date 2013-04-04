@@ -167,11 +167,11 @@ LABEL SVM_App<Derived>::classify_struct_example(PATTERN x, STRUCTMODEL *sm,
      recognized by the function empty_label(y). */
     LABEL y;
 
-    sm->test_stats->ResetTimer();
+    m_test_stats.ResetTimer();
 
     y.data = m_derived->Classify(*Downcast(x.data), sm, sparm);
 
-    sm->test_stats->StopTimer();
+    m_test_stats.StopTimer();
 
     return(y);
 }
@@ -363,7 +363,7 @@ void SVM_App<Derived>::print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm
      the function eval_prediction to accumulate the necessary
      statistics for each prediction. */
     if (m_derived->Params().stats_file != std::string())
-        sm->test_stats->Write(m_derived->Params().stats_file);
+        m_test_stats.Write(m_derived->Params().stats_file);
 }
 
 template <class Derived>
@@ -380,7 +380,7 @@ void SVM_App<Derived>::eval_prediction(long exnum, EXAMPLE ex, LABEL ypred,
     }
 
     double loss = m_derived->Loss(*Downcast(ex.y.data), *Downcast(ypred.data), sparm->loss_scale)*100.0 / sparm->loss_scale;
-    sm->test_stats->Add(TestStats::ImageStats(ex.x.data->Name(), loss, sm->test_stats->LastTime()));
+    m_test_stats.Add(TestStats::ImageStats(ex.x.data->Name(), loss, m_test_stats.LastTime()));
 
     m_derived->EvalPrediction(*Downcast(ex.x.data), *Downcast(ex.y.data), *Downcast(ypred.data));
 }
@@ -417,6 +417,7 @@ void SVM_App<Derived>::write_struct_model(char *file, STRUCTMODEL *sm,
     unsigned int param_version = m_derived->Params().Version();
     ar & param_version;
     m_derived->SerializeParams(ar, param_version);
+    ar & m_test_stats;
 
     sv_num=1;
     for(i=1;i<model->sv_num;i++) {
@@ -458,8 +459,6 @@ STRUCTMODEL SVM_App<Derived>::read_struct_model(char *file, STRUCT_LEARN_PARM *s
     
     strcpy(sparm->model_file, file);
 
-    sm.test_stats = new TestStats;
-
     sm.svm_model = (MODEL*)my_malloc(sizeof(MODEL));
     MODEL* model = sm.svm_model;
 
@@ -483,6 +482,7 @@ STRUCTMODEL SVM_App<Derived>::read_struct_model(char *file, STRUCT_LEARN_PARM *s
     ar & version;
     m_derived->SerializeParams(ar, version);
     m_derived->InitFeatures(m_derived->Params());
+    ar & m_test_stats;
 
     ar & model->sv_num;
     ar & model->b;
