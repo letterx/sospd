@@ -13,6 +13,7 @@ TestStats::TestStats(const std::string& data_file, const std::string& model_file
 
 template <typename Archive>
 void TestStats::ImageStats::serialize(Archive& ar, const unsigned int version) {
+    ar & name;
     ar & loss;
     ar & classify_time;
 }
@@ -35,7 +36,7 @@ void TestStats::Write(const std::string& fname) const {
             boost::archive::text_iarchive iar(ifs);
             iar & stats_list;
             ifs.close();
-        } catch (boost::archive::archive_exception& e) { }
+        } catch (std::exception& e) { stats_list = std::vector<TestStats>(); }
 
         stats_list.push_back(*this);
 

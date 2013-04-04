@@ -380,7 +380,7 @@ void SVM_App<Derived>::eval_prediction(long exnum, EXAMPLE ex, LABEL ypred,
     }
 
     double loss = m_derived->Loss(*Downcast(ex.y.data), *Downcast(ypred.data), sparm->loss_scale)*100.0 / sparm->loss_scale;
-    sm->test_stats->Add(TestStats::ImageStats(loss, sm->test_stats->LastTime()));
+    sm->test_stats->Add(TestStats::ImageStats(ex.x.data->Name(), loss, sm->test_stats->LastTime()));
 
     m_derived->EvalPrediction(*Downcast(ex.x.data), *Downcast(ex.y.data), *Downcast(ypred.data));
 }
@@ -414,7 +414,9 @@ void SVM_App<Derived>::write_struct_model(char *file, STRUCTMODEL *sm,
     ar & model->totwords;
     ar & model->totdoc;
 
-    m_derived->SerializeParams(ar);
+    unsigned int param_version = m_derived->Params().Version();
+    ar & param_version;
+    m_derived->SerializeParams(ar, param_version);
 
     sv_num=1;
     for(i=1;i<model->sv_num;i++) {
@@ -477,7 +479,9 @@ STRUCTMODEL SVM_App<Derived>::read_struct_model(char *file, STRUCT_LEARN_PARM *s
     ar & model->totwords;
     ar & model->totdoc;
 
-    m_derived->SerializeParams(ar);
+    unsigned int version;
+    ar & version;
+    m_derived->SerializeParams(ar, version);
     m_derived->InitFeatures(m_derived->Params());
 
     ar & model->sv_num;

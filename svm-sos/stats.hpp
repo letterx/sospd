@@ -19,11 +19,13 @@ class TestStats {
         TestStats(const std::string& data_file, const std::string& model_file, STRUCT_LEARN_PARM* sparm);
 
         struct ImageStats {
+            std::string name;
             double loss;
             double classify_time;
 
             ImageStats() = default;
-            ImageStats(double _loss, Duration _classify_time) : loss(_loss), classify_time(_classify_time.count()) { }
+            ImageStats(const std::string& _name, double _loss, Duration _classify_time) 
+                : name(_name), loss(_loss), classify_time(_classify_time.count()) { }
 
             private:
             friend class boost::serialization::access;
