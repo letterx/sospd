@@ -5,18 +5,17 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 
-TestStats::TestStats(const std::string& data_file, const std::string& model_file, STRUCT_LEARN_PARM* sparm)
-    : m_data_file(data_file),
-    m_model_file(model_file),
-    m_image_stats(),
-    m_num_examples(0),
+TestStats::TestStats()
+    : m_num_examples(0),
     m_train_time(0),
     m_train_iters(0),
     m_num_inferences(0),
     m_maxdiff(0),
     m_epsilon(0),
     m_modellength(0),
-    m_slacksum(0)
+    m_slacksum(0),
+    m_model_file(),
+    m_image_stats()
 { }
 
 void TestStats::Write(const std::string& fname) const {
@@ -51,3 +50,25 @@ std::vector<TestStats> TestStats::ReadStats(const std::string& fname) {
     return stats_list;
 }
 
+double TestStats::AverageLoss() const {
+    double total = 0;
+    for (const auto& image : m_image_stats)
+        total += image.loss;
+    return total/m_image_stats.size();
+}
+
+double TestStats::AverageClassifyTime() const {
+    double total = 0;
+    for (const auto& image : m_image_stats)
+        total += image.classify_time;
+    return total/m_image_stats.size();
+}
+
+
+double TestStats::TotalClassifyTime() const {
+    double total = 0;
+    for (const auto& image : m_image_stats)
+        total += image.classify_time;
+    return total;
+}
+    

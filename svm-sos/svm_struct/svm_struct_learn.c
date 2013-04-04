@@ -876,6 +876,7 @@ void svm_learn_struct_joint(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
            (100.0*rt_cachesum)/rt_total);
     else if(struct_verbosity==1) 
       printf("Runtime in cpu-seconds: %.2f\n",rt_total/100.0);
+    final_train_stats(svmModel->maxdiff, ceps, modellength, slack);
   }
   if(ccache) {
     long cnum=0;

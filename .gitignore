@@ -30,6 +30,7 @@ svm_sos_classify
 svm_sos_learn
 process_stats
 feature_train
+init_stats
 
 # Generated test files
 *.model

@@ -16,8 +16,7 @@ class TestStats {
         typedef std::chrono::duration<double> Duration;
         typedef std::chrono::system_clock::time_point TimePt;
 
-        TestStats() = default;
-        TestStats(const std::string& data_file, const std::string& model_file, STRUCT_LEARN_PARM* sparm);
+        TestStats();
 
         struct ImageStats {
             std::string name;
@@ -39,6 +38,11 @@ class TestStats {
         void StopTimer() { m_last_time = std::chrono::system_clock::now() - m_timer_start; }
         Duration LastTime() { return m_last_time; }
 
+        // Aggregation functions
+        double AverageLoss() const;
+        double AverageClassifyTime() const;
+        double TotalClassifyTime() const;
+
         void Write(const std::string& fname) const;
         static std::vector<TestStats> ReadStats(const std::string& fname);
 
@@ -52,9 +56,8 @@ class TestStats {
         double m_modellength;
         double m_slacksum;
 
-    private:
-        std::string m_data_file;
         std::string m_model_file;
+    private:
         std::vector<ImageStats> m_image_stats;
         TimePt m_timer_start;
         Duration m_last_time;
@@ -73,7 +76,6 @@ void TestStats::ImageStats::serialize(Archive& ar, const unsigned int version) {
 
 template <typename Archive>
 void TestStats::serialize(Archive& ar, const unsigned int version) {
-    ar & m_data_file;
     ar & m_model_file;
     ar & m_image_stats;
     // Serialize training stats

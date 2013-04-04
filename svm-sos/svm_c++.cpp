@@ -411,6 +411,8 @@ void SVM_App<Derived>::write_struct_model(char *file, STRUCTMODEL *sm,
     SVECTOR *v;
     long j,i,sv_num;
 
+    m_test_stats.m_model_file = std::string(file);
+
     std::ofstream ofs(file, std::ios_base::trunc | std::ios_base::out);
     boost::archive::text_oarchive ar(ofs);
 

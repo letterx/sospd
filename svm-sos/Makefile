@@ -32,10 +32,11 @@ OBJS = $(SRCS:.cpp=.o)
 LEARN_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_main.o
 CLASSIFY_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) svm_struct/svm_struct_classify.o
 PROCESS_STATS_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) process_stats.o
+INIT_STATS_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) init_stats.o
 FEATURE_TRAIN_OBJS = $(SVM_STRUCT_OBJS) $(SVM_LIGHT_OBJS) $(OBJS) feature_train.o
 
 .PHONY:
-all: svm_sos_learn svm_sos_classify process_stats feature_train
+all: svm_sos_learn svm_sos_classify process_stats init_stats feature_train
 
 .PHONY: clean
 clean: svm_light_clean svm_struct_clean
@@ -74,6 +75,9 @@ svm_sos_learn: svm_light_hideo_noexe svm_struct_noexe $(OBJS) lib
 
 process_stats: $(OBJS) process_stats.o
 	$(LD) $(LDFLAGS) $(PROCESS_STATS_OBJS) -o process_stats $(LIBS)
+
+init_stats: $(OBJS) init_stats.o
+	$(LD) $(LDFLAGS) $(INIT_STATS_OBJS) -o init_stats $(LIBS)
 
 feature_train: $(OBJS) feature_train.o
 	$(LD) $(LDFLAGS) $(FEATURE_TRAIN_OBJS) -o feature_train $(LIBS)
