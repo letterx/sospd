@@ -58,6 +58,10 @@ void MultiLabelCRF::SetupAlphaEnergy(Label alpha, SubmodularFlow& crf) const {
         }
         crf.AddClique(c.Nodes(), energy_table);
     }
+    const NodeId n = m_unary_cost.size();
+    for (NodeId i = 0; i < n; ++i) {
+        crf.AddUnaryTerm(i, m_unary_cost[i][m_labels[i]], m_unary_cost[i][alpha]);
+    }
 }
 
 void MultiLabelCRF::AlphaExpansion() {
@@ -107,6 +111,9 @@ REAL MultiLabelCRF::ComputeEnergy(const std::vector<Label>& labels) const {
             labelBuf.push_back(m_labels[i]);
         energy += c.Energy(labelBuf);
     }
+    const NodeId n = m_labels.size();
+    for (NodeId i = 0; i < n; ++i)
+        energy += m_unary_cost[i][labels[i]];
     return energy;
 }
 
