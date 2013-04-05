@@ -51,7 +51,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
     }
     virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
-        std::vector<std::vector<REAL>> costTables(num_clusters, std::vector<REAL>(per_cluster+2, 0));
+        std::vector<std::vector<REAL>> costTables(num_clusters, std::vector<REAL>(per_cluster, 0));
         for (size_t i = 0; i < num_clusters; ++i) {
             for (size_t j = 0; j < per_cluster; ++j) {
                 costTables[i][j] = doubleToREAL(m_scale*w[i*per_cluster+j]);
