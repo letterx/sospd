@@ -182,26 +182,34 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         ar & m_patch_feature;
     }
     private:
-    static constexpr size_t filters = 5;
+    static constexpr int filters = 4;
     void FilterResponse(cv::Mat im, cv::Mat& out) {
         ASSERT(im.channels() == 1);
         ASSERT(im.type() == CV_32FC1);
         const size_t samples = im.rows*im.cols;
         out.create(samples, filters, CV_32FC1);
+
         std::vector<cv::Mat> all_filtered;
         cv::Mat filtered;
         filtered.create(im.rows, im.cols, CV_32FC1);
-        cv::Sobel(im, filtered, CV_32F, 1, 0);
+
+        cv::Mat x_deriv = (cv::Mat_<float>(2,2) << 1.0, -1.0, 1.0, -1.0);
+        cv::filter2D(im, filtered, CV_32F, x_deriv, cv::Point(0,0));
         all_filtered.push_back(filtered);
-        cv::Sobel(im, filtered, CV_32F, 0, 1);
+        
+        cv::Mat y_deriv = (cv::Mat_<float>(2,2) << 1.0, 1.0, -1.0, -1.0);
+        cv::filter2D(im, filtered, CV_32F, y_deriv, cv::Point(0,0));
         all_filtered.push_back(filtered);
-        cv::Sobel(im, filtered, CV_32F, 2, 0);
+        
+        cv::Mat xy_deriv = (cv::Mat_<float>(2,2) << 1.0, 0.0, 0.0, -1.0);
+        cv::filter2D(im, filtered, CV_32F, xy_deriv, cv::Point(0,0));
         all_filtered.push_back(filtered);
-        cv::Sobel(im, filtered, CV_32F, 0, 2);
+
+        cv::Mat yx_deriv = (cv::Mat_<float>(2,2) << 0.0, 1.0, -1.0, 0.0);
+        cv::filter2D(im, filtered, CV_32F, yx_deriv, cv::Point(0,0));
         all_filtered.push_back(filtered);
-        cv::Sobel(im, filtered, CV_32F, 1, 1);
-        all_filtered.push_back(filtered);
-        for (int i = 0; i < 5; ++i) {
+
+        for (int i = 0; i < filters; ++i) {
             filtered = all_filtered[i];
             ASSERT(filtered.rows == im.rows);
             ASSERT(filtered.cols == im.cols);
@@ -225,7 +233,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
             grayscale *= 1./255;
             FilterResponse(grayscale, response);
             ASSERT(response.rows == im.cols*im.rows);
-            ASSERT((size_t)response.cols == filters);
+            ASSERT(response.cols == filters);
     }
     void Subsample(cv::Mat in, cv::Mat& out, size_t num_samples) {
         std::uniform_int_distribution<size_t> dist(0, in.rows-1);
@@ -236,8 +244,8 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         }
     }
     void Classify(cv::Mat response, cv::Mat& out, cv::Mat centers) {
-        ASSERT((size_t)response.cols == filters);
-        ASSERT((size_t)centers.cols == filters);
+        ASSERT(response.cols == filters);
+        ASSERT(centers.cols == filters);
         ASSERT((size_t)centers.rows == num_clusters);
         std::vector<size_t> counts(num_clusters, 0);
         size_t i = 0;
