@@ -73,9 +73,9 @@ class SVM_App : public SVM_App_Base {
         SVM_App(Derived* d) : m_derived(d) { }
         virtual ~SVM_App() { }
 
+        TestStats m_test_stats;
     private:
         Derived* m_derived;
-        TestStats m_test_stats;
         static DPatternData* Downcast(PatternData* p) { return static_cast<DPatternData*>(p); }
         static DLabelData* Downcast(LabelData* p) { return static_cast<DLabelData*>(p); }
 

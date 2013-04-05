@@ -182,6 +182,7 @@ IS_LabelData* InteractiveSegApp::ExtractLabel(const CRF& crf, const IS_PatternDa
 
 IS_LabelData* InteractiveSegApp::Classify(const IS_PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
     if (m_params.grabcut_classify) {
+        const_cast<std::string&>(this->m_test_stats.m_model_file) = std::string("grabcut.model");
         IS_LabelData* y = new IS_LabelData(x.Name());
         x.m_tri.copyTo(y->m_gt);
         cv::Mat bgdModel;
