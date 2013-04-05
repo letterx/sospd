@@ -67,13 +67,16 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
             std::string stats_file;
             int crf;
 
-            unsigned int Version() const { return 0; }
+            unsigned int Version() const { return 1; }
         };
         template <typename Archive>
         void SerializeParams(Archive& ar, const unsigned int version) {
             ar & m_params.eval_dir;
             ar & m_params.all_features;
-            ar & m_params.grabcut_classify;
+            if (version < 1) {
+                bool dummy_grabcut_classify;
+                ar & dummy_grabcut_classify;
+            }
             ar & m_params.grabcut_unary;
             ar & m_params.distance_unary;
             ar & m_params.pairwise_feature;

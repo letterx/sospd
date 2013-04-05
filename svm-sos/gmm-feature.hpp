@@ -13,8 +13,9 @@
 class GMMFeature : public AppTraits<InteractiveSegApp>::FG {
     public:
     double m_scale;
+    int grabcut_iters;
     GMMFeature() : m_scale(1.0) { }
-    explicit GMMFeature(double scale) : m_scale(0.1*scale) { }
+    explicit GMMFeature(double scale, int iters) : m_scale(0.1*scale), grabcut_iters(iters) { }
 
     virtual size_t NumFeatures() const { return 3; }
     virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const {
@@ -68,8 +69,10 @@ class GMMFeature : public AppTraits<InteractiveSegApp>::FG {
             cv::Mat& bgdUnaries = m_bgdUnaries[x.Name()];
             cv::Mat& fgdUnaries = m_fgdUnaries[x.Name()];
             cv::Mat bgdModel, fgdModel;
+            cv::Mat tmp;
+            x.m_tri.copyTo(tmp);
+            cv::grabCut(x.m_image, tmp, cv::Rect(), bgdModel, fgdModel, grabcut_iters, cv::GC_INIT_WITH_MASK);
             GMM bgdGMM(bgdModel), fgdGMM(fgdModel);
-            learnGMMs(x.m_image, x.m_tri, bgdGMM, fgdGMM);
 
             bgdUnaries.create(x.m_image.rows, x.m_image.cols, CV_64FC1);
             fgdUnaries.create(x.m_image.rows, x.m_image.cols, CV_64FC1);
@@ -111,6 +114,7 @@ class GMMFeature : public AppTraits<InteractiveSegApp>::FG {
         //std::cout << "Serializing GMMFeature\n";
         ar & boost::serialization::base_object<FeatureGroup>(*this);
         ar & m_scale;
+        ar & grabcut_iters;
     }
 
     typedef std::map<std::string, cv::Mat> UnaryMap;

@@ -101,7 +101,7 @@ double InteractiveSegApp::Loss(const IS_LabelData& l1, const IS_LabelData& l2, d
 void InteractiveSegApp::InitFeatures(const Parameters& param) {
     std::cout << "\nFeatures: ";
     constexpr double feature_scale = 0.01;
-    m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale)));
+    m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale, param.grabcut_unary)));
     std::cout << "GMMFeature ";
     if (param.distance_unary || param.all_features) {
         m_features.push_back(boost::shared_ptr<FG>(new DistanceFeature(feature_scale)));
@@ -172,9 +172,6 @@ IS_LabelData* InteractiveSegApp::ExtractLabel(const CRF& crf, const IS_PatternDa
             else c = -1;
             id++;
         });
-    //x.m_tri.copyTo(lp->m_gt);
-    //cv::Mat bgdModel, fgdModel;
-    //cv::grabCut(x.m_image, lp->m_gt, cv::Rect(), bgdModel, fgdModel, 10, cv::GC_INIT_WITH_MASK);
     return lp;
 }
 

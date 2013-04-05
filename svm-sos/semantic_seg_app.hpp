@@ -44,10 +44,6 @@ class SemanticSegApp : public SVM_App<SemanticSegApp> {
             // The following are serialized with the model
             std::string eval_dir;
             bool all_features;
-            bool pairwise_feature;
-            bool contrast_pairwise_feature;
-            bool submodular_feature;
-            bool contrast_submodular_feature;
             // Classify-only options
             bool show_images;
             std::string output_dir;
@@ -60,10 +56,6 @@ class SemanticSegApp : public SVM_App<SemanticSegApp> {
         void SerializeParams(Archive& ar, const unsigned int version) {
             ar &  m_params.eval_dir;
             ar &  m_params.all_features;
-            ar &  m_params.pairwise_feature;
-            ar &  m_params.contrast_pairwise_feature;
-            ar &  m_params.submodular_feature;
-            ar &  m_params.contrast_submodular_feature;
         }
 
         typedef FeatureGroup<Sem_PatternData, Sem_LabelData, MultiLabelCRF> FG;

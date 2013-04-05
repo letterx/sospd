@@ -62,6 +62,28 @@ class MultiLabelCRF {
         std::vector<Label> m_labels;
 };
 
+class PottsClique : public MultiLabelCRF::Clique {
+    public:
+        typedef MultiLabelCRF::NodeId NodeId;
+        typedef MultiLabelCRF::Label Label;
+
+        PottsClique(const std::vector<NodeId>& nodes, REAL same_cost, REAL diff_cost)
+            : MultiLabelCRF::Clique(nodes),
+            m_same_cost(same_cost),
+            m_diff_cost(diff_cost)
+        { }
+
+        virtual REAL Energy(const std::vector<Label>& labels) const override {
+            const Label l = labels[0];
+            for (Label l2 : labels)
+                if (l2 != l)
+                    return m_diff_cost;
+            return m_same_cost;
+        }
+    private:
+        REAL m_same_cost;
+        REAL m_diff_cost;
+};
 
 class SeparableClique : public MultiLabelCRF::Clique {
     public:
