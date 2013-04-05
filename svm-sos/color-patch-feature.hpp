@@ -7,17 +7,19 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
+#include <unordered_set>
 
 class ColorPatchFeature : public InteractiveSegApp::FG {
     public: 
     static constexpr int num_clusters = 50;
+    static constexpr int per_cluster = 4;
     static constexpr int num_filters = 27;
     double m_scale;
 
     ColorPatchFeature() : m_scale(1.0) { }
     explicit ColorPatchFeature(double scale) : m_scale(scale) { }
 
-    virtual size_t NumFeatures() const override { return num_clusters*2; }
+    virtual size_t NumFeatures() const override { return num_clusters*2*per_cluster; }
     virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
         std::vector<FVAL> psi(NumFeatures(), 0);
@@ -25,10 +27,10 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
         for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
             for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
                 int feature = patch_feature.at<int>(pt);
-                ASSERT(feature < num_clusters);
+                ASSERT(feature < num_clusters*per_cluster);
                 unsigned char label = l.m_gt.at<unsigned char>(pt);
                 psi[feature] += m_scale*LabelDiff(label, cv::GC_FGD);
-                psi[feature+num_clusters] += m_scale*LabelDiff(label, cv::GC_BGD);
+                psi[feature+num_clusters*per_cluster] += m_scale*LabelDiff(label, cv::GC_BGD);
             }
         }
         for (auto& v : psi)
@@ -41,10 +43,10 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
         for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
             for (pt.x = 0; pt.x < p.m_image.cols; ++pt.x) {
                 int feature = patch_feature.at<int>(pt);
-                ASSERT(feature < num_clusters);
+                ASSERT(feature < num_clusters*per_cluster);
                 CRF::NodeId id = pt.y*p.m_image.cols + pt.x;
                 REAL E0 = doubleToREAL(m_scale*w[feature]);
-                REAL E1 = doubleToREAL(m_scale*w[feature+num_clusters]);
+                REAL E1 = doubleToREAL(m_scale*w[feature+num_clusters*per_cluster]);
                 crf.AddUnaryTerm(id, E0, E1);
             }
         }
@@ -81,10 +83,42 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
             ASSERT(features.rows == xp->m_image.rows);
             ASSERT(features.cols == xp->m_image.cols);
             ASSERT(features.type() == CV_32SC1);
+
+            // Get 4 features per cluster, one for each combination of whether 
+            // feature occurs in fgd and bgd labeled pixels in trimap
+            std::unordered_set<int> fgd_features;
+            std::unordered_set<int> bgd_features;
             cv::Point p;
-            for (p.y = 0; p.y < features.rows; ++p.y)
-                for (p.x = 0; p.x < features.cols; ++p.x) 
-                    ASSERT(features.at<int>(p) < num_clusters);
+            const cv::Mat& tri = xp->m_tri;
+            for (p.y = 0; p.y < tri.rows; ++p.y) {
+                for (p.x = 0; p.x < tri.cols; ++p.x) {
+                    unsigned char label = tri.at<unsigned char>(p);
+                    int feature = features.at<int>(p);
+                    if (label == cv::GC_FGD) fgd_features.insert(feature);
+                    if (label == cv::GC_BGD) bgd_features.insert(feature);
+                }
+            }
+            std::vector<int> in_fgd_bgd(num_clusters, 0);
+            for (int i = 0; i < num_clusters; ++i) {
+                auto f_iter = fgd_features.find(i);
+                auto b_iter = bgd_features.find(i);
+                if (f_iter == fgd_features.end() && b_iter == bgd_features.end())
+                    in_fgd_bgd[i] = 0;
+                else if (f_iter == fgd_features.end() && b_iter != bgd_features.end())
+                    in_fgd_bgd[i] = 1;
+                else if (f_iter != fgd_features.end() && b_iter == bgd_features.end())
+                    in_fgd_bgd[i] = 2;
+                else
+                    in_fgd_bgd[i] = 3;
+            }
+
+            for (p.y = 0; p.y < features.rows; ++p.y) {
+                for (p.x = 0; p.x < features.cols; ++p.x) {
+                    int feature = features.at<int>(p);
+                    features.at<int>(p) = feature + in_fgd_bgd[feature] * num_clusters;
+                    ASSERT(features.at<int>(p) < num_clusters*per_cluster);
+                }
+            }
         }
         std::cout << "Done!\n";
     }
