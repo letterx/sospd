@@ -14,6 +14,7 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
     static constexpr int num_clusters = 50;
     static constexpr int per_cluster = 4;
     static constexpr int num_filters = 27;
+    static constexpr size_t samples_per_image = 5000;
     double m_scale;
 
     ColorPatchFeature() : m_scale(1.0) { }
@@ -60,7 +61,9 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
             cv::Mat im = xp->m_image;
             cv::Mat response;
             GetResponse(im, response);
-            samples.push_back(response);
+            cv::Mat subsampled;
+            Subsample(response, subsampled, samples_per_image);
+            samples.push_back(subsampled);
         }
         std::cout << samples.rows << " samples...";
         std::cout.flush();
@@ -121,6 +124,14 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
             }
         }
         std::cout << "Done!\n";
+    }
+    void Subsample(cv::Mat in, cv::Mat& out, size_t num_samples) {
+        std::uniform_int_distribution<size_t> dist(0, in.rows-1);
+        out.create(num_samples, in.cols, in.type());
+        for (size_t i = 0; i < num_samples; ++i) {
+            size_t r = dist(gen);
+            in.row(r).copyTo(out.row(i));
+        }
     }
     virtual void SaveEvaluation(const std::string& output_dir) const {
         std::string outfile = output_dir + "/color-patch-feature.dat";

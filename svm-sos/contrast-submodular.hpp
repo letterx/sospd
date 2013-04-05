@@ -17,6 +17,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
     static constexpr Assgn clique_size = 4;
     static constexpr size_t per_cluster = (1 << clique_size);
     static constexpr size_t num_clusters = 50;
+    static constexpr size_t samples_per_image = 5000;
     double m_scale;
 
     ContrastSubmodularFeature() : m_scale(1.0) { }
@@ -143,7 +144,9 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
             cv::Mat im = xp->m_image;
             cv::Mat response;
             GetResponse(im, response);
-            samples.push_back(response);
+            cv::Mat subsampled;
+            Subsample(response, subsampled, samples_per_image);
+            samples.push_back(subsampled);
         }
         std::cout << samples.rows << " samples...";
         std::cout.flush();
