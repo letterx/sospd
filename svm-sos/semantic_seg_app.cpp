@@ -202,6 +202,8 @@ bool SemanticSegApp::FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN
             if (eps < sparm->epsilon)
                 sparm->epsilon *= 0.49999;
             std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|^2 = " << w2 << " New eps = " << sparm->epsilon << "\n";
+            if (sparm->epsilon < 0.0001)
+                return false;
             return true;
         }
         feature_base += fgp->NumFeatures();
