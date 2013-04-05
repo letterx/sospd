@@ -10,6 +10,7 @@
 #include "distance-feature.hpp"
 #include "pairwise-feature.hpp"
 #include "contrast-submodular.hpp"
+#include "color-patch-feature.hpp"
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
@@ -106,6 +107,10 @@ void InteractiveSegApp::InitFeatures(const Parameters& param) {
     if (param.distance_unary || param.all_features) {
         m_features.push_back(boost::shared_ptr<FG>(new DistanceFeature(feature_scale)));
         std::cout << "DistanceFeature ";
+    }
+    if (param.color_patch || param.all_features) {
+        m_features.push_back(boost::shared_ptr<FG>(new ColorPatchFeature(feature_scale)));
+        std::cout << "ColorPatchFeature ";
     }
     if (param.submodular_feature || param.all_features) {
         m_features.push_back(boost::shared_ptr<FG>(new SubmodularFeature(feature_scale)));
@@ -276,6 +281,7 @@ po::options_description InteractiveSegApp::GetLearnOptions() {
         ("all-features", po::value<bool>(), "Turn on all features (for use with feature-train)")
         ("grabcut-unary", po::value<int>(), "[0..] Use n iterations of grabcut to initialize GMM unary features (default 0)")
         ("distance-unary", po::value<int>(), "[0,1] If 1, use distance features for unary potentials")
+        ("color-patch", po::value<bool>(), "[0,1] If 1, use color patch features for unary potentials")
         ("pairwise", po::value<int>(), "[0, 1] -> Use pairwise edge features. (default 0)")
         ("contrast-pairwise", po::value<int>(), "[0, 1] -> Use contrast-sensitive pairwise features. (default 0)")
         ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 0)")
@@ -302,6 +308,7 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
     params.crf = 0;
     params.grabcut_unary = 0;
     params.distance_unary = 1;
+    params.color_patch = 1;
     params.pairwise_feature = 0;
     params.contrast_pairwise_feature = 0;
     params.submodular_feature = 0;
@@ -329,6 +336,8 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
         params.grabcut_unary = vm["grabcut-unary"].as<int>();
     if (vm.count("distance-unary"))
         params.distance_unary = vm["distance-unary"].as<int>();
+    if (vm.count("color-patch"))
+        params.color_patch = vm["color-patch"].as<bool>();
     if (vm.count("pairwise")) {
         params.pairwise_feature = vm["pairwise"].as<int>();
         std::cout << "Pairwise Feature = " << params.pairwise_feature << "\n";

@@ -73,7 +73,7 @@ class ClusterColorFeature : public SemanticSegApp::FG {
         std::cout << "Done!\n";
     }
     virtual void Evaluate(const std::vector<Sem_PatternData*>& patterns) override {
-        std::cout << "Evaluating Contrast Submodular Features...";
+        std::cout << "Evaluating MultiLabel Color Cluster Features...";
         std::cout.flush();
         for (const Sem_PatternData* xp : patterns) {
             const cv::Mat& im = xp->m_image;

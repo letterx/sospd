@@ -57,6 +57,7 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
             int grabcut_classify;
             int grabcut_unary;
             bool distance_unary;
+            bool color_patch;
             bool pairwise_feature;
             bool contrast_pairwise_feature;
             bool submodular_feature;
@@ -79,6 +80,7 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
             }
             ar & m_params.grabcut_unary;
             ar & m_params.distance_unary;
+            ar & m_params.color_patch;
             ar & m_params.pairwise_feature;
             ar & m_params.contrast_pairwise_feature;
             ar & m_params.submodular_feature;
