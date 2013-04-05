@@ -15,7 +15,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
     typedef uint32_t Assgn;
 
     static constexpr Assgn clique_size = 4;
-    static constexpr size_t per_cluster = (1 << clique_size) - 2;
+    static constexpr size_t per_cluster = (1 << clique_size);
     static constexpr size_t num_clusters = 50;
     double m_scale;
 
@@ -25,8 +25,6 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
     virtual size_t NumFeatures() const override { return per_cluster*num_clusters; }
     virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
-        const Assgn all_zeros = 0;
-        const Assgn all_ones = (1 << clique_size) - 1;
         std::vector<FVAL> psi(NumFeatures(), 0);
         cv::Point base, pt;
         const cv::Point patch_size(1.0, 1.0);
@@ -43,8 +41,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
                         i++;
                     }
                 }
-                if (a != all_zeros && a != all_ones)
-                    psi[a-1 + feature*per_cluster] += m_scale;
+                psi[a + feature*per_cluster] += m_scale;
             }
         }
         for (auto& v : psi)
@@ -56,7 +53,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         std::vector<std::vector<REAL>> costTables(num_clusters, std::vector<REAL>(per_cluster+2, 0));
         for (size_t i = 0; i < num_clusters; ++i) {
             for (size_t j = 0; j < per_cluster; ++j) {
-                costTables[i][j+1] = doubleToREAL(m_scale*w[i*per_cluster+j]);
+                costTables[i][j] = doubleToREAL(m_scale*w[i*per_cluster+j]);
             }
         }
         cv::Point base, pt;
@@ -78,7 +75,6 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         typedef std::vector<std::pair<size_t, double>> LHS;
         typedef double RHS;
         Constr ret;
-        Assgn all_zeros = 0;
         Assgn all_ones = (1 << clique_size) - 1;
         for (size_t cluster = 0; cluster < num_clusters; ++cluster) {
             size_t base = feature_base + cluster*per_cluster;
@@ -93,9 +89,9 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
                                 // Decreasing marginal costs, so we require
                                 // f(ti) - f(t) <= f(si) - f(s)
                                 // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-                                LHS lhs = {{base+si-1, constraint_scale}, {base+t-1, constraint_scale}};
-                                if (s != all_zeros) lhs.push_back(std::make_pair(base+s-1, -constraint_scale));
-                                if (ti != all_ones) lhs.push_back(std::make_pair(base+ti-1, -constraint_scale));
+                                LHS lhs = {{base+si, constraint_scale}, {base+t, constraint_scale}};
+                                lhs.push_back(std::make_pair(base+s, -constraint_scale));
+                                lhs.push_back(std::make_pair(base+ti, -constraint_scale));
                                 RHS rhs = 0;
                                 ret.push_back(std::make_pair(lhs, rhs));
                             }
@@ -109,7 +105,6 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
     virtual double Violation(size_t feature_base, double* w) const override {
         size_t num_constraints = 0;
         double total_violation = 0;
-        Assgn all_zeros = 0;
         Assgn all_ones = (1 << clique_size) - 1;
         for (size_t cluster = 0; cluster < num_clusters; ++cluster) {
             size_t base = feature_base + cluster*per_cluster;
@@ -125,9 +120,9 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
                                 // Decreasing marginal costs, so we require
                                 // f(ti) - f(t) <= f(si) - f(s)
                                 // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
-                                double violation = -w[base+si-1] - w[base+t-1];
-                                if (s != all_zeros) violation += w[base+s-1];
-                                if (ti != all_ones) violation += w[base+ti-1];
+                                double violation = -w[base+si] - w[base+t];
+                                violation += w[base+s];
+                                violation += w[base+ti];
                                 if (violation > 0) total_violation += violation;
                             }
                         }
