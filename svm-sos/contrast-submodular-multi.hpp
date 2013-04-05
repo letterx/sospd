@@ -22,7 +22,7 @@ class ContrastSubmodularMultiFeature : public SemanticSegApp::FG {
     int per_label;
 
     ContrastSubmodularMultiFeature() : m_scale(1.0) { }
-    explicit ContrastSubmodularMultiFeature(double scale, int num_labels) : m_scale(scale), m_num_labels(num_labels), per_cluster((1 << clique_size)*num_labels), per_label(1 << clique_size) { }
+    explicit ContrastSubmodularMultiFeature(double scale, int num_labels) : m_scale(100.0*scale), m_num_labels(num_labels), per_cluster((1 << clique_size)*num_labels), per_label(1 << clique_size) { }
 
     virtual size_t NumFeatures() const override { return per_cluster*num_clusters; }
     virtual std::vector<FVAL> Psi(const Sem_PatternData& p, const Sem_LabelData& y) const override {
@@ -44,7 +44,7 @@ class ContrastSubmodularMultiFeature : public SemanticSegApp::FG {
                             i++;
                         }
                     }
-                    ASSERT(a < per_label);
+                    ASSERT(a < (Assgn)per_label);
                     psi[a + l*per_label + feature*per_cluster] += m_scale;
                 }
             }

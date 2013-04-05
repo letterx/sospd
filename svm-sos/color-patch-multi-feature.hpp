@@ -18,7 +18,7 @@ class ColorPatchMultiFeature : public SemanticSegApp::FG {
     int m_num_labels;
 
     ColorPatchMultiFeature() : m_scale(1.0) { }
-    explicit ColorPatchMultiFeature(double scale, int num_labels) : m_scale(scale), m_num_labels(num_labels) { }
+    explicit ColorPatchMultiFeature(double scale, int num_labels) : m_scale(10.0*scale), m_num_labels(num_labels) { }
 
     virtual size_t NumFeatures() const override { return num_clusters*m_num_labels; }
     virtual std::vector<FVAL> Psi(const Sem_PatternData& p, const Sem_LabelData& l) const override {
