@@ -9,6 +9,7 @@
 #include "alpha-expansion.hpp"
 #include "ale-feature.hpp"
 #include "potts-feature.hpp"
+#include "contrast-submodular-multi.hpp"
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
@@ -97,9 +98,9 @@ void SemanticSegApp::InitFeatures(const Parameters& param) {
     //m_features.push_back(boost::shared_ptr<FG>(new ClusterColorFeature(feature_scale, m_num_labels)));
     //std::cout << "ColorClusterFeature ";
     m_features.push_back(boost::shared_ptr<FG>(new ALE_Feature(feature_scale, m_num_labels)));
-    std::cout << "ALE Feature ";
-    m_features.push_back(boost::shared_ptr<FG>(new PottsFeature(feature_scale, m_num_labels)));
-    std::cout << "Potts Feature ";
+    std::cout << "ALE_Feature ";
+    m_features.push_back(boost::shared_ptr<FG>(new ContrastSubmodularMultiFeature(feature_scale, m_num_labels)));
+    std::cout << "ContrastSubmodular ";
     /*
     m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale)));
     if (param.distance_unary || param.all_features)

@@ -65,17 +65,16 @@ void MultiLabelCRF::SetupAlphaEnergy(Label alpha, SubmodularFlow& crf) const {
 }
 
 void MultiLabelCRF::AlphaExpansion() {
-    std::cout << "Starting Alpha Expansion\n";
+    std::cout << "(";
+    std::cout.flush();
     REAL last_energy = std::numeric_limits<REAL>::max();
     REAL energy = ComputeEnergy();
     const NodeId n = m_labels.size();
     size_t num_rounds = 0;
     while (energy < last_energy) {
-        std::cout << "\tRound: " << num_rounds;
+        std::cout << "*";
         std::cout.flush();
         for (Label alpha = 0; alpha < m_num_labels; ++alpha) {
-            std::cout << ".";
-            std::cout.flush();
             SubmodularFlow crf;
             crf.AddNode(m_labels.size());
             SetupAlphaEnergy(alpha, crf);
@@ -86,11 +85,12 @@ void MultiLabelCRF::AlphaExpansion() {
                     m_labels[i] = alpha;
             }
         }
-        std::cout << "\n";
         last_energy = energy;
         energy = ComputeEnergy();
         num_rounds++;
     }
+    std::cout << ")";
+    std::cout.flush();
 }
 
 void MultiLabelCRF::Solve() {
