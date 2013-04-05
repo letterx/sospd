@@ -5,9 +5,9 @@
 #include "image_manip.hpp"
 #include "crf.hpp"
 #include "feature.hpp"
-#include "cluster-color-feature.hpp"
 #include "alpha-expansion.hpp"
 #include "ale-feature.hpp"
+#include "color-patch-multi-feature.hpp"
 #include "potts-feature.hpp"
 #include "contrast-submodular-multi.hpp"
 
@@ -99,6 +99,8 @@ void SemanticSegApp::InitFeatures(const Parameters& param) {
     //std::cout << "ColorClusterFeature ";
     m_features.push_back(boost::shared_ptr<FG>(new ALE_Feature(feature_scale, m_num_labels)));
     std::cout << "ALE_Feature ";
+    m_features.push_back(boost::shared_ptr<FG>(new ColorPatchMultiFeature(feature_scale, m_num_labels)));
+    std::cout << "ColorPatchMulti ";
     m_features.push_back(boost::shared_ptr<FG>(new ContrastSubmodularMultiFeature(feature_scale, m_num_labels)));
     std::cout << "ContrastSubmodular ";
     /*
