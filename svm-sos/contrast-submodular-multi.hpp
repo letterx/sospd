@@ -55,9 +55,11 @@ class ContrastSubmodularMultiFeature : public SemanticSegApp::FG {
     virtual void AddToCRF(MultiLabelCRF& crf, const Sem_PatternData& p, double* w) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
         typedef SeparableClique::EnergyTable EnergyTable;
-        std::vector<EnergyTable> costTables(num_clusters, EnergyTable(m_num_labels, std::vector<REAL>(per_label, 0)));
+        std::vector<EnergyTable> costTables;
         for (int i = 0; i < num_clusters; ++i) {
+            costTables.push_back(EnergyTable());
             for (int l = 0; l < m_num_labels; ++l) {
+                costTables[i].push_back(std::vector<REAL>(per_cluster, 0));
                 for (int j = 0; j < per_cluster; ++j) {
                     costTables[i][l][j] = doubleToREAL(m_scale*w[i*per_cluster + l*per_label + j]);
                 }
