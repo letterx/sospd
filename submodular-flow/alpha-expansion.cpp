@@ -37,6 +37,20 @@ void MultiLabelCRF::AddClique(const CliquePtr& cp) {
     m_cliques.push_back(cp);
 }
 
+void MultiLabelCRF::InitialLabeling() {
+    const NodeId n = m_unary_cost.size();
+    for (NodeId i = 0; i < n; ++i) {
+        REAL best_cost = std::numeric_limits<REAL>::max();
+        for (Label l = 0; l < m_num_labels; ++l) {
+            if (m_unary_cost[i][l] < best_cost) {
+                best_cost = m_unary_cost[i][l];
+                m_labels[i] = l;
+            }
+        }
+    }
+}
+
+
 void MultiLabelCRF::SetupAlphaEnergy(Label alpha, SubmodularFlow& crf) const {
     typedef int32_t Assgn;
     for (const CliquePtr& cp : m_cliques) {
@@ -67,6 +81,7 @@ void MultiLabelCRF::SetupAlphaEnergy(Label alpha, SubmodularFlow& crf) const {
 void MultiLabelCRF::AlphaExpansion() {
     std::cout << "(";
     std::cout.flush();
+    InitialLabeling();
     REAL last_energy = std::numeric_limits<REAL>::max();
     REAL energy = ComputeEnergy();
     const NodeId n = m_labels.size();

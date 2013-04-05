@@ -44,6 +44,7 @@ class ContrastSubmodularMultiFeature : public SemanticSegApp::FG {
                             i++;
                         }
                     }
+                    ASSERT(a < per_label);
                     psi[a + l*per_label + feature*per_cluster] += m_scale;
                 }
             }

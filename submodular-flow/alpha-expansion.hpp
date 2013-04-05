@@ -55,6 +55,7 @@ class MultiLabelCRF {
 
     protected:
         void SetupAlphaEnergy(Label alpha, SubmodularFlow& crf) const;
+        void InitialLabeling();
         const size_t m_num_labels;
         REAL m_constant_term;
         std::vector<CliquePtr> m_cliques;
@@ -97,6 +98,7 @@ class SeparableClique : public MultiLabelCRF::Clique {
             m_energy_table(energy_table) { }
 
         virtual REAL Energy(const std::vector<Label>& labels) const override {
+            ASSERT(labels.size() == this->m_nodes.size());
             const Label num_labels = m_energy_table.size();
             std::vector<Assgn> per_label(num_labels, 0);
             for (size_t i = 0; i < labels.size(); ++i)
