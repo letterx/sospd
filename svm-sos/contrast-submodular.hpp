@@ -153,7 +153,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         std::cout << samples.rows << " samples...";
         std::cout.flush();
         cv::Mat best_labels;
-        cv::kmeans(samples, num_clusters, best_labels, cv::TermCriteria(CV_TERMCRIT_EPS, 10, 0.01), 1, cv::KMEANS_RANDOM_CENTERS, m_centers);
+        cv::kmeans(samples, num_clusters, best_labels, cv::TermCriteria(CV_TERMCRIT_EPS, 10, 0.01), 3, cv::KMEANS_RANDOM_CENTERS, m_centers);
         std::cout << "Done!\n";
     }
     virtual void Evaluate(const std::vector<IS_PatternData*>& patterns) override {
