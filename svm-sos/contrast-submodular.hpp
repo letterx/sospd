@@ -20,7 +20,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
     double m_scale;
 
     ContrastSubmodularFeature() : m_scale(1.0) { }
-    explicit ContrastSubmodularFeature(double scale) : m_scale(scale) { }
+    explicit ContrastSubmodularFeature(double scale) : m_scale(0.1*scale) { }
 
     virtual size_t NumFeatures() const override { return per_cluster*num_clusters; }
     virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const override {
