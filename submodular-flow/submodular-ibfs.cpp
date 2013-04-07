@@ -189,7 +189,6 @@ void SubmodularIBFS::IBFSInit()
 }
 
 void SubmodularIBFS::IBFS() {
-    std::cout << "Starting IBFS\n";
     IBFSInit();
 
     m_forward_search = true;
@@ -315,7 +314,6 @@ void SubmodularIBFS::IBFS() {
             m_sink_tree_d++;
         }
     } // End while
-    std::cout << "Done!\n";
 }
 
 void SubmodularIBFS::Augment(Arc& arc) {
