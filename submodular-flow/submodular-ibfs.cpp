@@ -334,7 +334,7 @@ void SubmodularIBFS::Augment(Arc& arc) {
         bottleneck = std::min(bottleneck, ResCap(a));
         current = a.j;
     }
-    ASSERT(bottleneck > 0);
+    //ASSERT(bottleneck > 0);
     Push(arc, bottleneck);
     current = i;
     while (current != s) {
@@ -514,7 +514,6 @@ bool SubmodularIBFS::NonzeroCap(Arc& arc) {
 }
 
 void SubmodularIBFS::Push(Arc& arc, REAL delta) {
-    ASSERT(delta > 0);
     ASSERT(arc.j != s && arc.i != t);
     if (arc.i == s) {  // reverse arc
         ASSERT(delta <= m_c_si[arc.j] - m_phi_si[arc.j]);
