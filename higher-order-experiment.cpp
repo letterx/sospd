@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
     typedef std::chrono::system_clock::time_point TimePt;
     typedef std::chrono::duration<double> Duration;
 
-    const NodeId n = 2000;
-    const size_t m = 2000;
+    const NodeId n = 20000;
+    const size_t m = 20000;
     const size_t k = 4;
 
     TimePt ibfs_start = std::chrono::system_clock::now();
