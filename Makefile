@@ -5,7 +5,7 @@ INCLUDES = -I./submodular-flow/ -I./higher-order-energy/include -I./higher-order
 OPT ?= -O3
 CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = 
-LIBS = 
+LIBS = -lboost_serialization
 TEST_DIR = ./test
 LIB_DIR = ./lib
 
@@ -27,13 +27,16 @@ SRCS = $(CORE_SRCS) $(TEST_SRCS) $(QPBO_SRCS)
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
-all: $(SF_LIB) unit-test higher-order-experiment
+all: $(SF_LIB) unit-test higher-order-experiment recover-crash
 
 unit-test: $(TEST_OBJS) $(SF_LIB)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(TEST_OBJS) $(SF_LIB) $(LIBS) -lboost_unit_test_framework 
 
 higher-order-experiment: higher-order-experiment.o $(SF_LIB)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ higher-order-experiment.o $(SF_LIB) $(LIBS)
+
+recover-crash: recover-crash.o $(SF_LIB)
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ recover-crash.o $(SF_LIB) $(LIBS)
 
 $(SF_LIB): $(CORE_OBJS) $(QPBO_OBJS)
 	mkdir -p $(LIB_DIR)

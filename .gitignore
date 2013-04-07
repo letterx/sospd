@@ -17,6 +17,7 @@
 *.swp
 *.swo
 *.P
+ibfs-crash*
 
 # gprof files
 gmon*.out
@@ -31,6 +32,7 @@ svm_sos_learn
 process_stats
 feature_train
 init_stats
+recover-crash
 
 # Generated test files
 *.model

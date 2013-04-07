@@ -1,8 +1,14 @@
 #include <iostream>
+#include <fstream>
 #include "submodular-ibfs.hpp"
 #include <algorithm>
 #include <limits>
 #include <queue>
+#include <chrono>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 SubmodularIBFS::SubmodularIBFS()
     : m_constant_term(0),
@@ -151,18 +157,22 @@ void SubmodularIBFS::IBFSInit()
             }
         }
     }
+    for (int cid = 0; cid < m_num_cliques; ++cid) {
+        CliquePtr cp = m_cliques[cid];
+        cp->ResetAlpha();
+    }
     // Sort the arc lists, to ensure consistency of current-arc heuristic
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         std::sort(m_nodes[i].out_arcs.begin(), m_nodes[i].out_arcs.end(), 
-                [](const Arc& n1, const Arc& n2) { return n1.j < n2.j || (n1.j == n2.j && n1.c < n2.c); });
+                [](const Arc& n1, const Arc& n2) { return n1.j < n2.j ; });
         std::sort(m_nodes[i].in_arcs.begin(), m_nodes[i].in_arcs.end(), 
-                [](const Arc& n1, const Arc& n2) { return n1.i < n2.i || (n1.i == n2.i && n1.c < n2.c); });
+                [](const Arc& n1, const Arc& n2) { return n1.i < n2.i ; });
     }
     // saturate all s-i-t paths
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         REAL min_cap = std::min(m_c_si[i], m_c_it[i]);
-        m_phi_si[i] += min_cap;
-        m_phi_it[i] += min_cap;
+        m_phi_si[i] = min_cap;
+        m_phi_it[i] = min_cap;
         if (m_c_si[i] > min_cap) {
             m_nodes[i].dis = 1;
             m_nodes[i].state = NodeState::S;
@@ -525,6 +535,7 @@ bool SubmodularIBFS::NonzeroCap(Arc& arc) {
 }
 
 void SubmodularIBFS::Push(Arc& arc, REAL delta) {
+    ASSERT(delta > 0);
     ASSERT(arc.j != s && arc.i != t);
     if (arc.i == s) {  // reverse arc
         ASSERT(delta <= m_c_si[arc.j] - m_phi_si[arc.j]);
@@ -573,8 +584,23 @@ void SubmodularIBFS::ComputeMinCut() {
 }
 
 void SubmodularIBFS::Solve() {
-    IBFS();
-    ComputeMinCut();
+    try {
+        IBFS();
+        ComputeMinCut();
+    } catch(std::logic_error& e) {
+        auto now = std::chrono::system_clock::now();
+        size_t count = now.time_since_epoch().count();
+        std::string error_file = "ibfs-crash-" + std::to_string(count);
+        std::ofstream of(error_file);
+        {
+            boost::archive::binary_oarchive ar(of);
+            ar & *this;
+        }
+        of.flush();
+        of.close();
+        std::cout << "Wrote crash dump to " << error_file << "\n";
+        throw;
+    }
 }
 
 REAL SubmodularIBFS::ComputeEnergy() const {
@@ -692,7 +718,6 @@ REAL IBFSEnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
 }
 
 void IBFSEnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
-    ASSERT(delta > 0);
     ASSERT(u_idx >= 0 && u_idx < this->m_nodes.size());
     ASSERT(v_idx >= 0 && v_idx < this->m_nodes.size());
     m_alpha_Ci[u_idx] += delta;
@@ -781,5 +806,16 @@ void IBFSEnergyTableClique::EnforceSubmodularity() {
             }
             s = NextPerm(s);
         } while (s < bound);
+    }
+}
+
+void IBFSEnergyTableClique::ResetAlpha() {
+    for (auto& a : this->m_alpha_Ci) {
+        a = 0;
+    }
+    const size_t n = this->m_nodes.size();
+    const Assignment num_assignments = 1 << n;
+    for (Assignment a = 0; a < num_assignments; ++a) {
+        m_alpha_energy[a] = m_energy[a];
     }
 }
