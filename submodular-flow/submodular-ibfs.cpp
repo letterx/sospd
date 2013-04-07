@@ -85,6 +85,8 @@ void SubmodularIBFS::IBFSInit()
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
     num_edges = 2 * m_num_nodes; // source sink edges
+    m_nodes.push_back(Node());
+    m_nodes.push_back(Node());
 
     m_source_q.clear(); m_sink_q.clear();
 
@@ -168,7 +170,9 @@ void SubmodularIBFS::IBFSInit()
                     [&](const Arc& n) { return n.i == s; });
             m_nodes[i].parent = s;
             ASSERT(m_nodes[i].parent_arc->j == i);
-            m_source_q.push_back(i);
+            m_source_q.push_front(i);
+            m_nodes[i].active = true;
+            m_nodes[i].q_iterator = m_source_q.begin();
         } else if (m_c_it[i] > min_cap) {
             m_nodes[i].dis = 1;
             m_nodes[i].state = NodeState::T;
@@ -176,7 +180,9 @@ void SubmodularIBFS::IBFSInit()
                     [&](const Arc& n) { return n.j == t; });
             m_nodes[i].parent = t;
             ASSERT(m_nodes[i].parent_arc->i == i);
-            m_sink_q.push_back(i);
+            m_sink_q.push_front(i);
+            m_nodes[i].active = true;
+            m_nodes[i].q_iterator = m_sink_q.begin();
         }
     }
 
@@ -189,27 +195,51 @@ void SubmodularIBFS::IBFS() {
     m_forward_search = true;
     m_last_search_node = -1;
     m_source_tree_d = m_sink_tree_d = 1;
+    m_source_q.sort();
+    m_sink_q.sort();
 
-    while (!m_source_q.empty() && !m_sink_q.empty()) {
+    while (!m_source_q.empty() || !m_sink_q.empty()) {
         NodeId search_node;
         int distance;
         if (m_forward_search) {
+            if (m_source_q.empty()) {
+                m_forward_search = !m_forward_search;
+                continue;
+            }
             search_node = m_source_q.front();
             distance = m_source_tree_d;
-            ASSERT(m_nodes[search_node].state == NodeState::S);
         } else {
+            if (m_sink_q.empty()) {
+                m_forward_search = !m_forward_search;
+                continue;
+            }
             search_node = m_sink_q.front();
             distance = m_sink_tree_d;
-            ASSERT(m_nodes[search_node].state == NodeState::T);
         }
         Node& n = m_nodes[search_node];
-        ASSERT(n.dis == distance);
-        if (m_last_search_node != search_node) {
+        ASSERT(n.dis >= distance);
+        if (n.dis > distance) {
+            if (m_forward_search) {
+                m_search_arc = n.out_arcs.end();
+                m_search_arc_end = n.out_arcs.end();
+                m_next_source_q.push_front(search_node);
+                n.active = true;
+                n.q_iterator = m_next_source_q.begin();
+            } else {
+                m_search_arc = n.in_arcs.end();
+                m_search_arc_end = n.in_arcs.end();
+                m_next_sink_q.push_front(search_node);
+                n.active = true;
+                n.q_iterator = m_next_sink_q.begin();
+            }
+        } else if (m_last_search_node != search_node) {
             m_last_search_node = search_node;
             if (m_forward_search) {
+                ASSERT(m_nodes[search_node].state == NodeState::S);
                 m_search_arc = n.out_arcs.begin();
                 m_search_arc_end = n.out_arcs.end();
             } else {
+                ASSERT(m_nodes[search_node].state == NodeState::T);
                 m_search_arc = n.in_arcs.begin();
                 m_search_arc_end = n.in_arcs.end();
             }
@@ -239,8 +269,6 @@ void SubmodularIBFS::IBFS() {
                                 m_nodes[neighbor].out_arcs.end(),
                                 [&](const Arc& a) { return a.j == search_node && a.c == m_search_arc->c; });
                         m_nodes[neighbor].parent = search_node;
-                    } else {
-                        ASSERT(false);
                     }
                 }
                 m_search_arc++;
@@ -254,13 +282,17 @@ void SubmodularIBFS::IBFS() {
                             m_nodes[neighbor].in_arcs.end(),
                             [&](const Arc& a) { return a.i == search_node && a.c == m_search_arc->c; });
                     m_nodes[neighbor].parent = search_node;
-                    m_next_source_q.push_back(neighbor);
+                    m_next_source_q.push_front(neighbor);
+                    m_nodes[neighbor].active = true;
+                    m_nodes[neighbor].q_iterator = m_next_source_q.begin();
                 } else {
                     m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].out_arcs.begin(), 
                             m_nodes[neighbor].out_arcs.end(),
                             [&](const Arc& a) { return a.j == search_node && a.c == m_search_arc->c; });
                     m_nodes[neighbor].parent = search_node;
-                    m_next_sink_q.push_back(neighbor);
+                    m_next_sink_q.push_front(neighbor);
+                    m_nodes[neighbor].active = true;
+                    m_nodes[neighbor].q_iterator = m_next_sink_q.begin();
                 }
                 m_search_arc++;
                 continue;
@@ -275,15 +307,19 @@ void SubmodularIBFS::IBFS() {
             // No more arcs to scan from this node, so remove from queue
             if (m_forward_search) {
                 m_source_q.pop_front();
+                n.active = false;
                 if (m_source_q.empty()) {
                     std::swap(m_source_q, m_next_source_q);
+                    m_source_q.sort();
                     m_forward_search = !m_forward_search;
                     m_source_tree_d++;
                 }
             } else {
                 m_sink_q.pop_front();
+                n.active = false;
                 if (m_sink_q.empty()) {
                     std::swap(m_sink_q, m_next_sink_q);
+                    m_sink_q.sort();
                     m_forward_search = !m_forward_search;
                     m_sink_tree_d++;
                 }
@@ -296,17 +332,17 @@ void SubmodularIBFS::IBFS() {
 void SubmodularIBFS::Augment(Arc& arc) {
     NodeId i = arc.i;
     NodeId j = arc.j;
-    ASSERT(m_nodes[i].state == NodeState::S);
-    ASSERT(m_nodes[j].state == NodeState::T);
     REAL bottleneck = ResCap(arc);
     NodeId current = i;
     while (current != s) {
+        ASSERT(m_nodes[current].state == NodeState::S);
         Arc& a = *m_nodes[current].parent_arc;
         bottleneck = std::min(bottleneck, ResCap(a));
         current = a.i;
     }
     current = j;
     while (current != t) {
+        ASSERT(m_nodes[current].state == NodeState::T);
         Arc& a = *m_nodes[current].parent_arc;
         bottleneck = std::min(bottleneck, ResCap(a));
         current = a.j;
@@ -337,17 +373,25 @@ void SubmodularIBFS::Adopt() {
                 && (m_nodes[n.parent].state == NodeState::T
                     || m_nodes[n.parent].state == NodeState::T_orphan
                     || m_nodes[n.parent].dis != current_dist - 1
-                    || NonzeroCap(*n.parent_arc)))
+                    || !NonzeroCap(*n.parent_arc))) {
             n.parent_arc++;
+            n.parent = n.parent_arc->i;
+        }
         if (n.parent_arc == n.in_arcs.end()) {
+            if (n.active && n.dis == m_source_tree_d) {
+                m_source_q.erase(n.q_iterator);
+            } else if (n.active && n.dis == m_source_tree_d+1) {
+                m_next_source_q.erase(n.q_iterator);
+            }
+            n.active = false;
             int old_dist = n.dis;
             // We didn't find a new parent with the same label, so do a relabel
-            n.dis = std::numeric_limits<int>::max();
+            n.dis = std::numeric_limits<int>::max()-1;
             for (auto iter = n.in_arcs.begin(); iter != n.in_arcs.end(); ++iter) {
                 if (m_nodes[iter->i].dis < n.dis 
                         && (m_nodes[iter->i].state == NodeState::S
                             || m_nodes[iter->i].state == NodeState::S_orphan)
-                        && !NonzeroCap(*iter)) {
+                        && NonzeroCap(*iter)) {
                     n.dis = m_nodes[iter->i].dis;
                     n.parent_arc = iter;
                     n.parent = iter->i;
@@ -359,6 +403,13 @@ void SubmodularIBFS::Adopt() {
             if (m_forward_search) cutoff_distance += 1;
             if (n.dis > cutoff_distance) {
                 n.state = NodeState::N;
+            } else {
+                n.state = NodeState::S;
+            }
+            if (n.dis == m_source_tree_d + 1 && n.dis <= cutoff_distance) {
+                m_next_source_q.push_front(i);
+                n.q_iterator = m_next_source_q.begin();
+                n.active = true;
             }
             for (Arc& a : n.out_arcs) {
                 if (m_nodes[a.j].parent == i)
@@ -377,17 +428,25 @@ void SubmodularIBFS::Adopt() {
                 && (m_nodes[n.parent].state == NodeState::S
                     || m_nodes[n.parent].state == NodeState::S_orphan
                     || m_nodes[n.parent].dis != current_dist - 1
-                    || NonzeroCap(*n.parent_arc)))
+                    || !NonzeroCap(*n.parent_arc))) {
             n.parent_arc++;
+            n.parent = n.parent_arc->j;
+        }
         if (n.parent_arc == n.out_arcs.end()) {
+            if (n.active && n.dis == m_source_tree_d) {
+                m_sink_q.erase(n.q_iterator);
+            } else if (n.active && n.dis == m_source_tree_d+1) {
+                m_next_sink_q.erase(n.q_iterator);
+            }
+            n.active = false;
             int old_dist = n.dis;
             // We didn't find a new parent with the same label, so do a relabel
-            n.dis = std::numeric_limits<int>::max();
+            n.dis = std::numeric_limits<int>::max()-1;
             for (auto iter = n.out_arcs.begin(); iter != n.out_arcs.end(); ++iter) {
                 if (m_nodes[iter->j].dis < n.dis 
                         && (m_nodes[iter->j].state == NodeState::T
                             || m_nodes[iter->j].state == NodeState::T_orphan)
-                        && !NonzeroCap(*iter)) {
+                        && NonzeroCap(*iter)) {
                     n.dis = m_nodes[iter->j].dis;
                     n.parent_arc = iter;
                     n.parent = iter->j;
@@ -399,6 +458,13 @@ void SubmodularIBFS::Adopt() {
             if (!m_forward_search) cutoff_distance += 1;
             if (n.dis > cutoff_distance) {
                 n.state = NodeState::N;
+            } else {
+                n.state = NodeState::T;
+            }
+            if (n.dis == m_sink_tree_d + 1 && n.dis <= cutoff_distance) {
+                m_next_sink_q.push_front(i);
+                n.q_iterator = m_next_sink_q.begin();
+                n.active = true;
             }
             for (Arc& a : n.in_arcs) {
                 if (m_nodes[a.i].parent == i)
@@ -446,7 +512,7 @@ bool SubmodularIBFS::NonzeroCap(Arc& arc) {
     if (arc.c >= 0) {
         return m_cliques[arc.c]->NonzeroCapacity(arc.i_idx, arc.j_idx);
     } else if (arc.i == s) {
-        return (m_c_si[arc.j] - m_phi_it[arc.j]) != 0;
+        return (m_c_si[arc.j] - m_phi_si[arc.j]) != 0;
     } else if (arc.j == s) {
         return m_phi_si[arc.i] != 0;
     } else if (arc.i == t) {
@@ -470,7 +536,7 @@ void SubmodularIBFS::Push(Arc& arc, REAL delta) {
     } else if (arc.j == t) {
         ASSERT(delta <= m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
-        if (m_phi_it[arc.i] == m_c_si[arc.j]) {
+        if (m_phi_it[arc.i] == m_c_it[arc.i]) {
             MakeOrphan(arc.i);
         }
     } else { // Clique arc

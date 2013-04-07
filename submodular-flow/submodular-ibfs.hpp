@@ -16,6 +16,7 @@ class SubmodularIBFS {
         struct Clique;
         typedef std::shared_ptr<IBFSEnergyTableClique> CliquePtr;
         typedef std::vector<CliquePtr> CliqueVec;
+        typedef std::list<NodeId> NodeQueue;
         enum class NodeState : char {
             S, T, S_orphan, T_orphan, N
         };
@@ -34,7 +35,9 @@ class SubmodularIBFS {
             ArcList in_arcs;
             typename ArcList::iterator parent_arc;
             NodeId parent;
-            Node() : state(NodeState::N), dis(std::numeric_limits<int>::max()), out_arcs(), in_arcs(), parent_arc() { }
+            bool active;
+            typename NodeQueue::iterator q_iterator;
+            Node() : state(NodeState::N), dis(std::numeric_limits<int>::max()), out_arcs(), in_arcs(), parent_arc(), active(false) { }
         };
 
 
@@ -132,7 +135,6 @@ class SubmodularIBFS {
 
     protected:
         // Layers store vertices by distance.
-        typedef std::list<NodeId> NodeQueue;
         NodeQueue m_source_q;
         NodeQueue m_next_source_q;
         NodeQueue m_sink_q;
@@ -153,8 +155,6 @@ class SubmodularIBFS {
         NodeId s,t;
         long num_edges;
 
-        REAL ResCap(Arc& arc);
-        bool NonzeroCap(Arc& arc);
         void Push(Arc& arc, REAL delta);
         void Augment(Arc& arc);
         void Adopt();
@@ -192,6 +192,12 @@ class SubmodularIBFS {
         CliqueId GetNumCliques() const { return m_num_cliques; }
         const CliqueVec& GetCliques() const { return m_cliques; }
         const std::vector<NeighborList>& GetNeighbors() const { return m_neighbors; }
+        std::vector<int>& GetLabels() { return m_labels; }
+        const std::vector<int>& GetLabels() const { return m_labels; }
+        const std::vector<Node>& GetNodes() const { return m_nodes; }
+
+        REAL ResCap(Arc& arc);
+        bool NonzeroCap(Arc& arc);
 
 };
 
