@@ -3,6 +3,7 @@
 
 #include "submodular-flow.hpp"
 #include "higher-order-energy.hpp"
+#include "submodular-ibfs.hpp"
 #include "QPBO.h"
 
 inline REAL doubleToREAL(double d) { return (REAL)(d * 500000.0); }

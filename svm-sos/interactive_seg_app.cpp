@@ -192,9 +192,12 @@ IS_LabelData* InteractiveSegApp::Classify(const IS_PatternData& x, STRUCTMODEL* 
     } else {
         CRF crf;
         SubmodularFlow sf;
+        SubmodularIBFS ibfs;
         HigherOrderWrapper ho;
         if (m_params.crf == 0) {
             crf.Wrap(&sf);
+        } else if (m_params.crf == 2) {
+            crf.Wrap(&ibfs);
         } else {
             crf.Wrap(&ho);
         }
@@ -213,8 +216,11 @@ IS_LabelData* InteractiveSegApp::FindMostViolatedConstraint(const IS_PatternData
     CRF crf;
     SubmodularFlow sf;
     HigherOrderWrapper ho;
+    SubmodularIBFS ibfs;
     if (m_params.crf == 0) {
         crf.Wrap(&sf);
+    } else if (m_params.crf == 2) {
+        crf.Wrap(&ibfs);
     } else {
         crf.Wrap(&ho);
     }
@@ -328,6 +334,9 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
         } else if (type == "ho") {
             std::cout << "HigherOrder optimizer\n";
             params.crf = 1;
+        } else if (type == "ibfs") {
+            std::cout << "SubmodularIBFS optimizer\n";
+            params.crf = 2;
         } else {
             std::cout << "Unrecognized optimizer\n";
             exit(-1);
@@ -387,6 +396,9 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseClassifyOptions(const std:
         } else if (type == "ho") {
             std::cout << "HigherOrder optimizer\n";
             params.crf = 1;
+        } else if (type == "ibfs") {
+            std::cout << "SubmodularIBFS optimizer\n";
+            params.crf = 2;
         } else {
             std::cout << "Unrecognized optimizer\n";
             exit(-1);
