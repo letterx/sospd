@@ -535,6 +535,8 @@ void SubmodularIBFS::Push(Arc& arc, REAL delta) {
         c.Push(arc.i_idx, arc.j_idx, delta);
         c.Time()++;
         for (NodeId n : c.Nodes()) {
+            if (m_nodes[n].state == NodeState::N)
+                continue;
             Arc& parent_arc = *m_nodes[n].parent_arc;
             if (parent_arc.c == arc.c && !NonzeroCap(parent_arc)) {
                 MakeOrphan(n);
