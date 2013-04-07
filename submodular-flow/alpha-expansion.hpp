@@ -3,6 +3,7 @@
 
 #include "sos-common.hpp"
 #include "submodular-flow.hpp"
+#include "submodular-ibfs.hpp"
 #include <vector>
 
 class MultiLabelCRF {
@@ -54,7 +55,7 @@ class MultiLabelCRF {
         };
 
     protected:
-        void SetupAlphaEnergy(Label alpha, SubmodularFlow& crf) const;
+        void SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) const;
         void InitialLabeling();
         const size_t m_num_labels;
         REAL m_constant_term;

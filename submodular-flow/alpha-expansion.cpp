@@ -51,7 +51,7 @@ void MultiLabelCRF::InitialLabeling() {
 }
 
 
-void MultiLabelCRF::SetupAlphaEnergy(Label alpha, SubmodularFlow& crf) const {
+void MultiLabelCRF::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) const {
     typedef int32_t Assgn;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
@@ -90,7 +90,7 @@ void MultiLabelCRF::AlphaExpansion() {
         std::cout << "*";
         std::cout.flush();
         for (Label alpha = 0; alpha < m_num_labels; ++alpha) {
-            SubmodularFlow crf;
+            SubmodularIBFS crf;
             crf.AddNode(m_labels.size());
             SetupAlphaEnergy(alpha, crf);
             crf.Solve();
