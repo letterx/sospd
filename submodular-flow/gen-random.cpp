@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "submodular-flow.hpp"
 #include "higher-order.hpp"
+#include "submodular-ibfs.hpp"
 
 template <typename REAL>
 void GenRandomEnergyTable(std::vector<REAL>& energy_table, size_t k, REAL clique_range, std::mt19937& random_gen) {
@@ -60,4 +61,7 @@ void DummyInstantiateTemplates() {
 
     SubmodularFlow sf;
     GenRandom(sf, 0, 0, 0, (REAL)0, (REAL)0, (REAL)0, 0);
+
+    SubmodularIBFS ibfs;
+    GenRandom(ibfs, 0, 0, 0, (REAL)0, (REAL)0, (REAL)0, 0);
 }

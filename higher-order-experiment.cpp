@@ -4,6 +4,7 @@
 #include "QPBO.h"
 #include "gen-random.hpp"
 #include "submodular-flow.hpp"
+#include "submodular-ibfs.hpp"
 
 int main(int argc, char **argv) {
     typedef int64_t REAL;
@@ -12,9 +13,18 @@ int main(int argc, char **argv) {
     typedef std::chrono::system_clock::time_point TimePt;
     typedef std::chrono::duration<double> Duration;
 
-    const NodeId n = 20000;
-    const size_t m = 20000;
+    const NodeId n = 20;
+    const size_t m = 20;
     const size_t k = 4;
+
+    TimePt ibfs_start = std::chrono::system_clock::now();
+
+    SubmodularIBFS ibfs;
+    GenRandom(ibfs, n, k, m, (REAL)100, (REAL)800, (REAL)1600, 0);
+    ibfs.Solve();
+
+    Duration ibfs_time = std::chrono::system_clock::now() - ibfs_start;
+
 
     TimePt ho_start = std::chrono::system_clock::now();
     HOE ho;
@@ -49,13 +59,14 @@ int main(int argc, char **argv) {
             ones++;
     }
     ASSERT(qr.ComputeTwiceEnergy() == sf.ComputeEnergy()*2);
+    ASSERT(qr.ComputeTwiceEnergy() == ibfs.ComputeEnergy()*2);
 
-    std::cout << "Labeled: " << labeled << "\n";
-    std::cout << "Ones:    " << ones << "\n";
-    std::cout << "Energy:  " << sf.ComputeEnergy() << "\n";
-    std::cout << "HO time: " << ho_time.count() << " seconds\n";
-    std::cout << "SF time: " << sf_time.count() << " seconds\n";
-
-
+    std::cout << "Labeled:   " << labeled << "\n";
+    std::cout << "Ones:      " << ones << "\n";
+    std::cout << "Energy:    " << sf.ComputeEnergy() << "\n";
+    std::cout << "HO time:   " << ho_time.count() << " seconds\n";
+    std::cout << "SF time:   " << sf_time.count() << " seconds\n";
+    std::cout << "IBFS time: " << ibfs_time.count() << " seconds\n";
+    
     return 0;
 }
