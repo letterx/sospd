@@ -361,6 +361,7 @@ void SubmodularIBFS::Adopt() {
         while (n.parent_arc != n.in_arcs.end() 
                 && (m_nodes[n.parent].state == NodeState::T
                     || m_nodes[n.parent].state == NodeState::T_orphan
+                    || m_nodes[n.parent].state == NodeState::N
                     || m_nodes[n.parent].dis != current_dist - 1
                     || !NonzeroCap(*n.parent_arc))) {
             n.parent_arc++;
@@ -416,6 +417,7 @@ void SubmodularIBFS::Adopt() {
         while (n.parent_arc != n.out_arcs.end() 
                 && (m_nodes[n.parent].state == NodeState::S
                     || m_nodes[n.parent].state == NodeState::S_orphan
+                    || m_nodes[n.parent].state == NodeState::N
                     || m_nodes[n.parent].dis != current_dist - 1
                     || !NonzeroCap(*n.parent_arc))) {
             n.parent_arc++;
