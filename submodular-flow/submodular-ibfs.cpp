@@ -433,9 +433,9 @@ void SubmodularIBFS::Adopt() {
             n.parent = n.parent_arc->j;
         }
         if (n.parent_arc == n.out_arcs.end()) {
-            if (n.active && n.dis == m_source_tree_d) {
+            if (n.active && n.dis == m_sink_tree_d) {
                 m_sink_q.erase(n.q_iterator);
-            } else if (n.active && n.dis == m_source_tree_d+1) {
+            } else if (n.active && n.dis == m_sink_tree_d+1) {
                 m_next_sink_q.erase(n.q_iterator);
             }
             n.active = false;
