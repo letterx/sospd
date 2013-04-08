@@ -94,7 +94,11 @@ void SubmodularIBFS::IBFSInit()
     m_nodes.push_back(Node());
     m_nodes.push_back(Node());
 
-    m_source_q.clear(); m_sink_q.clear();
+    m_source_layers = std::vector<NodeQueue>(m_num_nodes);
+    m_sink_layers = std::vector<NodeQueue>(m_num_nodes);
+
+    m_source_orphans.clear();
+    m_sink_orphans.clear();
 
     // init data structures
     for (int i = 0; i < m_num_nodes + 2; ++i) {
@@ -105,8 +109,10 @@ void SubmodularIBFS::IBFSInit()
     }
     m_nodes[s].state = NodeState::S;
     m_nodes[s].dis = 0;
+    m_source_layers[0].push_back(s);
     m_nodes[t].state = NodeState::T;
     m_nodes[t].dis = 0;
+    m_sink_layers[0].push_back(t);
 
     // initialize arc lists
     Arc arc;
@@ -164,9 +170,9 @@ void SubmodularIBFS::IBFSInit()
     // Sort the arc lists, to ensure consistency of current-arc heuristic
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         std::sort(m_nodes[i].out_arcs.begin(), m_nodes[i].out_arcs.end(), 
-                [](const Arc& n1, const Arc& n2) { return n1.j < n2.j ; });
+                [](const Arc& n1, const Arc& n2) { return n1.j < n2.j || (n1.j == n2.j && n1.c < n2.c); });
         std::sort(m_nodes[i].in_arcs.begin(), m_nodes[i].in_arcs.end(), 
-                [](const Arc& n1, const Arc& n2) { return n1.i < n2.i ; });
+                [](const Arc& n1, const Arc& n2) { return n1.i < n2.i || (n1.i == n2.i && n1.c < n2.c); });
     }
     // saturate all s-i-t paths
     for (NodeId i = 0; i < m_num_nodes; ++i) {
@@ -174,27 +180,23 @@ void SubmodularIBFS::IBFSInit()
         m_phi_si[i] = min_cap;
         m_phi_it[i] = min_cap;
         if (m_c_si[i] > min_cap) {
-            m_nodes[i].dis = 1;
             m_nodes[i].state = NodeState::S;
+            m_nodes[i].dis = 1;
+            AddToLayer(i);
             m_nodes[i].parent_arc = std::find_if(m_nodes[i].in_arcs.begin(), m_nodes[i].in_arcs.end(),
                     [&](const Arc& n) { return n.i == s; });
             m_nodes[i].parent = s;
             ASSERT(m_nodes[i].parent_arc->j == i);
             ASSERT(NonzeroCap(*m_nodes[i].parent_arc));
-            m_source_q.push_front(i);
-            m_nodes[i].active = true;
-            m_nodes[i].q_iterator = m_source_q.begin();
         } else if (m_c_it[i] > min_cap) {
-            m_nodes[i].dis = 1;
             m_nodes[i].state = NodeState::T;
+            m_nodes[i].dis = 1;
+            AddToLayer(i);
             m_nodes[i].parent_arc = std::find_if(m_nodes[i].out_arcs.begin(), m_nodes[i].out_arcs.end(),
                     [&](const Arc& n) { return n.j == t; });
             m_nodes[i].parent = t;
             ASSERT(m_nodes[i].parent_arc->i == i);
             ASSERT(NonzeroCap(*m_nodes[i].parent_arc));
-            m_sink_q.push_front(i);
-            m_nodes[i].active = true;
-            m_nodes[i].q_iterator = m_sink_q.begin();
         }
     }
 
@@ -206,47 +208,35 @@ void SubmodularIBFS::IBFS() {
     m_forward_search = true;
     m_last_search_node = -1;
     m_source_tree_d = m_sink_tree_d = 1;
-    m_source_q.sort();
-    m_sink_q.sort();
 
-    while (!m_source_q.empty() && !m_sink_q.empty()) {
-        NodeId search_node;
+    NodeQueue* current_q = &(m_source_layers[1]);
+    m_search_node_iter = current_q->begin();
+    m_search_node_end = current_q->end();
+
+    while (!current_q->empty()) {
+        if (m_search_node_iter == m_search_node_end) {
+            // Swap queues and continue
+            if (m_forward_search) {
+                m_source_tree_d++;
+                current_q = &(m_sink_layers[m_sink_tree_d]);
+            } else {
+                m_sink_tree_d++;
+                current_q = &(m_source_layers[m_source_tree_d]);
+            }
+            m_search_node_iter = current_q->begin();
+            m_search_node_end = current_q->end();
+            continue;
+        }
+        NodeId search_node = *m_search_node_iter;
+        Node& n = m_nodes[search_node];
         int distance;
         if (m_forward_search) {
-            search_node = m_source_q.front();
             distance = m_source_tree_d;
         } else {
-            search_node = m_sink_q.front();
             distance = m_sink_tree_d;
         }
-        Node& n = m_nodes[search_node];
-        ASSERT(n.dis >= distance);
-        if (n.dis > distance) {
-            if (m_forward_search) {
-                m_search_arc = n.out_arcs.end();
-                m_search_arc_end = n.out_arcs.end();
-                m_next_source_q.push_front(search_node);
-                n.active = true;
-                n.q_iterator = m_next_source_q.begin();
-            } else {
-                m_search_arc = n.in_arcs.end();
-                m_search_arc_end = n.in_arcs.end();
-                m_next_sink_q.push_front(search_node);
-                n.active = true;
-                n.q_iterator = m_next_sink_q.begin();
-            }
-        } else if (m_last_search_node != search_node) {
-            m_last_search_node = search_node;
-            if (m_forward_search) {
-                ASSERT(m_nodes[search_node].state == NodeState::S);
-                m_search_arc = n.out_arcs.begin();
-                m_search_arc_end = n.out_arcs.end();
-            } else {
-                ASSERT(m_nodes[search_node].state == NodeState::T);
-                m_search_arc = n.in_arcs.begin();
-                m_search_arc_end = n.in_arcs.end();
-            }
-        }
+        ASSERT(n.dis == distance);
+        // Advance m_search_arc until we find a residual arc
         while (m_search_arc != m_search_arc_end && !NonzeroCap(*m_search_arc))
             m_search_arc++;
 
@@ -310,25 +300,7 @@ void SubmodularIBFS::IBFS() {
             }
         } else {
             // No more arcs to scan from this node, so remove from queue
-            if (m_forward_search) {
-                m_source_q.pop_front();
-                n.active = false;
-            } else {
-                m_sink_q.pop_front();
-                n.active = false;
-            }
-        }
-        if (m_forward_search && m_source_q.empty()) {
-            std::swap(m_source_q, m_next_source_q);
-            m_source_q.sort();
-            m_forward_search = !m_forward_search;
-            m_source_tree_d++;
-        }
-        if (!m_forward_search && m_sink_q.empty()) {
-            std::swap(m_sink_q, m_next_sink_q);
-            m_sink_q.sort();
-            m_forward_search = !m_forward_search;
-            m_sink_tree_d++;
+            AdvanceSearchNode();
         }
     } // End while
 }
@@ -819,3 +791,46 @@ void IBFSEnergyTableClique::ResetAlpha() {
         m_alpha_energy[a] = m_energy[a];
     }
 }
+
+void SubmodularIBFS::AddToLayer(NodeId i) {
+    int dis = m_nodes[i].dis;
+    if (m_nodes[i].state == NodeState::S) {
+        m_source_layers[dis].push_front(i);
+        m_nodes[i].q_iterator = m_source_layers[dis].begin();
+    } else if (m_nodes[i].state == NodeState::T) {
+        m_sink_layers[dis].push_front(i);
+        m_nodes[i].q_iterator = m_sink_layers[dis].begin();
+    } else {
+        ASSERT(false);
+    }
+}
+
+void SubmodularIBFS::RemoveFromLayer(NodeId i) {
+    if (m_search_node_iter != m_search_node_end && *m_search_node_iter == i)
+        AdvanceSearchNode();
+    int dis = m_nodes[i].dis;
+    if (m_nodes[i].state == NodeState::S || m_nodes[i].state == NodeState::S_orphan) {
+        m_source_layers[dis].erase(m_nodes[i].q_iterator);
+    } else if (m_nodes[i].state == NodeState::T || m_nodes[i].state == NodeState::T_orphan) {
+        m_sink_layers[dis].erase(m_nodes[i].q_iterator);
+    } else {
+        ASSERT(false);
+    }
+}
+
+void SubmodularIBFS::AdvanceSearchNode() {
+    m_search_node_iter++;
+    if (m_search_node_iter != m_search_node_end) {
+        Node& n = m_nodes[*m_search_node_iter];
+        if (m_forward_search) {
+            ASSERT(n.state == NodeState::S || n.state == NodeState::S_orphan);
+            m_search_arc = n.out_arcs.begin();
+            m_search_arc_end = n.out_arcs.end();
+        } else {
+            ASSERT(n.state == NodeState::T || n.state == NodeState::T_orphan);
+            m_search_arc = n.in_arcs.begin();
+            m_search_arc_end = n.in_arcs.end();
+        }
+    }
+}
+

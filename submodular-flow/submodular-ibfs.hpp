@@ -152,15 +152,14 @@ class SubmodularIBFS {
 
     protected:
         // Layers store vertices by distance.
-        NodeQueue m_source_q;
-        NodeQueue m_next_source_q;
-        NodeQueue m_sink_q;
-        NodeQueue m_next_sink_q;
+        std::vector<NodeQueue> m_source_layers;
+        std::vector<NodeQueue> m_sink_layers;
         NodeQueue m_source_orphans;
         NodeQueue m_sink_orphans;
         int m_source_tree_d;
         int m_sink_tree_d;
-        NodeId m_last_search_node;
+        typename NodeQueue::iterator m_search_node_iter;
+        typename NodeQueue::iterator m_search_node_end;
         typename ArcList::iterator m_search_arc;
         typename ArcList::iterator m_search_arc_end;
         bool m_forward_search;
@@ -176,6 +175,9 @@ class SubmodularIBFS {
         void Augment(Arc& arc);
         void Adopt();
         void MakeOrphan(NodeId i);
+        void RemoveFromLayer(NodeId i);
+        void AddToLayer(NodeId i);
+        void AdvanceSearchNode();
 
         void IBFSInit();
 
