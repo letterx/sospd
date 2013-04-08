@@ -195,13 +195,15 @@ bool SemanticSegApp::FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN
     size_t feature_base = 1;
     for (auto fgp : m_features) {
         double violation = fgp->Violation(feature_base, sm->w);
-        double w2 = 0;
+        double w_abs = 0;
         for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
-            w2 += sm->w[i] * sm->w[i];
-        if (violation > 0.001 * w2) {
+            w_abs += fabs(sm->w[i]);
+        if (violation > 0.001 * w_abs) {
             if (eps < sparm->epsilon)
                 sparm->epsilon *= 0.49999;
-            std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|^2 = " << w2 << " New eps = " << sparm->epsilon << "\n";
+            std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|_1 = " << w_abs << " New eps = " << sparm->epsilon << "\n";
+            if (sparm->epsilon < 0.0001)
+                return false;
             return true;
         }
         feature_base += fgp->NumFeatures();

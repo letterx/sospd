@@ -166,6 +166,7 @@ void SubmodularIBFS::IBFSInit()
     for (int cid = 0; cid < m_num_cliques; ++cid) {
         CliquePtr cp = m_cliques[cid];
         cp->ResetAlpha();
+        cp->ComputeMinTightSets();
     }
     // Sort the arc lists, to ensure consistency of current-arc heuristic
     for (NodeId i = 0; i < m_num_nodes; ++i) {
@@ -249,16 +250,18 @@ void SubmodularIBFS::IBFS() {
                 ASSERT(m_nodes[neighbor].dis <= n.dis + 1);
                 if (m_nodes[neighbor].dis == n.dis+1) {
                     if (n.state == NodeState::S
-                            && search_node < m_nodes[neighbor].parent
-                            && m_search_arc->c < m_nodes[neighbor].parent_arc->c) {
+                            && (search_node < m_nodes[neighbor].parent
+                                || (search_node == m_nodes[neighbor].parent 
+                                    && m_search_arc->c < m_nodes[neighbor].parent_arc->c))) {
                         m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].in_arcs.begin(), 
                                 m_nodes[neighbor].in_arcs.end(),
                                 [&](const Arc& a) { return a.i == search_node && a.c == m_search_arc->c; });
                         m_nodes[neighbor].parent = search_node;
                         ASSERT(NonzeroCap(*m_nodes[neighbor].parent_arc));
                     } else if (n.state == NodeState::T
-                            && search_node < m_nodes[neighbor].parent
-                            && m_search_arc->c < m_nodes[neighbor].parent_arc->c) {
+                            && (search_node < m_nodes[neighbor].parent
+                                || (search_node == m_nodes[neighbor].parent
+                                    && m_search_arc->c < m_nodes[neighbor].parent_arc->c))) {
                         m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].out_arcs.begin(), 
                                 m_nodes[neighbor].out_arcs.end(),
                                 [&](const Arc& a) { return a.j == search_node && a.c == m_search_arc->c; });
