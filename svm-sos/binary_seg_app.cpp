@@ -5,9 +5,12 @@
 #include "image_manip.hpp"
 #include "crf.hpp"
 #include "feature.hpp"
+#include "binary-unary-feature.hpp"
+#include "binary-submodular-feature.hpp"
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 BinarySegApp::BinarySegApp(const Parameters& params) 
     : SVM_App<BinarySegApp>(this),
@@ -38,7 +41,7 @@ void BinarySegApp::ReadExamples(const std::string& file, std::vector<BS_PatternD
                 std::cout << ".";
                 std::cout.flush();
             }
-            cv::Mat image = cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR);
+            cv::Mat image = cv::imread(images_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
             cv::Mat gt = cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
             ValidateExample(image, gt);
             patterns.push_back(new BS_PatternData(line, image));
@@ -50,12 +53,11 @@ void BinarySegApp::ReadExamples(const std::string& file, std::vector<BS_PatternD
 
 
 BS_PatternData::BS_PatternData(const std::string& name, const cv::Mat& image) 
-    : PatternData(name),
-    m_image(image)
+    : PatternData(name), m_image(image)
 { }
 
 BS_LabelData::BS_LabelData(const std::string& name, const cv::Mat& gt)
-    : LabelData(name)
+    : LabelData(name), m_gt(gt)
 { }
 
 bool BS_LabelData::operator==(const BS_LabelData& l) const {
@@ -76,7 +78,7 @@ double BinarySegApp::Loss(const BS_LabelData& l1, const BS_LabelData& l2, double
     cv::Point pt;
     for (pt.y = 0; pt.y < l1.m_gt.rows; ++pt.y) {
         for (pt.x = 0; pt.x < l1.m_gt.cols; ++pt.x) {
-            if (l1.m_gt.at<unsigned char>(pt), l2.m_gt.at<unsigned char>(pt))
+            if (l1.m_gt.at<unsigned char>(pt) != l2.m_gt.at<unsigned char>(pt))
                 loss += 1.0;
         }
     }
@@ -88,6 +90,10 @@ double BinarySegApp::Loss(const BS_LabelData& l1, const BS_LabelData& l2, double
 void BinarySegApp::InitFeatures(const Parameters& param) {
     std::cout << "\nFeatures: ";
     constexpr double feature_scale = 0.01;
+    m_features.push_back(boost::shared_ptr<FG>(new BinaryUnaryFeature(feature_scale)));
+    std::cout << "UnaryFeature ";
+    m_features.push_back(boost::shared_ptr<FG>(new BinarySubmodularFeature(feature_scale)));
+    std::cout << "SubmodularFeature ";
     /*
     m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale, param.grabcut_unary)));
     std::cout << "GMMFeature ";
