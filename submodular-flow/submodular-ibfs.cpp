@@ -207,7 +207,6 @@ void SubmodularIBFS::IBFS() {
     IBFSInit();
 
     m_forward_search = true;
-    m_last_search_node = -1;
     m_source_tree_d = m_sink_tree_d = 1;
 
     NodeQueue* current_q = &(m_source_layers[1]);
@@ -226,6 +225,19 @@ void SubmodularIBFS::IBFS() {
             }
             m_search_node_iter = current_q->begin();
             m_search_node_end = current_q->end();
+            m_forward_search = !m_forward_search;
+            if (!current_q->empty()) {
+                Node& n = m_nodes[*m_search_node_iter];
+                if (m_forward_search) {
+                    ASSERT(n.state == NodeState::S || n.state == NodeState::S_orphan);
+                    m_search_arc = n.out_arcs.begin();
+                    m_search_arc_end = n.out_arcs.end();
+                } else {
+                    ASSERT(n.state == NodeState::T || n.state == NodeState::T_orphan);
+                    m_search_arc = n.in_arcs.begin();
+                    m_search_arc_end = n.in_arcs.end();
+                }
+            }
             continue;
         }
         NodeId search_node = *m_search_node_iter;
@@ -274,24 +286,21 @@ void SubmodularIBFS::IBFS() {
                 // Then we found an unlabeled node, add it to the tree
                 m_nodes[neighbor].state = n.state;
                 m_nodes[neighbor].dis = n.dis + 1;
+                AddToLayer(neighbor);
                 if (m_forward_search) {
                     m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].in_arcs.begin(), 
                             m_nodes[neighbor].in_arcs.end(),
                             [&](const Arc& a) { return a.i == search_node && a.c == m_search_arc->c; });
-                    m_nodes[neighbor].parent = search_node;
+                    ASSERT(m_nodes[neighbor].parent_arc != m_nodes[neighbor].in_arcs.end());
                     ASSERT(NonzeroCap(*m_nodes[neighbor].parent_arc));
-                    m_next_source_q.push_front(neighbor);
-                    m_nodes[neighbor].active = true;
-                    m_nodes[neighbor].q_iterator = m_next_source_q.begin();
+                    m_nodes[neighbor].parent = search_node;
                 } else {
                     m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].out_arcs.begin(), 
                             m_nodes[neighbor].out_arcs.end(),
                             [&](const Arc& a) { return a.j == search_node && a.c == m_search_arc->c; });
+                    ASSERT(m_nodes[neighbor].parent_arc != m_nodes[neighbor].out_arcs.end());
                     ASSERT(NonzeroCap(*m_nodes[neighbor].parent_arc));
                     m_nodes[neighbor].parent = search_node;
-                    m_next_sink_q.push_front(neighbor);
-                    m_nodes[neighbor].active = true;
-                    m_nodes[neighbor].q_iterator = m_next_sink_q.begin();
                 }
                 m_search_arc++;
             } else {
@@ -347,24 +356,18 @@ void SubmodularIBFS::Adopt() {
         NodeId i = m_source_orphans.front();
         m_source_orphans.pop_front();
         Node& n = m_nodes[i];
-        int current_dist = n.dis;
+        int old_dist = n.dis;
         while (n.parent_arc != n.in_arcs.end() 
                 && (m_nodes[n.parent].state == NodeState::T
                     || m_nodes[n.parent].state == NodeState::T_orphan
                     || m_nodes[n.parent].state == NodeState::N
-                    || m_nodes[n.parent].dis != current_dist - 1
+                    || m_nodes[n.parent].dis != old_dist - 1
                     || !NonzeroCap(*n.parent_arc))) {
             n.parent_arc++;
             n.parent = n.parent_arc->i;
         }
         if (n.parent_arc == n.in_arcs.end()) {
-            if (n.active && n.dis == m_source_tree_d) {
-                m_source_q.erase(n.q_iterator);
-            } else if (n.active && n.dis == m_source_tree_d+1) {
-                m_next_source_q.erase(n.q_iterator);
-            }
-            n.active = false;
-            int old_dist = n.dis;
+            RemoveFromLayer(i);
             // We didn't find a new parent with the same label, so do a relabel
             n.dis = std::numeric_limits<int>::max()-1;
             for (auto iter = n.in_arcs.begin(); iter != n.in_arcs.end(); ++iter) {
@@ -379,16 +382,13 @@ void SubmodularIBFS::Adopt() {
                 }
             }
             n.dis++;
-            int cutoff_distance = m_source_tree_d + 1;
+            int cutoff_distance = m_source_tree_d;
+            if (m_forward_search) cutoff_distance += 1;
             if (n.dis > cutoff_distance) {
                 n.state = NodeState::N;
             } else {
                 n.state = NodeState::S;
-            }
-            if (n.dis == m_source_tree_d + 1 && n.dis <= cutoff_distance) {
-                m_next_source_q.push_front(i);
-                n.q_iterator = m_next_source_q.begin();
-                n.active = true;
+                AddToLayer(i);
             }
             if (n.dis > old_dist) {
                 for (Arc& a : n.out_arcs) {
@@ -405,24 +405,18 @@ void SubmodularIBFS::Adopt() {
         NodeId i = m_sink_orphans.front();
         m_sink_orphans.pop_front();
         Node& n = m_nodes[i];
-        int current_dist = n.dis;
+        int old_dist = n.dis;
         while (n.parent_arc != n.out_arcs.end() 
                 && (m_nodes[n.parent].state == NodeState::S
                     || m_nodes[n.parent].state == NodeState::S_orphan
                     || m_nodes[n.parent].state == NodeState::N
-                    || m_nodes[n.parent].dis != current_dist - 1
+                    || m_nodes[n.parent].dis != old_dist - 1
                     || !NonzeroCap(*n.parent_arc))) {
             n.parent_arc++;
             n.parent = n.parent_arc->j;
         }
         if (n.parent_arc == n.out_arcs.end()) {
-            if (n.active && n.dis == m_sink_tree_d) {
-                m_sink_q.erase(n.q_iterator);
-            } else if (n.active && n.dis == m_sink_tree_d+1) {
-                m_next_sink_q.erase(n.q_iterator);
-            }
-            n.active = false;
-            int old_dist = n.dis;
+            RemoveFromLayer(i);
             // We didn't find a new parent with the same label, so do a relabel
             n.dis = std::numeric_limits<int>::max()-1;
             for (auto iter = n.out_arcs.begin(); iter != n.out_arcs.end(); ++iter) {
@@ -437,16 +431,13 @@ void SubmodularIBFS::Adopt() {
                 }
             }
             n.dis++;
-            int cutoff_distance = m_sink_tree_d + 1;
+            int cutoff_distance = m_sink_tree_d;
+            if (!m_forward_search) cutoff_distance += 1;
             if (n.dis > cutoff_distance) {
                 n.state = NodeState::N;
             } else {
                 n.state = NodeState::T;
-            }
-            if (n.dis == m_sink_tree_d + 1 && n.dis <= cutoff_distance) {
-                m_next_sink_q.push_front(i);
-                n.q_iterator = m_next_sink_q.begin();
-                n.active = true;
+                AddToLayer(i);
             }
             if (n.dis > old_dist) {
                 for (Arc& a : n.in_arcs) {
@@ -553,7 +544,7 @@ void SubmodularIBFS::ComputeMinCut() {
         else {
             ASSERT(m_nodes[i].state == NodeState::N);
             // Put N nodes on whichever side could still grow
-            m_labels[i] = m_forward_search;
+            m_labels[i] = !m_forward_search;
         }
     }
 }

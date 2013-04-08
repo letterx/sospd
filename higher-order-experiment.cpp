@@ -21,7 +21,8 @@ int main(int argc, char **argv) {
 
     SubmodularIBFS ibfs;
     GenRandom(ibfs, n, k, m, (REAL)100, (REAL)800, (REAL)1600, 0);
-    ibfs.Solve();
+    ibfs.IBFS();
+    ibfs.ComputeMinCut();
 
     Duration ibfs_time = std::chrono::system_clock::now() - ibfs_start;
 
