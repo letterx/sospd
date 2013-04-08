@@ -279,10 +279,7 @@ inline cv::Mat MaskToColor(const cv::Mat& mask, const cv::Mat& image) {
 
 inline void ShowImage(const cv::Mat& im) {
     cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
-    if (im.depth() == CV_8U)
-        cv::imshow("Display window", im*(255/3));
-    else
-        cv::imshow("Display window", im);
+    cv::imshow("Display window", im);
     cv::waitKey(0);
 }
 

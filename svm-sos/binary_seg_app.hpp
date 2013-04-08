@@ -3,7 +3,6 @@
 
 #include "svm_c++.hpp"
 #include "feature.hpp"
-#include "gmm.hpp"
 #include "crf.hpp"
 
 #include <boost/shared_ptr.hpp>
@@ -13,18 +12,8 @@
 
 class BS_PatternData : public PatternData {
     public:
-        BS_PatternData(const std::string& name, const cv::Mat& im, const cv::Mat& tri);
+        BS_PatternData(const std::string& name, const cv::Mat& im);
         cv::Mat m_image;
-        /*
-        double m_beta;
-        cv::Mat m_fgdUnaries;
-        cv::Mat m_bgdUnaries;
-        cv::Mat m_downW;
-        cv::Mat m_rightW;
-        cv::Mat m_fgdDist;
-        cv::Mat m_bgdDist;
-        cv::Mat m_dist_feature;
-        */
 };
 
 class BS_LabelData : public LabelData{
@@ -49,41 +38,28 @@ struct AppTraits<BinarySegApp> {
 
 class BinarySegApp : public SVM_App<BinarySegApp> {
     public:
+        static constexpr unsigned char FGD = 255;
+        static constexpr unsigned char BGD = 0;
         struct Parameters {
             // The following are saved/loaded in model serialization
             std::string eval_dir;
             bool all_features;
-            int grabcut_classify;
-            int grabcut_unary;
-            bool distance_unary;
-            bool color_patch;
             bool pairwise_feature;
-            bool contrast_pairwise_feature;
             bool submodular_feature;
-            bool contrast_submodular_feature;
             // These parameters are classify-specific
             bool show_images;
             std::string output_dir;
             std::string stats_file;
             int crf;
 
-            unsigned int Version() const { return 1; }
+            unsigned int Version() const { return 0; }
         };
         template <typename Archive>
         void SerializeParams(Archive& ar, const unsigned int version) {
             ar & m_params.eval_dir;
             ar & m_params.all_features;
-            if (version < 1) {
-                bool dummy_grabcut_classify;
-                ar & dummy_grabcut_classify;
-            }
-            ar & m_params.grabcut_unary;
-            ar & m_params.distance_unary;
-            ar & m_params.color_patch;
             ar & m_params.pairwise_feature;
-            ar & m_params.contrast_pairwise_feature;
             ar & m_params.submodular_feature;
-            ar & m_params.contrast_submodular_feature;
         }
 
         typedef FeatureGroup<BS_PatternData, BS_LabelData, CRF> FG;
@@ -105,6 +81,7 @@ class BinarySegApp : public SVM_App<BinarySegApp> {
         static Parameters ParseLearnOptions(const std::vector<std::string>& args);
         static Parameters ParseClassifyOptions(const std::vector<std::string>& args);
     private:
+        void ValidateExample(const cv::Mat& im, const cv::Mat& gt);
         void InitializeCRF(CRF& crf, const BS_PatternData& x) const;
         void AddLossToCRF(CRF& crf, const BS_PatternData& x, const BS_LabelData& y, double scale) const;
         BS_LabelData* ExtractLabel(const CRF& crf, const BS_PatternData& x) const;
@@ -113,26 +90,5 @@ class BinarySegApp : public SVM_App<BinarySegApp> {
         Parameters m_params;
         std::vector<boost::shared_ptr<FG>> m_features;
 };
-
-inline double LabelDiff(unsigned char l1, unsigned char l2) {
-    if (l1 == cv::GC_BGD || l1 == cv::GC_PR_BGD) {
-        if (l2 == cv::GC_FGD || l2 == cv::GC_PR_FGD)
-            return 1.0;
-        else if (l2 == (unsigned char)-1)
-            return 0.5;
-        else 
-            return 0.0;
-    } else if (l1 == cv::GC_FGD || l1 == cv::GC_PR_FGD) {
-        if (l2 == cv::GC_BGD || l2 == cv::GC_PR_BGD)
-            return 1.0;
-        else if (l2 == (unsigned char)-1)
-            return 0.5;
-        else 
-            return 0.0;
-    } else if (l1 == l2)
-        return 0.0;
-    else
-        return 0.5;
-}
 
 #endif

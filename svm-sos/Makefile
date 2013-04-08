@@ -23,6 +23,7 @@ SVM_LIGHT_OBJS = svm_light/svm_hideo.o \
 SRCS = svm_struct_learn_custom.cpp \
 	   svm_struct_api.cpp \
 	   svm_c++.cpp \
+	   binary_seg_app.cpp \
 	   interactive_seg_app.cpp \
 	   gmm.cpp \
 	   semantic_seg_app.cpp \
