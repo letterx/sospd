@@ -27,7 +27,7 @@ SRCS = $(CORE_SRCS) $(TEST_SRCS) $(QPBO_SRCS)
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
-all: $(SF_LIB) unit-test higher-order-experiment recover-crash
+all: $(SF_LIB) unit-test higher-order-experiment recover-crash add-noise
 
 unit-test: $(TEST_OBJS) $(SF_LIB)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(TEST_OBJS) $(SF_LIB) $(LIBS) -lboost_unit_test_framework 
@@ -37,6 +37,9 @@ higher-order-experiment: higher-order-experiment.o $(SF_LIB)
 
 recover-crash: recover-crash.o $(SF_LIB)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ recover-crash.o $(SF_LIB) $(LIBS)
+
+add-noise: add-noise.cpp
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ add-noise.cpp $(LIBS) -lopencv_core -lopencv_imgproc -lopencv_highgui
 
 $(SF_LIB): $(CORE_OBJS) $(QPBO_OBJS)
 	mkdir -p $(LIB_DIR)
