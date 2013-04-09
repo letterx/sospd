@@ -89,7 +89,7 @@ double BinarySegApp::Loss(const BS_LabelData& l1, const BS_LabelData& l2, double
 
 void BinarySegApp::InitFeatures(const Parameters& param) {
     std::cout << "\nFeatures: ";
-    constexpr double feature_scale = 1.0;
+    constexpr double feature_scale = 0.01;
     m_features.push_back(boost::shared_ptr<FG>(new BinaryUnaryFeature(feature_scale)));
     std::cout << "UnaryFeature ";
     m_features.push_back(boost::shared_ptr<FG>(new BinarySubmodularFeature(feature_scale)));
