@@ -6,7 +6,7 @@ then
     exit 1
 fi
 
-(cd $1/images; ls *.ppm) | shuf > $1/random-order.dat
+(ls $1/images/*.ppm) | shuf > $1/random-order.dat
 
 num_files=`cat $1/random-order.dat | wc -l`
 echo "Num files: $num_files"
@@ -26,27 +26,25 @@ echo $1/images-gt/ >> $1/header.txt
 echo "# The files" >> $1/header.txt
 
 num_splits=$2
-split_size=`expr $num_files / $num_splits`
-echo "Split size: $split_size"
 
 cat $1/header.txt > $1/data-all.dat
 cat $1/random-order.dat >> $1/data-all.dat
 
 for i in $(seq 1 $num_splits)
 do
-    small_file=$1/data-$i-$num_splits-small.dat
-    large_file=$1/data-$i-$num_splits-large.dat
+    (ls $1/images/*.ppm) | shuf > $1/random-order.dat
 
-    cat $1/header.txt > $small_file
-    cat $1/header.txt > $large_file
+    train_file=$1/train-$i.dat
+    test_file=$1/test-$i.dat
+    validate_file=$1/validate-$i.dat
 
-    start=$((( $i - 1 ) * $split_size))
-    end=$(($i * $split_size))
+    cat $1/header.txt > $train_file
+    cat $1/header.txt > $test_file
+    cat $1/header.txt > $validate_file
 
-    head -n $end $1/random-order.dat | tail -n $split_size >> $small_file
-    head -n $start $1/random-order.dat >> $large_file
-    tail -n $(($num_files - $end)) $1/random-order.dat >> $large_file
-
+    head -n 75 $1/random-order.dat >> $train_file
+    tail -n 76 $1/random-order.dat | head -n 38 >> $validate_file
+    tail -n 38 $1/random-order.dat >> $test_file
 done
 
 rm $1/header.txt
