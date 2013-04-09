@@ -89,7 +89,7 @@ double BinarySegApp::Loss(const BS_LabelData& l1, const BS_LabelData& l2, double
 
 void BinarySegApp::InitFeatures(const Parameters& param) {
     std::cout << "\nFeatures: ";
-    constexpr double feature_scale = 0.01;
+    constexpr double feature_scale = 1.0;
     m_features.push_back(boost::shared_ptr<FG>(new BinaryUnaryFeature(feature_scale)));
     std::cout << "UnaryFeature ";
     m_features.push_back(boost::shared_ptr<FG>(new BinarySubmodularFeature(feature_scale)));
@@ -241,7 +241,10 @@ bool BinarySegApp::FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN_P
             if (eps < sparm->epsilon)
                 sparm->epsilon *= 0.49999;
             std::cout << "Forcing algorithm to continue: Max Violation = " << violation << ", |w|^2 = " << w2 << " New eps = " << sparm->epsilon << "\n";
-            return true;
+            if (sparm->epsilon < 0.0001)
+                return false;
+            else
+                return true;
         }
         feature_base += fgp->NumFeatures();
     }
