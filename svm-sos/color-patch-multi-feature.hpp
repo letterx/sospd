@@ -11,7 +11,7 @@
 
 class ColorPatchMultiFeature : public SemanticSegApp::FG {
     public: 
-    static constexpr int num_clusters = 50;
+    static constexpr int num_clusters = 400;
     static constexpr int num_filters = 27;
     static constexpr size_t samples_per_image = 5000;
     double m_scale;
