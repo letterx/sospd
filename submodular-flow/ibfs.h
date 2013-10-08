@@ -9,7 +9,8 @@
 #pragma warning(disable:4786)
 #include <time.h>
 #include <sys/timeb.h>
-
+#include <algorithm>
+#include <vector>
 
 template <typename captype, typename tcaptype, typename flowtype> class IBFSGraph
 {
@@ -40,6 +41,34 @@ public:
 		return maxflowClean();
 	}
 
+	typedef std::pair<int, int> edgeInfo;
+	typedef std::pair<edgeInfo, flowtype> flowInfo;
+	typedef std::vector<flowInfo> flowList;
+	typedef std::pair<tcaptype, tcaptype> STFlowInfo;
+	typedef std::vector<STFlowInfo> STFlowList;
+
+	flowList getFlow()
+	{
+		flowList ret;
+		ret.clear();
+		for (arc* edge = arcs; edge < arcLast; ++edge){
+			ret.push_back(std::make_pair(std::make_pair(edge->u, edge->v), edge->cap - edge->rCap));
+		}
+		return ret;
+	}
+	STFlowList getSTFlow()
+	{
+		STFlowList ret;
+		ret.clear();
+		for (node* vtx = nodes; vtx < nodeLast; ++vtx){
+			if (vtx->srcSinkCap >= 0)
+				ret.push_back(std::make_pair(vtx->srcCap - vtx->srcSinkCap, vtx->sinkCap));
+			else
+				ret.push_back(std::make_pair(vtx->srcCap, vtx->sinkCap + vtx->srcSinkCap));
+		}
+		return ret;
+	}
+
 	termtype what_segment(int nodeIndex, termtype default_segm = SOURCE);
 
 
@@ -53,7 +82,9 @@ private:
 		node*		head;
 		arc*		sister;
 		int			sister_rCap :1;
-		captype		rCap :31;
+		captype		rCap;
+		captype		cap;
+		int		u,v;
 	};
 
 	struct node
@@ -66,6 +97,8 @@ private:
 		int			label;		// distance to the source or the sink
 								// label > 0: distance from src
 								// label < 0: -distance from sink
+		tcaptype		srcCap;
+		tcaptype		sinkCap;		
 		union
 		{
 			tcaptype	srcSinkCap;		// srcSinkCap > 0: capacity from the source
@@ -128,6 +161,8 @@ private:
 
 template <typename captype, typename tcaptype, typename flowtype> inline void IBFSGraph<captype, tcaptype, flowtype>::add_tweights(int nodeIndex, tcaptype capacitySource, tcaptype capacitySink)
 {
+	nodes[nodeIndex].srcCap += capacitySource;
+	nodes[nodeIndex].sinkCap += capacitySink;
 	flowtype f = nodes[nodeIndex].srcSinkCap;
 	if (f > 0)
 	{
@@ -163,9 +198,15 @@ template <typename captype, typename tcaptype, typename flowtype> inline void IB
 	aRev->sister = aFwd;
 	aFwd->sister = aRev;
 	aFwd->rCap = capacity;
+	aFwd->cap = capacity;
 	aRev->rCap = reverseCapacity;
+	aRev->cap = reverseCapacity;
 	aFwd->head = y;
 	aRev->head = x;
+	aFwd->u = nodeIndexFrom;
+	aFwd->v = nodeIndexTo;
+	aRev->u = nodeIndexTo;
+	aRev->v = nodeIndexFrom;
 }
 
 

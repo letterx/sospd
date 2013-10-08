@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "ibfs.h"
 #include <limits.h>
+#include <cstdlib>
 
 #define END_OF_ORPHANS   ( (node *) 1 )
 #define PREVIOUSLY_ORPHAN ( (node *) 2 )
@@ -114,6 +115,8 @@ template <typename captype, typename tcaptype, typename flowtype> IBFSGraph<capt
 		nodeLast->nextActive = NULL;
 		nodeLast->label = 0;
 		nodeLast->srcSinkCap = 0;
+		nodeLast->srcCap = 0;
+		nodeLast->sinkCap = 0;
 	}
 	arcLast = arcs;
 	flow = 0;
@@ -934,3 +937,5 @@ template <typename captype, typename tcaptype, typename flowtype> flowtype IBFSG
 	return flow;
 }
 
+template class IBFSGraph<int, int, int>;
+template class IBFSGraph<double, double, double>;
