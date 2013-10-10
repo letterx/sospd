@@ -204,6 +204,30 @@ BOOST_AUTO_TEST_CASE(minimalFlow) {
     }
 }
 
+BOOST_AUTO_TEST_CASE(makeSureToSearchSource) {
+	SubmodularIBFS crf;
+	crf.AddNode(3);
+	crf.AddUnaryTerm(0, 12, 6);
+	crf.AddUnaryTerm(1, 8, 8);
+	crf.AddUnaryTerm(2, 6, 12);
+	NodeId node_array[3] = {0, 1, 2};
+	std::vector<NodeId> node(node_array, node_array + 3);
+	REAL energy_array[8] = {0, 3, 1, 2, 0, 2, 0, 0};
+	std::vector<REAL> energy(energy_array, energy_array + 8);
+	crf.AddClique(node, energy);
+	crf.Solve();
+    BOOST_CHECK_EQUAL(crf.GetLabel(0), 1);
+    BOOST_CHECK_EQUAL(crf.GetLabel(1), 1);
+    BOOST_CHECK_EQUAL(crf.GetLabel(2), 0);
+    BOOST_CHECK_EQUAL(crf.ComputeEnergy(), 22);
+
+    std::vector<int> label;
+    label.push_back(1);
+    label.push_back(0);
+    label.push_back(0);
+    BOOST_CHECK_EQUAL(crf.ComputeEnergy(label), 23);
+}
+
 /* More complicated test case on a larger graph.
  *
  * GenRandom generates a random submodular function that can be turned into

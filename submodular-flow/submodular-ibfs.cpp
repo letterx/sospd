@@ -206,12 +206,15 @@ void SubmodularIBFS::IBFSInit()
 void SubmodularIBFS::IBFS() {
     IBFSInit();
 
-    m_forward_search = true;
-    m_source_tree_d = m_sink_tree_d = 1;
-
-    NodeQueue* current_q = &(m_source_layers[1]);
-    m_search_node_iter = current_q->begin();
+    // Set up initial current_q and search nodes to make it look like
+    // we just finished scanning the sink node
+    NodeQueue* current_q = &(m_sink_layers[0]);
+    m_search_node_iter = current_q->end();
     m_search_node_end = current_q->end();
+
+    m_forward_search = false;
+    m_source_tree_d = 1;
+    m_sink_tree_d = 0;
 
     while (!current_q->empty()) {
         if (m_search_node_iter == m_search_node_end) {
