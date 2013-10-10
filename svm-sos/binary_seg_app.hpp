@@ -46,11 +46,13 @@ class BinarySegApp : public SVM_App<BinarySegApp> {
             bool all_features;
             bool pairwise_feature;
             bool submodular_feature;
+            bool sqrt_feature;
             // These parameters are classify-specific
             bool show_images;
             std::string output_dir;
             std::string stats_file;
             int crf;
+            double sqrt_scale;
 
             unsigned int Version() const { return 0; }
         };
@@ -60,6 +62,7 @@ class BinarySegApp : public SVM_App<BinarySegApp> {
             ar & m_params.all_features;
             ar & m_params.pairwise_feature;
             ar & m_params.submodular_feature;
+            ar & m_params.sqrt_feature;
         }
 
         typedef FeatureGroup<BS_PatternData, BS_LabelData, CRF> FG;

@@ -48,6 +48,7 @@ class SemanticSegApp : public SVM_App<SemanticSegApp> {
             bool show_images;
             std::string output_dir;
             std::string stats_file;
+            std::string ale_dir;
             int crf;
 
             unsigned int Version() const { return 0; }

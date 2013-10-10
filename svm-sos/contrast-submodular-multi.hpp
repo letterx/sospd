@@ -14,7 +14,7 @@ class ContrastSubmodularMultiFeature : public SemanticSegApp::FG {
     typedef uint32_t Assgn;
 
     static constexpr Assgn clique_size = 4;
-    static constexpr int num_clusters = 50;
+    static constexpr int num_clusters = 400;
     static constexpr size_t samples_per_image = 5000;
     double m_scale;
     int m_num_labels;
