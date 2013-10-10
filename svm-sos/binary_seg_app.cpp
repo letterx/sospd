@@ -7,6 +7,7 @@
 #include "feature.hpp"
 #include "binary-unary-feature.hpp"
 #include "binary-submodular-feature.hpp"
+#include "sqrt-submodular-feature.hpp"
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
@@ -92,8 +93,14 @@ void BinarySegApp::InitFeatures(const Parameters& param) {
     constexpr double feature_scale = 0.01;
     m_features.push_back(boost::shared_ptr<FG>(new BinaryUnaryFeature(feature_scale)));
     std::cout << "UnaryFeature ";
-    m_features.push_back(boost::shared_ptr<FG>(new BinarySubmodularFeature(feature_scale)));
-    std::cout << "SubmodularFeature ";
+    if (m_params.submodular_feature) {
+        m_features.push_back(boost::shared_ptr<FG>(new BinarySubmodularFeature(feature_scale)));
+        std::cout << "SubmodularFeature ";
+    }
+    if (m_params.sqrt_feature) {
+        m_features.push_back(boost::shared_ptr<FG>(new SqrtSubmodularFeature(feature_scale)));
+        std::cout << "SqrtFeature ";
+    }
     /*
     m_features.push_back(boost::shared_ptr<FG>(new GMMFeature(feature_scale, param.grabcut_unary)));
     std::cout << "GMMFeature ";
@@ -186,6 +193,9 @@ BS_LabelData* BinarySegApp::Classify(const BS_PatternData& x, STRUCTMODEL* sm, S
     } else {
         crf.Wrap(&ho);
     }
+    if (m_params.sqrt_feature) {
+        sm->w[2] = m_params.sqrt_scale;
+    }
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
@@ -277,6 +287,7 @@ po::options_description BinarySegApp::GetLearnOptions() {
         ("all-features", po::value<bool>(), "Turn on all features (for use with feature-train)")
         ("pairwise", po::value<int>(), "[0, 1] -> Use pairwise edge features. (default 0)")
         ("submodular", po::value<int>(), "[0, 1] -> Use submodular features. (default 0)")
+        ("sqrt", po::value<int>(), "[0, 1] -> Use sqrt features. (default 0)")
     ;
     return desc;
 }
@@ -286,6 +297,7 @@ po::options_description BinarySegApp::GetClassifyOptions() {
     desc.add_options()
         ("show", po::value<int>(), "[0,1] -> If nonzero, display each image after it is classified. (default 0)")
         ("output-dir", po::value<std::string>(), "Write predicted images to directory.")
+        ("sqrt-scale", po::value<double>(), "Scale factor for sqrt cliques")
     ;
     return desc;
 }
@@ -327,6 +339,10 @@ BinarySegApp::Parameters BinarySegApp::ParseLearnOptions(const std::vector<std::
     if (vm.count("submodular")) {
         params.submodular_feature = vm["submodular"].as<int>();
         std::cout << "Submodular Feature = " << params.submodular_feature << "\n";
+    }
+    if (vm.count("sqrt")) {
+        params.sqrt_feature = vm["sqrt"].as<int>();
+        std::cout << "Sqrt Feature = " << params.sqrt_feature << "\n";
     }
     if (vm.count("stats-file")) {
         params.stats_file = vm["stats-file"].as<std::string>();
@@ -380,6 +396,9 @@ BinarySegApp::Parameters BinarySegApp::ParseClassifyOptions(const std::vector<st
     }
     if (vm.count("eval-dir")) {
         params.eval_dir = vm["eval-dir"].as<std::string>();
+    }
+    if (vm.count("sqrt-scale")) {
+        params.sqrt_scale = vm["sqrt-scale"].as<double>();
     }
     return params;
 }

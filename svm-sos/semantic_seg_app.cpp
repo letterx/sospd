@@ -167,6 +167,13 @@ Sem_LabelData* SemanticSegApp::ExtractLabel(const MultiLabelCRF& crf, const Sem_
 }
 
 Sem_LabelData* SemanticSegApp::Classify(const Sem_PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+    if (m_params.ale_dir != std::string()) {
+        cv::Mat gt = cv::imread(m_params.ale_dir + "/" + x.Name(), CV_LOAD_IMAGE_COLOR);
+        ValidateExample(x.m_image, gt);
+        cv::Mat label_gt;
+        ConvertColorToLabel(gt, label_gt);
+        return new Sem_LabelData(x.Name(), label_gt);
+    }
     MultiLabelCRF crf(m_num_labels);
     InitializeCRF(crf, x);
     size_t feature_base = 1;
@@ -304,6 +311,7 @@ po::options_description SemanticSegApp::GetClassifyOptions() {
     desc.add_options()
         ("show", po::value<int>(), "[0,1] -> If nonzero, display each image after it is classified. (default 0)")
         ("output-dir", po::value<std::string>(), "Write predicted images to directory.")
+        ("ale-dir", po::value<std::string>(), "Read images from this file, use them as classifications instead")
     ;
     return desc;
 }
@@ -350,6 +358,7 @@ SemanticSegApp::Parameters SemanticSegApp::ParseClassifyOptions(const std::vecto
     params.crf = 0;
     params.output_dir = std::string();
     params.stats_file = std::string();
+    params.ale_dir = std::string();
 
     po::options_description desc = GetClassifyOptions();
     po::variables_map vm;
@@ -380,6 +389,9 @@ SemanticSegApp::Parameters SemanticSegApp::ParseClassifyOptions(const std::vecto
     }
     if (vm.count("eval-dir")) {
         params.eval_dir = vm["eval-dir"].as<std::string>();
+    }
+    if (vm.count("ale-dir")) {
+        params.ale_dir = vm["ale-dir"].as<std::string>();
     }
     return params;
 }
