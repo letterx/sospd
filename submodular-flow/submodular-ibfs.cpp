@@ -72,7 +72,7 @@ void SubmodularIBFS::AddClique(const CliquePtr& cp) {
         m_neighbors[i].push_back(m_num_cliques);
     }
     m_num_cliques++;
-    cp->NormalizeEnergy(*this);//Chen
+    //cp->NormalizeEnergy(*this);//Chen
 }
 
 void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {

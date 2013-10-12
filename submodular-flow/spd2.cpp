@@ -66,11 +66,11 @@ void SubmodularPrimalDual2::InitialDual() {
 			cnt[m_labels[nodes[i]]]++;
 		}
 		REAL energy = c.Energy(labelBuf);
-		Dual newDual;
+        m_dual.push_back(Dual());
+		Dual& newDual = m_dual.back();
 		newDual.clear();
 		for (size_t i = 0; i < k; ++i) {
-			std::vector<REAL> dual(m_num_labels, 0);
-			newDual.push_back(dual);
+			newDual.push_back(std::vector<REAL>(m_num_labels, 0));
 		}
 		for (size_t i = 0; i < m_num_labels; ++i){
 			if (cnt[i] != 0) {
@@ -85,7 +85,6 @@ void SubmodularPrimalDual2::InitialDual() {
 				}
 			}
 		}
-		m_dual.push_back(newDual);
     }
 }
 
