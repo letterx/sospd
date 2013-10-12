@@ -5,13 +5,14 @@
 #include "boost/optional/optional.hpp"
 #include <list>
 
-typedef int64_t REAL;
+typedef double REAL;
 
 class EnergyTableClique;
 
 class SubmodularFlow {
     public:
-        typedef int NodeId;
+        typedef size_t NodeId;
+        //typedef size_t CliqueId;
         typedef int CliqueId;
         struct Clique;
         typedef std::shared_ptr<EnergyTableClique> CliquePtr;

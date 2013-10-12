@@ -8,14 +8,15 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/shared_ptr.hpp>
 
-typedef int64_t REAL;
+typedef double REAL;
 
 class IBFSEnergyTableClique;
 
 class SubmodularIBFS {
     public:
-        typedef int NodeId;
-        typedef int CliqueId;
+        typedef size_t NodeId;
+        //typedef size_t CliqueId;
+        typedef int CliqueId; //Chen: Is this a bug?
         struct Clique;
         typedef boost::shared_ptr<IBFSEnergyTableClique> CliquePtr;
         typedef std::vector<CliquePtr> CliqueVec;

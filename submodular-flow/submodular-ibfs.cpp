@@ -72,7 +72,7 @@ void SubmodularIBFS::AddClique(const CliquePtr& cp) {
         m_neighbors[i].push_back(m_num_cliques);
     }
     m_num_cliques++;
-    cp->NormalizeEnergy(*this);
+    //cp->NormalizeEnergy(*this);//Chen
 }
 
 void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
@@ -170,9 +170,9 @@ void SubmodularIBFS::IBFSInit()
     }
     // Sort the arc lists, to ensure consistency of current-arc heuristic
     for (NodeId i = 0; i < m_num_nodes; ++i) {
-        std::sort(m_nodes[i].out_arcs.begin(), m_nodes[i].out_arcs.end(), 
+        std::sort(m_nodes[i].out_arcs.begin(), m_nodes[i].out_arcs.end(),
                 [](const Arc& n1, const Arc& n2) { return n1.j < n2.j || (n1.j == n2.j && n1.c < n2.c); });
-        std::sort(m_nodes[i].in_arcs.begin(), m_nodes[i].in_arcs.end(), 
+        std::sort(m_nodes[i].in_arcs.begin(), m_nodes[i].in_arcs.end(),
                 [](const Arc& n1, const Arc& n2) { return n1.i < n2.i || (n1.i == n2.i && n1.c < n2.c); });
     }
     // saturate all s-i-t paths
@@ -206,12 +206,15 @@ void SubmodularIBFS::IBFSInit()
 void SubmodularIBFS::IBFS() {
     IBFSInit();
 
-    m_forward_search = true;
-    m_source_tree_d = m_sink_tree_d = 1;
-
-    NodeQueue* current_q = &(m_source_layers[1]);
-    m_search_node_iter = current_q->begin();
+    // Set up initial current_q and search nodes to make it look like
+    // we just finished scanning the sink node
+    NodeQueue* current_q = &(m_sink_layers[0]);
+    m_search_node_iter = current_q->end();
     m_search_node_end = current_q->end();
+
+    m_forward_search = false;
+    m_source_tree_d = 1;
+    m_sink_tree_d = 0;
 
     while (!current_q->empty()) {
         if (m_search_node_iter == m_search_node_end) {
@@ -263,9 +266,9 @@ void SubmodularIBFS::IBFS() {
                 if (m_nodes[neighbor].dis == n.dis+1) {
                     if (n.state == NodeState::S
                             && (search_node < m_nodes[neighbor].parent
-                                || (search_node == m_nodes[neighbor].parent 
+                                || (search_node == m_nodes[neighbor].parent
                                     && m_search_arc->c < m_nodes[neighbor].parent_arc->c))) {
-                        m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].in_arcs.begin(), 
+                        m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].in_arcs.begin(),
                                 m_nodes[neighbor].in_arcs.end(),
                                 [&](const Arc& a) { return a.i == search_node && a.c == m_search_arc->c; });
                         m_nodes[neighbor].parent = search_node;
@@ -274,7 +277,7 @@ void SubmodularIBFS::IBFS() {
                             && (search_node < m_nodes[neighbor].parent
                                 || (search_node == m_nodes[neighbor].parent
                                     && m_search_arc->c < m_nodes[neighbor].parent_arc->c))) {
-                        m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].out_arcs.begin(), 
+                        m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].out_arcs.begin(),
                                 m_nodes[neighbor].out_arcs.end(),
                                 [&](const Arc& a) { return a.j == search_node && a.c == m_search_arc->c; });
                         m_nodes[neighbor].parent = search_node;
@@ -288,14 +291,14 @@ void SubmodularIBFS::IBFS() {
                 m_nodes[neighbor].dis = n.dis + 1;
                 AddToLayer(neighbor);
                 if (m_forward_search) {
-                    m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].in_arcs.begin(), 
+                    m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].in_arcs.begin(),
                             m_nodes[neighbor].in_arcs.end(),
                             [&](const Arc& a) { return a.i == search_node && a.c == m_search_arc->c; });
                     ASSERT(m_nodes[neighbor].parent_arc != m_nodes[neighbor].in_arcs.end());
                     ASSERT(NonzeroCap(*m_nodes[neighbor].parent_arc));
                     m_nodes[neighbor].parent = search_node;
                 } else {
-                    m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].out_arcs.begin(), 
+                    m_nodes[neighbor].parent_arc = std::find_if(m_nodes[neighbor].out_arcs.begin(),
                             m_nodes[neighbor].out_arcs.end(),
                             [&](const Arc& a) { return a.j == search_node && a.c == m_search_arc->c; });
                     ASSERT(m_nodes[neighbor].parent_arc != m_nodes[neighbor].out_arcs.end());
@@ -335,7 +338,7 @@ void SubmodularIBFS::Augment(Arc& arc) {
         bottleneck = std::min(bottleneck, ResCap(a));
         current = a.j;
     }
-    ASSERT(bottleneck > 0);
+    ASSERT(bottleneck > -1e-7);//Chen
     Push(arc, bottleneck);
     current = i;
     while (current != s) {
@@ -357,7 +360,7 @@ void SubmodularIBFS::Adopt() {
         m_source_orphans.pop_front();
         Node& n = m_nodes[i];
         int old_dist = n.dis;
-        while (n.parent_arc != n.in_arcs.end() 
+        while (n.parent_arc != n.in_arcs.end()
                 && (m_nodes[n.parent].state == NodeState::T
                     || m_nodes[n.parent].state == NodeState::T_orphan
                     || m_nodes[n.parent].state == NodeState::N
@@ -371,7 +374,7 @@ void SubmodularIBFS::Adopt() {
             // We didn't find a new parent with the same label, so do a relabel
             n.dis = std::numeric_limits<int>::max()-1;
             for (auto iter = n.in_arcs.begin(); iter != n.in_arcs.end(); ++iter) {
-                if (m_nodes[iter->i].dis < n.dis 
+                if (m_nodes[iter->i].dis < n.dis
                         && (m_nodes[iter->i].state == NodeState::S
                             || m_nodes[iter->i].state == NodeState::S_orphan)
                         && NonzeroCap(*iter)) {
@@ -406,7 +409,7 @@ void SubmodularIBFS::Adopt() {
         m_sink_orphans.pop_front();
         Node& n = m_nodes[i];
         int old_dist = n.dis;
-        while (n.parent_arc != n.out_arcs.end() 
+        while (n.parent_arc != n.out_arcs.end()
                 && (m_nodes[n.parent].state == NodeState::S
                     || m_nodes[n.parent].state == NodeState::S_orphan
                     || m_nodes[n.parent].state == NodeState::N
@@ -420,7 +423,7 @@ void SubmodularIBFS::Adopt() {
             // We didn't find a new parent with the same label, so do a relabel
             n.dis = std::numeric_limits<int>::max()-1;
             for (auto iter = n.out_arcs.begin(); iter != n.out_arcs.end(); ++iter) {
-                if (m_nodes[iter->j].dis < n.dis 
+                if (m_nodes[iter->j].dis < n.dis
                         && (m_nodes[iter->j].state == NodeState::T
                             || m_nodes[iter->j].state == NodeState::T_orphan)
                         && NonzeroCap(*iter)) {
@@ -501,16 +504,16 @@ bool SubmodularIBFS::NonzeroCap(Arc& arc) {
 }
 
 void SubmodularIBFS::Push(Arc& arc, REAL delta) {
-    ASSERT(delta > 0);
+    ASSERT(delta > -1e-7);//Chen
     ASSERT(arc.j != s && arc.i != t);
-    if (arc.i == s) {  // reverse arc
-        ASSERT(delta <= m_c_si[arc.j] - m_phi_si[arc.j]);
+    if (arc.i == s) { // reverse arc
+        ASSERT(delta <= m_c_si[arc.j] - m_phi_si[arc.j] + 1e-7);//Chen
         m_phi_si[arc.j] += delta;
         if (m_phi_si[arc.j] == m_c_si[arc.j]) {
             MakeOrphan(arc.j);
         }
     } else if (arc.j == t) {
-        ASSERT(delta <= m_c_it[arc.i] - m_phi_it[arc.i]);
+        ASSERT(delta <= m_c_it[arc.i] - m_phi_it[arc.i] + 1e-7);//Chen
         m_phi_it[arc.i] += delta;
         if (m_phi_it[arc.i] == m_c_it[arc.i]) {
             MakeOrphan(arc.i);
@@ -532,7 +535,7 @@ void SubmodularIBFS::Push(Arc& arc, REAL delta) {
     }
 }
 
-///////////////    end of push relabel    ///////////////////
+/////////////// end of push relabel ///////////////////
 
 
 void SubmodularIBFS::ComputeMinCut() {
@@ -630,9 +633,9 @@ void IBFSEnergyTableClique::NormalizeEnergy(SubmodularIBFS& sf) {
         }
         ASSERT(m_energy[a] >= 0);
         /* FIXME: the above only works if the energy is actually submodular
-         * not epsilon-submodular. To make everything positive even if not,
-         * we truncate to zero.
-         */
+* not epsilon-submodular. To make everything positive even if not,
+* we truncate to zero.
+*/
         //m_energy[a] = std::max(0, m_energy[a]);
         m_alpha_energy[a] = m_energy[a];
     }
@@ -827,4 +830,3 @@ void SubmodularIBFS::AdvanceSearchNode() {
         }
     }
 }
-

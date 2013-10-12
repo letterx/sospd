@@ -33,6 +33,10 @@ process_stats
 feature_train
 init_stats
 recover-crash
+denoise_test
+ibfs_test
+sos_ibfs_test
+
 
 # Generated test files
 *.model
@@ -45,3 +49,4 @@ sum-of-submodular.tar
 
 # images
 *.ppm
+*.png
