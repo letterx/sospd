@@ -72,7 +72,7 @@ void SubmodularIBFS::AddClique(const CliquePtr& cp) {
         m_neighbors[i].push_back(m_num_cliques);
     }
     m_num_cliques++;
-    //cp->NormalizeEnergy(*this);//Chen
+    cp->NormalizeEnergy(*this);//Chen
 }
 
 void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
@@ -604,7 +604,8 @@ static void CheckSubmodular(size_t n, const std::vector<REAL>& m_energy) {
                         // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
                         REAL violation = -m_energy[si] - m_energy[t]
                             + m_energy[s] + m_energy[ti];
-                        ASSERT(violation <= 0);
+			if (violation > 0) std::cout << violation << std::endl;
+                        ASSERT(violation <= 1e-7);
                     }
                 }
             }
@@ -613,7 +614,7 @@ static void CheckSubmodular(size_t n, const std::vector<REAL>& m_energy) {
 }
 
 void IBFSEnergyTableClique::NormalizeEnergy(SubmodularIBFS& sf) {
-    EnforceSubmodularity();
+    //EnforceSubmodularity();
     const size_t n = this->m_nodes.size();
     CheckSubmodular(n, m_energy);
     const Assignment num_assignments = 1 << n;
