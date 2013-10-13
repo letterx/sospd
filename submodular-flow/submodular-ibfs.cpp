@@ -338,7 +338,8 @@ void SubmodularIBFS::Augment(Arc& arc) {
         bottleneck = std::min(bottleneck, ResCap(a));
         current = a.j;
     }
-    ASSERT(bottleneck > -1e-7);//Chen
+    ASSERT(bottleneck > 0);
+    //ASSERT(bottleneck > -1e-7);//Chen
     Push(arc, bottleneck);
     current = i;
     while (current != s) {
@@ -504,16 +505,19 @@ bool SubmodularIBFS::NonzeroCap(Arc& arc) {
 }
 
 void SubmodularIBFS::Push(Arc& arc, REAL delta) {
-    ASSERT(delta > -1e-7);//Chen
+    ASSERT(delta > 0);
+    //ASSERT(delta > -1e-7);//Chen
     ASSERT(arc.j != s && arc.i != t);
     if (arc.i == s) { // reverse arc
-        ASSERT(delta <= m_c_si[arc.j] - m_phi_si[arc.j] + 1e-7);//Chen
+        //ASSERT(delta <= m_c_si[arc.j] - m_phi_si[arc.j] + 1e-7);//Chen
+        ASSERT(delta <= m_c_si[arc.j] - m_phi_si[arc.j]);
         m_phi_si[arc.j] += delta;
         if (m_phi_si[arc.j] == m_c_si[arc.j]) {
             MakeOrphan(arc.j);
         }
     } else if (arc.j == t) {
-        ASSERT(delta <= m_c_it[arc.i] - m_phi_it[arc.i] + 1e-7);//Chen
+        //ASSERT(delta <= m_c_it[arc.i] - m_phi_it[arc.i] + 1e-7);//Chen
+        ASSERT(delta <= m_c_it[arc.i] - m_phi_it[arc.i]);
         m_phi_it[arc.i] += delta;
         if (m_phi_it[arc.i] == m_c_it[arc.i]) {
             MakeOrphan(arc.i);
@@ -604,8 +608,8 @@ static void CheckSubmodular(size_t n, const std::vector<REAL>& m_energy) {
                         // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
                         REAL violation = -m_energy[si] - m_energy[t]
                             + m_energy[s] + m_energy[ti];
-			if (violation > 0) std::cout << violation << std::endl;
-                        ASSERT(violation <= 1e-7);
+                        if (violation > 0) std::cout << violation << std::endl;
+                        ASSERT(violation <= 0);
                     }
                 }
             }
