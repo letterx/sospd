@@ -23,6 +23,7 @@ ibfs-crash*
 gmon*.out
 gprof*.out
 cachegrind*
+callgrind*
 
 # Compiled Binaries
 unit-test
