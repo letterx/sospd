@@ -58,7 +58,6 @@ void SubmodularPrimalDual2::InitialDual() {
         const Clique& c = *cp;
 		std::vector<NodeId> nodes = c.Nodes();
 		int k = nodes.size();
-	    std::cout.flush(); // FIXME: Cause of slowness?
 		labelBuf.clear();
 		for (int i = 0; i < k; ++i) {
 			labelBuf.push_back(m_labels[nodes[i]]);
@@ -285,7 +284,6 @@ void SubmodularPrimalDual2::DualFit() {
 void SubmodularPrimalDual2::Solve() {
 	#ifdef PROGRESS_DISPLAY
 		std::cout << "(" << std::endl;
-		std::cout.flush();
 	#endif
 	m_num_cliques = m_cliques.size();
 	ComputeRho();
@@ -296,7 +294,6 @@ void SubmodularPrimalDual2::Solve() {
 		size_t num_round = 0;
 		REAL energy = ComputeEnergy();
 		std::cout << "Iteration " << num_round << ": " << energy << std::endl;
-		std::cout.flush();
 	#endif
 	#ifdef DEBUG
 	    std::cout << "Init Done!" << std::endl;
@@ -329,7 +326,6 @@ void SubmodularPrimalDual2::Solve() {
 			energy = ComputeEnergy();
 			num_round++;
 			std::cout << "Iteration " << num_round << ": " << energy << std::endl;
-			std::cout.flush();
 		#endif
 	}
 	#ifdef DEBUG
@@ -338,7 +334,6 @@ void SubmodularPrimalDual2::Solve() {
 	DualFit();
     #ifdef PROGRESS_DISPLAY
 	    std::cout << ")" << std::endl;
-	    std::cout.flush();
     #endif
 }
 
