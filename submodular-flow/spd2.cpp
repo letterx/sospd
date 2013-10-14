@@ -58,9 +58,9 @@ void SubmodularPrimalDual2::InitialDual() {
         const Clique& c = *cp;
 		const std::vector<NodeId>& nodes = c.Nodes();
 		int k = nodes.size();
-		labelBuf.clear();
+        labelBuf.resize(k);
 		for (int i = 0; i < k; ++i) {
-			labelBuf.push_back(m_labels[nodes[i]]);
+            labelBuf[i] = m_labels[nodes[i]];
 		}
 		REAL energy = c.Energy(labelBuf);
         m_dual.push_back(Dual(k, std::vector<REAL>(m_num_labels, 0)));
