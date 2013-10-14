@@ -242,11 +242,11 @@ void SubmodularPrimalDual2::PostEditDual() {
     int clique_index = 0;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
-        std::vector<NodeId> nodes = c.Nodes();
+        const std::vector<NodeId>& nodes = c.Nodes();
         int k = nodes.size();
-        labelBuf.clear();
+        labelBuf.resize(k);
 		for (int i = 0; i < k; ++i) {
-			labelBuf.push_back(m_labels[nodes[i]]);
+            labelBuf[i] = m_labels[nodes[i]];
 		}
 		REAL energy = c.Energy(labelBuf);
         REAL avg = energy / k;
