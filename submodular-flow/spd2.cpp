@@ -304,7 +304,6 @@ void SubmodularPrimalDual2::Solve() {
         ASSERT(CheckLabelInvariant());
         ASSERT(CheckDualBoundInvariant());
         ASSERT(CheckActiveInvariant());
-        ASSERT(CheckZeroSumInvariant());
 	#endif
 	bool labelChanged = true;
 	while (labelChanged){
@@ -316,7 +315,6 @@ void SubmodularPrimalDual2::Solve() {
                 ASSERT(CheckLabelInvariant());
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
-                ASSERT(CheckZeroSumInvariant());
 	        #endif
 			if (UpdatePrimalDual(alpha)) labelChanged = true;
 			PostEditDual();
@@ -325,7 +323,6 @@ void SubmodularPrimalDual2::Solve() {
                 ASSERT(CheckLabelInvariant());
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
-                ASSERT(CheckZeroSumInvariant());
 	        #endif
 		}
 		#ifdef PROGRESS_DISPLAY
@@ -497,6 +494,7 @@ bool SubmodularPrimalDual2::CheckActiveInvariant() {
     return true;
 }
 
+/*
 bool SubmodularPrimalDual2::CheckZeroSumInvariant() {
     size_t clique_index = 0;
     for (const CliquePtr& cp : m_cliques) {
@@ -518,3 +516,4 @@ bool SubmodularPrimalDual2::CheckZeroSumInvariant() {
     }
     return true;
 }
+*/

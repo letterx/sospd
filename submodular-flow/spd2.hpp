@@ -53,7 +53,7 @@ class SubmodularPrimalDual2 {
         bool CheckLabelInvariant();
         bool CheckDualBoundInvariant();
         bool CheckActiveInvariant();
-        bool CheckZeroSumInvariant();
+        //bool CheckZeroSumInvariant();
         const size_t m_num_labels;
         size_t m_num_cliques;
         REAL m_constant_term;
