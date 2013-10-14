@@ -71,7 +71,7 @@ void SubmodularPrimalDual2::InitialDual() {
 			newDual.push_back(std::vector<REAL>(m_num_labels, 0));
 		}
         ASSERT(energy >= 0);
-        int avg = energy / k;
+        REAL avg = energy / k;
         int remainder = energy % k;
         for (int i = 0; i < k; ++i) {
             newDual[i][m_labels[nodes[i]]] = avg;
@@ -254,26 +254,18 @@ void SubmodularPrimalDual2::PostEditDual() {
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
         std::vector<NodeId> nodes = c.Nodes();
-        size_t k = nodes.size();
+        int k = nodes.size();
         labelBuf.clear();
-        std::vector<size_t> cnt(m_num_labels, 0);
-        std::vector<REAL> delta(m_num_labels, 0);
-		for (size_t i = 0; i < k; ++i) {
+		for (int i = 0; i < k; ++i) {
 			labelBuf.push_back(m_labels[nodes[i]]);
-			cnt[m_labels[nodes[i]]]++;
 		}
 		REAL energy = c.Energy(labelBuf);
-		for (size_t i = 0; i < k; ++i) {
-		    delta[labelBuf[i]] += m_dual[clique_index][i][labelBuf[i]] - energy / k;
-		    m_dual[clique_index][i][labelBuf[i]] = energy / k;
-		}
-		for (size_t i = 0; i < k; ++i) {
-		    for (Label j = 0; j < m_num_labels; ++j) {
-		        if (labelBuf[i] != j) {
-		            ASSERT(cnt[j] != k);
-		            m_dual[clique_index][i][j] += delta[j] / (k - cnt[j]);
-		        }
-		    }
+        REAL avg = energy / k;
+        int remainder = energy % k;
+		for (int i = 0; i < k; ++i) {
+		    m_dual[clique_index][i][labelBuf[i]] = avg;
+            if (i < remainder)
+                m_dual[clique_index][i][labelBuf[i]] += 1;
 		}
 		++clique_index;
     }
