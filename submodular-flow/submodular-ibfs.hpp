@@ -73,6 +73,7 @@ class SubmodularIBFS {
         void AddPairwiseTerm(NodeId i, NodeId j, REAL E00, REAL E01, REAL E10, REAL E11);
 
         void IBFS();
+        void GraphInit();
         void ComputeMinCut();
         void Solve();
 

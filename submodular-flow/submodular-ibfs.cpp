@@ -11,7 +11,9 @@
 #include <boost/archive/binary_oarchive.hpp>
 
 SubmodularIBFS::SubmodularIBFS()
-    : m_constant_term(0),
+    : s(-1), 
+    t(-1),
+    m_constant_term(0),
     m_num_nodes(0),
     m_nodes(),
     m_c_si(),
@@ -27,6 +29,7 @@ SubmodularIBFS::SubmodularIBFS()
 
 SubmodularIBFS::NodeId SubmodularIBFS::AddNode(int n) {
     ASSERT(n >= 1);
+    ASSERT(s == -1);
     NodeId first_node = m_num_nodes;
     for (int i = 0; i < n; ++i) {
         m_nodes.push_back(Node());
@@ -66,6 +69,7 @@ void SubmodularIBFS::AddUnaryTerm(NodeId n, REAL coeff) {
 }
 
 void SubmodularIBFS::AddClique(const CliquePtr& cp) {
+    ASSERT(s == -1);
     m_cliques.push_back(cp);
     for (NodeId i : cp->Nodes()) {
         ASSERT(0 <= i && i < m_num_nodes);
@@ -76,18 +80,23 @@ void SubmodularIBFS::AddClique(const CliquePtr& cp) {
 }
 
 void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
+    ASSERT(s == -1);
     CliquePtr cp(new IBFSEnergyTableClique(nodes, energyTable));
     AddClique(cp);
 }
 
 void SubmodularIBFS::AddPairwiseTerm(NodeId i, NodeId j, REAL E00, REAL E01, REAL E10, REAL E11) {
+    ASSERT(s == -1);
     std::vector<NodeId> nodes{i, j};
     std::vector<REAL> energyTable{E00, E01, E10, E11};
     AddClique(nodes, energyTable);
 }
 
-void SubmodularIBFS::IBFSInit()
+void SubmodularIBFS::GraphInit()
 {
+    // Check to see if we've already initialized, if so: do nothing
+    if (s != -1) return;
+
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
     num_edges = 2 * m_num_nodes; // source sink edges
@@ -99,20 +108,6 @@ void SubmodularIBFS::IBFSInit()
 
     m_source_orphans.clear();
     m_sink_orphans.clear();
-
-    // init data structures
-    for (int i = 0; i < m_num_nodes + 2; ++i) {
-        Node& node = m_nodes[i];
-        node.dis = std::numeric_limits<int>::max();
-        node.state = NodeState::N;
-        node.parent = i;
-    }
-    m_nodes[s].state = NodeState::S;
-    m_nodes[s].dis = 0;
-    m_source_layers[0].push_back(s);
-    m_nodes[t].state = NodeState::T;
-    m_nodes[t].dis = 0;
-    m_sink_layers[0].push_back(t);
 
     // initialize arc lists
     Arc arc;
@@ -163,11 +158,7 @@ void SubmodularIBFS::IBFSInit()
             }
         }
     }
-    for (int cid = 0; cid < m_num_cliques; ++cid) {
-        CliquePtr cp = m_cliques[cid];
-        cp->ResetAlpha();
-        cp->ComputeMinTightSets();
-    }
+    
     // Sort the arc lists, to ensure consistency of current-arc heuristic
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         std::sort(m_nodes[i].out_arcs.begin(), m_nodes[i].out_arcs.end(),
@@ -175,6 +166,31 @@ void SubmodularIBFS::IBFSInit()
         std::sort(m_nodes[i].in_arcs.begin(), m_nodes[i].in_arcs.end(),
                 [](const Arc& n1, const Arc& n2) { return n1.i < n2.i || (n1.i == n2.i && n1.c < n2.c); });
     }
+}
+
+void SubmodularIBFS::IBFSInit()
+{
+    // reset distance, state and parent
+    for (int i = 0; i < m_num_nodes + 2; ++i) {
+        Node& node = m_nodes[i];
+        node.dis = std::numeric_limits<int>::max();
+        node.state = NodeState::N;
+        node.parent = i;
+    }
+    m_nodes[s].state = NodeState::S;
+    m_nodes[s].dis = 0;
+    m_source_layers[0].push_back(s);
+    m_nodes[t].state = NodeState::T;
+    m_nodes[t].dis = 0;
+    m_sink_layers[0].push_back(t);
+
+    // Reset Clique parameters
+    for (int cid = 0; cid < m_num_cliques; ++cid) {
+        CliquePtr cp = m_cliques[cid];
+        cp->ResetAlpha();
+        cp->ComputeMinTightSets();
+    }
+
     // saturate all s-i-t paths
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         REAL min_cap = std::min(m_c_si[i], m_c_it[i]);
@@ -200,10 +216,10 @@ void SubmodularIBFS::IBFSInit()
             ASSERT(NonzeroCap(*m_nodes[i].parent_arc));
         }
     }
-
 }
 
 void SubmodularIBFS::IBFS() {
+    GraphInit();
     IBFSInit();
 
     // Set up initial current_q and search nodes to make it look like
