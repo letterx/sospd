@@ -57,34 +57,27 @@ void SubmodularPrimalDual2::InitialDual() {
 	for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
 		std::vector<NodeId> nodes = c.Nodes();
-		size_t k = nodes.size();
-	    std::cout.flush();
-		std::vector<size_t> cnt(m_num_labels, 0);
+		int k = nodes.size();
+	    std::cout.flush(); // FIXME: Cause of slowness?
 		labelBuf.clear();
-		for (size_t i = 0; i < k; ++i) {
+		for (int i = 0; i < k; ++i) {
 			labelBuf.push_back(m_labels[nodes[i]]);
-			cnt[m_labels[nodes[i]]]++;
 		}
 		REAL energy = c.Energy(labelBuf);
         m_dual.push_back(Dual());
 		Dual& newDual = m_dual.back();
 		newDual.clear();
-		for (size_t i = 0; i < k; ++i) {
+		for (int i = 0; i < k; ++i) {
 			newDual.push_back(std::vector<REAL>(m_num_labels, 0));
 		}
-		for (size_t i = 0; i < m_num_labels; ++i){
-			if (cnt[i] != 0) {
-				for (size_t j = 0; j < k; ++j) {
-					if (labelBuf[j] == i) {
-						newDual[j][i] = energy / k;
-					}
-					else {
-						ASSERT(k != cnt[i]);
-						newDual[j][i] = -energy / k * cnt[i] / (k - cnt[i]);
-					}
-				}
-			}
-		}
+        ASSERT(energy >= 0);
+        int avg = energy / k;
+        int remainder = energy % k;
+        for (int i = 0; i < k; ++i) {
+            newDual[i][m_labels[nodes[i]]] = avg;
+            if (i < remainder) // Have to distribute remainder to maintain average
+                newDual[i][m_labels[nodes[i]]] += 1;
+        }
     }
 }
 
