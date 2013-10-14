@@ -345,35 +345,7 @@ void SubmodularPrimalDual2::ComputeRho() {
     m_rho = 1;
     for (const CliquePtr& cp : m_cliques) {
         Clique& c = *cp;
-        const size_t k = c.Nodes().size();
-        std::vector<Label> labelBuf;
-        for (size_t i = 0; i < k; ++i) {
-            labelBuf.push_back(0);
-        }
-        bool t = true;
-        REAL max_energy = -1;
-        REAL min_energy = -1;
-        while (t) {
-            REAL energy = c.Energy(labelBuf);
-            if (energy > max_energy) max_energy = energy;
-            if ((energy > 0) && ((min_energy < 0) || (energy < min_energy))) min_energy = energy;
-            labelBuf[0]++;
-            for (size_t i = 0; i < k; ++i){
-                if (labelBuf[i] == m_num_labels) {
-                    if (i + 1 < k) {
-                        labelBuf[i] = 0;
-                        labelBuf[i + 1]++;
-                    }
-                    else {
-                        t = false;
-                    }
-                }
-                else break;
-            }
-        }
-        c.m_f_max = max_energy;
-        c.m_f_min = min_energy;
-        if ((double)k * max_energy / min_energy > m_rho) m_rho = (double)k * max_energy / min_energy;
+        m_rho = std::max(m_rho, c.Rho());
     }
 }
 

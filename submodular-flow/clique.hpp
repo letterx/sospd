@@ -11,7 +11,9 @@ typedef size_t Label;
 class Clique {
     public:   
         Clique(const std::vector<NodeId>& nodes)
-            : m_nodes(nodes)
+            : m_f_min(1),
+            m_f_max(1),
+            m_nodes(nodes)
         { }
         virtual ~Clique() = default;
 
@@ -21,6 +23,7 @@ class Clique {
 
         const std::vector<NodeId>& Nodes() const { return m_nodes; }
         size_t Size() const { return m_nodes.size(); }
+        virtual double Rho() const { return Size()*double(m_f_max)/double(m_f_min); }
         REAL m_f_min, m_f_max;
 
     protected:
@@ -40,7 +43,14 @@ class PottsClique : public Clique {
             : Clique(nodes),
             m_same_cost(same_cost),
             m_diff_cost(diff_cost)
-        { }
+        { 
+            ASSERT(m_diff_cost >= m_same_cost);
+            this->m_f_max = m_diff_cost;
+            if (m_same_cost == 0)
+                this->m_f_min = m_diff_cost;
+            else
+                this->m_f_min = m_same_cost;
+        }
 
         virtual REAL Energy(const std::vector<Label>& labels) const override {
             const Label l = labels[0];
