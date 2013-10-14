@@ -229,7 +229,7 @@ bool SubmodularPrimalDual2::UpdatePrimalDual(Label alpha, SubmodularIBFS& crf) {
     SubmodularIBFS::CliqueVec clique = crf.GetCliques();
     for (size_t i = 0; i < m_num_cliques; ++i) {
         SubmodularIBFS::CliquePtr c = clique[i];
-        std::vector<REAL> phiCi = c->AlphaCi();
+        const std::vector<REAL>& phiCi = c->AlphaCi();
         for (size_t j = 0; j < phiCi.size(); ++j) {
             m_dual[i][j][alpha] += phiCi[j];
         }
