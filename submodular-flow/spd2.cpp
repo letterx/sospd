@@ -145,10 +145,30 @@ REAL SubmodularPrimalDual2::ComputeHeight(NodeId i, Label x) {
     return ret;
 }
 
-void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
+void SubmodularPrimalDual2::SetupGraph(SubmodularIBFS& crf) {
     typedef int32_t Assgn;
     const size_t n = m_labels.size();
     crf.AddNode(n);
+
+    size_t clique_index = 0;
+    for (const CliquePtr& cp : m_cliques) {
+        const Clique& c = *cp;
+        const size_t k = c.Size();
+        ASSERT(k < 32);
+        const Assgn max_assgn = 1 << k;
+        std::vector<REAL> energy_table(max_assgn, 0);
+        crf.AddClique(c.Nodes(), energy_table);
+        ++clique_index;
+    }
+
+    crf.GraphInit();
+}
+
+void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
+    typedef int32_t Assgn;
+    const size_t n = m_labels.size();
+    crf.ClearUnaries();
+    crf.AddConstantTerm(-crf.GetConstantTerm());
     for (size_t i = 0; i < n; ++i) {
         REAL height_x = ComputeHeight(i, m_labels[i]);
         REAL height_alpha = ComputeHeight(i, alpha);
@@ -159,13 +179,17 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
             crf.AddUnaryTerm(i, 0, height_alpha - height_x);
         }
     }
+
     size_t clique_index = 0;
+    SubmodularIBFS::CliqueVec& ibfs_cliques = crf.GetCliques();
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
+        auto& ibfs_c = *ibfs_cliques[clique_index];
         const size_t k = c.Size();
         ASSERT(k < 32);
+        ASSERT(k == ibfs_c.Size());
         const Assgn max_assgn = 1 << k;
-        std::vector<REAL> energy_table(max_assgn);
+        std::vector<REAL>& energy_table = ibfs_c.EnergyTable();
         std::vector<Label> label_buf(k);
         for (Assgn a = 0; a < max_assgn; ++a) {
             REAL lambda = 0;
@@ -182,14 +206,12 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
             }
             energy_table[a] = c.Energy(label_buf) - lambda;
         }
-        crf.AddClique(c.Nodes(), energy_table);
         ++clique_index;
     }
 }
 
-bool SubmodularPrimalDual2::UpdatePrimalDual(Label alpha) {
+bool SubmodularPrimalDual2::UpdatePrimalDual(Label alpha, SubmodularIBFS& crf) {
     bool ret = false;
-    SubmodularIBFS crf;
     SetupAlphaEnergy(alpha, crf);
     crf.Solve();
     NodeId n = m_labels.size();
@@ -251,6 +273,8 @@ void SubmodularPrimalDual2::Solve() {
 	#endif
 	m_num_cliques = m_cliques.size();
 	ComputeRho();
+    SubmodularIBFS crf;
+    SetupGraph(crf);
 	InitialLabeling();
 	InitialDual();
 	InitialNodeCliqueList();
@@ -274,7 +298,7 @@ void SubmodularPrimalDual2::Solve() {
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
 	        #endif
-			if (UpdatePrimalDual(alpha)) labelChanged = true;
+			if (UpdatePrimalDual(alpha, crf)) labelChanged = true;
 			PostEditDual();
 			#ifdef DEBUG
                 ASSERT(CheckLabelInvariant());

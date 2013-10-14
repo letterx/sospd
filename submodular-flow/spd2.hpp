@@ -39,12 +39,13 @@ class SubmodularPrimalDual2 {
 
     protected:
         REAL ComputeHeight(NodeId, Label);
+        void SetupGraph(SubmodularIBFS& crf);
         void SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf);
         void InitialLabeling();
         void InitialDual();
         void InitialNodeCliqueList();
         void PreEditDual(Label alpha);
-        bool UpdatePrimalDual(Label alpha);
+        bool UpdatePrimalDual(Label alpha, SubmodularIBFS& crf);
         void PostEditDual();
         void DualFit();
         bool CheckHeightInvariant();

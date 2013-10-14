@@ -68,6 +68,13 @@ void SubmodularIBFS::AddUnaryTerm(NodeId n, REAL coeff) {
     AddUnaryTerm(n, 0, coeff);
 }
 
+void SubmodularIBFS::ClearUnaries() {
+    for (NodeId i = 0; i < m_num_nodes; ++i) {
+        m_c_si[i] = m_c_it[i] = 0;
+        m_phi_si[i] = m_phi_it[i] = 0;
+    }
+}
+
 void SubmodularIBFS::AddClique(const CliquePtr& cp) {
     ASSERT(s == -1);
     m_cliques.push_back(cp);
@@ -102,12 +109,6 @@ void SubmodularIBFS::GraphInit()
     num_edges = 2 * m_num_nodes; // source sink edges
     m_nodes.push_back(Node());
     m_nodes.push_back(Node());
-
-    m_source_layers = std::vector<NodeQueue>(m_num_nodes);
-    m_sink_layers = std::vector<NodeQueue>(m_num_nodes);
-
-    m_source_orphans.clear();
-    m_sink_orphans.clear();
 
     // initialize arc lists
     Arc arc;
@@ -177,6 +178,12 @@ void SubmodularIBFS::IBFSInit()
         node.state = NodeState::N;
         node.parent = i;
     }
+    m_source_layers = std::vector<NodeQueue>(m_num_nodes);
+    m_sink_layers = std::vector<NodeQueue>(m_num_nodes);
+
+    m_source_orphans.clear();
+    m_sink_orphans.clear();
+
     m_nodes[s].state = NodeState::S;
     m_nodes[s].dis = 0;
     m_source_layers[0].push_back(s);
@@ -813,6 +820,7 @@ void IBFSEnergyTableClique::ResetAlpha() {
     for (Assignment a = 0; a < num_assignments; ++a) {
         m_alpha_energy[a] = m_energy[a];
     }
+    this->Time()++;
 }
 
 void SubmodularIBFS::AddToLayer(NodeId i) {

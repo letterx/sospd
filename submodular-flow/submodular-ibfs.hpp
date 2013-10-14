@@ -65,6 +65,7 @@ class SubmodularIBFS {
         // for being in S
         void AddUnaryTerm(NodeId n, REAL E0, REAL E1);
         void AddUnaryTerm(NodeId n, REAL coeff);
+        void ClearUnaries();
 
         // Add Clique pointed to by cp
         void AddClique(const CliquePtr& cp);
@@ -213,6 +214,7 @@ class SubmodularIBFS {
         const std::vector<REAL>& GetPhi_it() const { return m_phi_it; }
         CliqueId GetNumCliques() const { return m_num_cliques; }
         const CliqueVec& GetCliques() const { return m_cliques; }
+        CliqueVec& GetCliques() { return m_cliques; }
         const std::vector<NeighborList>& GetNeighbors() const { return m_neighbors; }
         std::vector<int>& GetLabels() { return m_labels; }
         const std::vector<int>& GetLabels() const { return m_labels; }
@@ -268,6 +270,8 @@ class IBFSEnergyTableClique : public SubmodularIBFS::Clique {
 
         void ComputeMinTightSets();
         void EnforceSubmodularity();
+        std::vector<REAL>& EnergyTable() { return m_energy; }
+        const std::vector<REAL>& EnergyTable() const { return m_energy; }
 
         void ResetAlpha();
 
