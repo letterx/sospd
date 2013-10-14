@@ -199,6 +199,8 @@ class SubmodularIBFS {
 
         size_t m_num_clique_pushes;
 
+        bool m_crash_dump = false;
+
     public:
         // Functions for reading out data, useful for testing
         NodeId GetS() const { return s; }
