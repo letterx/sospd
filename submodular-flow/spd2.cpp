@@ -286,7 +286,7 @@ void SubmodularPrimalDual2::Solve() {
 		REAL energy = ComputeEnergy();
 		std::cout << "Iteration " << num_round << ": " << energy << std::endl;
 	#endif
-	#ifdef DEBUG
+	#ifdef CHECK_INVARIANTS
         ASSERT(CheckLabelInvariant());
         ASSERT(CheckDualBoundInvariant());
         ASSERT(CheckActiveInvariant());
@@ -296,14 +296,14 @@ void SubmodularPrimalDual2::Solve() {
 		labelChanged = false;
 		for (size_t alpha = 0; alpha < m_num_labels; ++alpha){
 			PreEditDual(alpha);
-			#ifdef DEBUG
+			#ifdef CHECK_INVARIANTS
                 ASSERT(CheckLabelInvariant());
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
 	        #endif
 			if (UpdatePrimalDual(alpha, crf)) labelChanged = true;
 			PostEditDual();
-			#ifdef DEBUG
+			#ifdef CHECK_INVARIANTS
                 ASSERT(CheckLabelInvariant());
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
@@ -315,7 +315,7 @@ void SubmodularPrimalDual2::Solve() {
 			std::cout << "Iteration " << num_round << ": " << energy << std::endl;
 		#endif
 	}
-	#ifdef DEBUG
+	#ifdef CHECK_INVARIANTS
 	    ASSERT(CheckHeightInvariant());
 	#endif
 	DualFit();

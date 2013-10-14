@@ -2,7 +2,7 @@
 #define _SPD2_HPP_
 
 #define PROGRESS_DISPLAY
-#define DEBUG
+//#define CHECK_INVARIANTS
 
 #include "sos-common.hpp"
 #include "clique.hpp"
