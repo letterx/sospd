@@ -3,6 +3,7 @@
 
 #define PROGRESS_DISPLAY
 #define DEBUG
+//#define ZERO_SUM_CONSTRAINT
 
 #include "sos-common.hpp"
 #include "clique.hpp"

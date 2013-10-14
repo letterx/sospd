@@ -52,39 +52,45 @@ void SubmodularPrimalDual2::InitialLabeling() {
 }
 
 void SubmodularPrimalDual2::InitialDual() {
-	m_dual.clear();
-	std::vector<Label> labelBuf;
-	for (const CliquePtr& cp : m_cliques) {
+    m_dual.clear();
+    std::vector<Label> labelBuf;
+    for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
-		std::vector<NodeId> nodes = c.Nodes();
-		size_t k = nodes.size();
-	    std::cout.flush();
-		std::vector<size_t> cnt(m_num_labels, 0);
-		labelBuf.clear();
-		for (size_t i = 0; i < k; ++i) {
-			labelBuf.push_back(m_labels[nodes[i]]);
-			cnt[m_labels[nodes[i]]]++;
-		}
-		REAL energy = c.Energy(labelBuf);
+        std::vector<NodeId> nodes = c.Nodes();
+        size_t k = nodes.size();
+        std::cout.flush();
+        #ifdef ZERO_SUM_CONSTRAINT
+            std::vector<size_t> cnt(m_num_labels, 0);
+        #endif
+        labelBuf.clear();
+        for (size_t i = 0; i < k; ++i) {
+            labelBuf.push_back(m_labels[nodes[i]]);
+            #ifdef ZERO_SUM_CONSTRAINT
+                cnt[m_labels[nodes[i]]]++;
+            #endif
+        }
+        REAL energy = c.Energy(labelBuf);
         m_dual.push_back(Dual());
-		Dual& newDual = m_dual.back();
-		newDual.clear();
-		for (size_t i = 0; i < k; ++i) {
-			newDual.push_back(std::vector<REAL>(m_num_labels, 0));
-		}
-		for (size_t i = 0; i < m_num_labels; ++i){
-			if (cnt[i] != 0) {
-				for (size_t j = 0; j < k; ++j) {
-					if (labelBuf[j] == i) {
-						newDual[j][i] = m_mu * energy / k;
-					}
-					else {
-						ASSERT(k != cnt[i]);
-						newDual[j][i] = -m_mu * energy / k * cnt[i] / (k - cnt[i]);
-					}
-				}
-			}
-		}
+        Dual& newDual = m_dual.back();
+        newDual.clear();
+        for (size_t i = 0; i < k; ++i) {
+            newDual.push_back(std::vector<REAL>(m_num_labels, 0));
+        }
+        for (size_t i = 0; i < k; ++i) {
+            newDual[i][labelBuf[i]] = m_mu * energy / k;
+        }
+        #ifdef ZERO_SUM_CONSTRAINT
+            for (size_t i = 0; i < m_num_labels; ++i){
+                if (cnt[i] != 0) {
+                    for (size_t j = 0; j < k; ++j) {
+                        if (labelBuf[j] != i) {
+                            ASSERT(k != cnt[i]);
+                            newDual[j][i] = -m_mu * energy / k * cnt[i] / (k - cnt[i]);
+                        }
+                    }
+                }
+            }
+        #endif
     }
 }
 
@@ -110,7 +116,6 @@ void SubmodularPrimalDual2::InitialNodeCliqueList() {
 void SubmodularPrimalDual2::PreEditDual(Label alpha) {
     std::vector<Label> label_buf;
     int clique_index = 0;
-    //bool t = true;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
         const size_t k = c.Nodes().size();
@@ -127,18 +132,6 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
         }
         std::vector<REAL> psi;
         REAL oldG = m_mu * energy - lambdaA;
-        /*if ((k == 4) && t) {
-            for (size_t i = 0; i < k; ++i)
-                std::cout << label_buf[i] << " ";
-            std::cout << std::endl;
-            for (size_t i = 0; i < k; ++i)
-                std::cout << m_dual[clique_index][i][label_buf[i]] << " ";
-            std::cout << std::endl;
-            for (size_t i = 0; i < k; ++i)
-                std::cout << m_dual[clique_index][i][alpha] << " ";
-            std::cout << std::endl;
-        }*/
-        //if ((k == 4) && t) std::cout << oldG << " ";
         //This ordering here is important!
         for (int i = k - 1; i >= 0; --i){
             lambdaA -= m_dual[clique_index][i][label_buf[i]];
@@ -148,22 +141,11 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
             REAL newG = m_mu * energy - lambdaA - lambdaB;
             psi.push_back(oldG - newG);
             oldG = newG;
-            //if ((k == 4) && t) std::cout << oldG << " ";
         }
-        //if ((k == 4) && t) std::cout << std::endl;
         for (size_t i = 0; i < k; ++i) {
             m_dual[clique_index][i][alpha] -= psi[k - i - 1];
         }
-        /*if ((k == 4) && t) {
-            for (size_t i = 0; i < k; ++i)
-                std::cout << psi[i] << " ";
-            std::cout << std::endl;
-            for (size_t i = 0; i < k; ++i)
-                std::cout << m_dual[clique_index][i][alpha] << " ";
-            std::cout << std::endl;
-        }*/
         ++clique_index;
-        //if (k == 4) t = false;
     }
 }
 
@@ -192,7 +174,6 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
         }
     }
     size_t clique_index = 0;
-    //bool t = true;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
         const size_t k = c.Size();
@@ -200,11 +181,6 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
         const Assgn max_assgn = 1 << k;
         std::vector<REAL> energy_table;
         std::vector<Label> label_buf;
-        /*if ((k == 4) && t) {
-            for (size_t i = 0; i < k; ++i)
-                std::cout << m_dual[clique_index][i][alpha] << " ";
-            std::cout << std::endl;
-        }*/
         for (Assgn a = 0; a < max_assgn; ++a) {
             label_buf.clear();
             REAL lambda = 0;
@@ -221,13 +197,8 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
             }
             energy_table.push_back(m_mu * c.Energy(label_buf) - lambda);
         }
-        /*if ((k == 4) && t){
-            for (int i = 0; i < max_assgn; ++i) std::cout << energy_table[i] << " ";
-            std::cout << std::endl;
-        }*/
         crf.AddClique(c.Nodes(), energy_table);
         ++clique_index;
-        //if (k == 4) t = false;
     }
 }
 
@@ -263,96 +234,106 @@ void SubmodularPrimalDual2::PostEditDual() {
         std::vector<NodeId> nodes = c.Nodes();
         size_t k = nodes.size();
         labelBuf.clear();
-        std::vector<size_t> cnt(m_num_labels, 0);
-        std::vector<REAL> delta(m_num_labels, 0);
-		for (size_t i = 0; i < k; ++i) {
-			labelBuf.push_back(m_labels[nodes[i]]);
-			cnt[m_labels[nodes[i]]]++;
-		}
-		REAL energy = m_mu * c.Energy(labelBuf);
-		for (size_t i = 0; i < k; ++i) {
-		    delta[labelBuf[i]] += m_dual[clique_index][i][labelBuf[i]] - energy / k;
-		    m_dual[clique_index][i][labelBuf[i]] = energy / k;
-		}
-		for (size_t i = 0; i < k; ++i) {
-		    for (Label j = 0; j < m_num_labels; ++j) {
-		        if (labelBuf[i] != j) {
-		            ASSERT(cnt[j] != k);
-		            m_dual[clique_index][i][j] += delta[j] / (k - cnt[j]);
-		        }
-		    }
-		}
-		++clique_index;
+        #ifdef ZERO_SUM_CONSTRAINT
+            std::vector<size_t> cnt(m_num_labels, 0);
+            std::vector<REAL> delta(m_num_labels, 0);
+        #endif
+        for (size_t i = 0; i < k; ++i) {
+            labelBuf.push_back(m_labels[nodes[i]]);
+            #ifdef ZERO_SUM_CONSTRAINT
+                cnt[m_labels[nodes[i]]]++;
+            #endif
+        }
+        REAL energy = m_mu * c.Energy(labelBuf);
+        for (size_t i = 0; i < k; ++i) {
+            #ifdef ZERO_SUM_CONSTRAINT
+                delta[labelBuf[i]] += m_dual[clique_index][i][labelBuf[i]] - energy / k;
+            #endif
+            m_dual[clique_index][i][labelBuf[i]] = energy / k;
+        }
+        #ifdef ZERO_SUM_CONSTRAINT
+            for (size_t i = 0; i < k; ++i) {
+                for (Label j = 0; j < m_num_labels; ++j) {
+                    if (labelBuf[i] != j) {
+                        ASSERT(cnt[j] != k);
+                        m_dual[clique_index][i][j] += delta[j] / (k - cnt[j]);
+                    }
+                }
+            }
+        #endif
+        ++clique_index;
     }
 }
 
 void SubmodularPrimalDual2::DualFit() {
-	for (size_t i = 0; i < m_dual.size(); ++i)
-		for (size_t j = 0; j < m_dual[i].size(); ++j)
-			for (size_t k = 0; k < m_dual[i][j].size(); ++k)
-				m_dual[i][j][k] /= (m_mu * m_rho);
+    for (size_t i = 0; i < m_dual.size(); ++i)
+        for (size_t j = 0; j < m_dual[i].size(); ++j)
+            for (size_t k = 0; k < m_dual[i][j].size(); ++k)
+                m_dual[i][j][k] /= (m_mu * m_rho);
 }
 
 void SubmodularPrimalDual2::Solve() {
-	#ifdef PROGRESS_DISPLAY
-		std::cout << "(" << std::endl;
-		std::cout.flush();
-	#endif
-	m_num_cliques = m_cliques.size();
-	ComputeRho();
-	InitialLabeling();
-	InitialDual();
-	InitialNodeCliqueList();
-	#ifdef PROGRESS_DISPLAY
-		size_t num_round = 0;
-		REAL energy = ComputeEnergy();
-		std::cout << "Iteration " << num_round << ": " << energy << std::endl;
-		std::cout.flush();
-	#endif
-	#ifdef DEBUG
-	    std::cout << "Init Done!" << std::endl;
-	    //std::cout << m_dual[728][1][2] << std::endl;
+    #ifdef PROGRESS_DISPLAY
+        std::cout << "(" << std::endl;
+        std::cout.flush();
+    #endif
+    m_num_cliques = m_cliques.size();
+    ComputeRho();
+    InitialLabeling();
+    InitialDual();
+    InitialNodeCliqueList();
+    #ifdef PROGRESS_DISPLAY
+        size_t num_round = 0;
+        REAL energy = ComputeEnergy();
+        std::cout << "Iteration " << num_round << ": " << energy << std::endl;
+        std::cout.flush();
+    #endif
+    #ifdef DEBUG
         ASSERT(CheckLabelInvariant());
         ASSERT(CheckDualBoundInvariant());
         ASSERT(CheckActiveInvariant());
-        ASSERT(CheckZeroSumInvariant());
-	#endif
-	bool labelChanged = true;
-	while (labelChanged){
-		labelChanged = false;
-		for (size_t alpha = 0; alpha < m_num_labels; ++alpha){
-			PreEditDual(alpha);
-			#ifdef DEBUG
-			    std::cout << "Pre-edit Done!" << std::endl;
+        #ifdef ZERO_SUM_CONSTRAINT
+            ASSERT(CheckZeroSumInvariant());
+        #endif
+    #endif
+    bool labelChanged = true;
+    while (labelChanged){
+        labelChanged = false;
+        for (size_t alpha = 0; alpha < m_num_labels; ++alpha){
+            PreEditDual(alpha);
+            #ifdef DEBUG
                 ASSERT(CheckLabelInvariant());
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
-                ASSERT(CheckZeroSumInvariant());
-	        #endif
-			if (UpdatePrimalDual(alpha)) labelChanged = true;
-			PostEditDual();
-			#ifdef DEBUG
-			    std::cout << "Post-edit Done!" << std::endl;
+                #ifdef ZERO_SUM_CONSTRAINT
+                    ASSERT(CheckZeroSumInvariant());
+                #endif
+            #endif
+            if (UpdatePrimalDual(alpha)) labelChanged = true;
+            PostEditDual();
+            #ifdef DEBUG
                 ASSERT(CheckLabelInvariant());
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
-                ASSERT(CheckZeroSumInvariant());
-	        #endif
-		}
-		#ifdef PROGRESS_DISPLAY
-			energy = ComputeEnergy();
-			num_round++;
-			std::cout << "Iteration " << num_round << ": " << energy << std::endl;
-			std::cout.flush();
-		#endif
-	}
-	#ifdef DEBUG
-	    ASSERT(CheckHeightInvariant());
-	#endif
-	DualFit();
+                #ifdef ZERO_SUM_CONSTRAINT
+                    ASSERT(CheckZeroSumInvariant());
+                #endif
+            #endif
+        }
+        #ifdef PROGRESS_DISPLAY
+            energy = ComputeEnergy();
+            num_round++;
+            std::cout << "Iteration " << num_round << ": " << energy << std::endl;
+            std::cout.flush();
+        #endif
+    }
+    #ifdef DEBUG
+        ASSERT(CheckHeightInvariant());
+    #endif
+    DualFit();
     #ifdef PROGRESS_DISPLAY
-	    std::cout << ")" << std::endl;
-	    std::cout.flush();
+        std::cout << ")" << std::endl;
+        std::cout.flush();
     #endif
 }
 
