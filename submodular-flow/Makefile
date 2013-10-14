@@ -10,7 +10,7 @@ CORE_SRCS = submodular-flow.cpp \
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
 .PHONY: all
-all: ibfs_test sos_ibfs_test submodular-ibfs spd1 spd2 denoise_test
+all: ibfs_test sos_ibfs_test submodular-ibfs spd2 denoise_test
 
 ibfs_test: ibfs_test.cpp ibfs.o
 	$(CXX) $(CXX_FLAGS) -o $@ ibfs.o ibfs_test.cpp
@@ -20,9 +20,6 @@ sos_ibfs_test: sos_ibfs_test.cpp submodular-ibfs.o
 
 submodular-ibfs: submodular-ibfs.cpp submodular-ibfs.hpp
 	$(CXX) $(CXX_FLAGS) -c submodular-ibfs.cpp $(LIBS)
-
-spd1: spd1.cpp spd1.hpp clique.hpp submodular-ibfs.o
-	$(CXX) $(CXX_FLAGS) -c spd1.cpp submodular-ibfs.o $(LIBS)
 
 spd2: spd2.cpp spd2.hpp clique.hpp submodular-ibfs.o
 	$(CXX) $(CXX_FLAGS) -c spd2.cpp submodular-ibfs.o $(LIBS)	
