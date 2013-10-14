@@ -5,7 +5,7 @@
 #include "submodular-flow.hpp"
 #include "submodular-ibfs.hpp"
 
-typedef size_t NodeId;
+typedef int NodeId;
 typedef size_t Label;
 
 class Clique {

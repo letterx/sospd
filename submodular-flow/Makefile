@@ -19,10 +19,10 @@ sos_ibfs_test: sos_ibfs_test.cpp submodular-ibfs.o
 	$(CXX) $(CXX_FLAGS) -o $@ submodular-ibfs.o sos_ibfs_test.cpp $(LIBS)
 
 submodular-ibfs: submodular-ibfs.cpp submodular-ibfs.hpp
-	$(CXX) $(CXX_FLAGS) -c submodular-ibfs.cpp $(LIBS)
+	$(CXX) $(CXX_FLAGS) -c submodular-ibfs.cpp
 
-spd2: spd2.cpp spd2.hpp clique.hpp submodular-ibfs.o
-	$(CXX) $(CXX_FLAGS) -c spd2.cpp submodular-ibfs.o $(LIBS)	
+spd2: spd2.cpp spd2.hpp clique.hpp
+	$(CXX) $(CXX_FLAGS) -c spd2.cpp
 	
 denoise_test: denoise_test.cpp spd2.o submodular-ibfs.o 
 	$(CXX) $(CXX_FLAGS) -o $@ denoise_test.cpp spd2.o submodular-ibfs.o $(LIBS)	

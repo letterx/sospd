@@ -5,7 +5,7 @@
 #include "boost/optional/optional.hpp"
 #include <list>
 
-typedef double REAL;
+typedef int REAL;
 
 class EnergyTableClique;
 

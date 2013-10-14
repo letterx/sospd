@@ -13,7 +13,7 @@
 
 class SubmodularPrimalDual2 {
     public:
-        typedef size_t NodeId;
+        typedef int NodeId;
         typedef size_t Label;
         typedef std::shared_ptr<Clique> CliquePtr;
         typedef std::vector<REAL> UnaryCost;
@@ -54,8 +54,7 @@ class SubmodularPrimalDual2 {
         bool CheckLabelInvariant();
         bool CheckDualBoundInvariant();
         bool CheckActiveInvariant();
-        bool CheckZeroSumInvariant();
-        const double EPS = 1e-7;
+        //bool CheckZeroSumInvariant();
         const size_t m_num_labels;
         size_t m_num_cliques;
         REAL m_constant_term;
@@ -64,7 +63,6 @@ class SubmodularPrimalDual2 {
         std::vector<Label> m_labels;
         NodeCliqueList m_node_clique_list;
         std::vector<Dual> m_dual;
-        REAL m_mu;
         REAL m_rho;
 };
 

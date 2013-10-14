@@ -71,9 +71,11 @@ int main(){
     
     for (int i = 0; i < m * n; ++i) image.data[i] = val[mrf.GetLabel(i)];
     
+    /*
     cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );// Create a window for display.
     cv::imshow( "Display window", image );                   // Show our image inside it.
 
     cv::waitKey(0);    
+    */
     return 0;
 }
