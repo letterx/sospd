@@ -53,10 +53,12 @@ class PottsClique : public Clique {
         }
 
         virtual REAL Energy(const std::vector<Label>& labels) const override {
+            const int n = labels.size();
             const Label l = labels[0];
-            for (Label l2 : labels)
-                if (l2 != l)
+            for (int i = 1; i < n; ++i) {
+                if (labels[i] != l)
                     return m_diff_cost;
+            }
             return m_same_cost;
         }
     private:
