@@ -106,9 +106,9 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
         const Clique& c = *cp;
         const size_t k = c.Nodes().size();
         ASSERT(k < 32);
-        label_buf.clear();
+        label_buf.resize(k);
         for (size_t i = 0; i < k; ++i) {
-            label_buf.push_back(m_labels[c.Nodes()[i]]);
+            label_buf[i] = m_labels[c.Nodes()[i]];
         }
         REAL energy = c.Energy(label_buf);
         REAL lambdaA = 0;
