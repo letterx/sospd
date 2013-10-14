@@ -56,19 +56,16 @@ void SubmodularPrimalDual2::InitialDual() {
     std::vector<Label> labelBuf;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
-		std::vector<NodeId> nodes = c.Nodes();
+		const std::vector<NodeId>& nodes = c.Nodes();
 		int k = nodes.size();
 		labelBuf.clear();
 		for (int i = 0; i < k; ++i) {
 			labelBuf.push_back(m_labels[nodes[i]]);
 		}
 		REAL energy = c.Energy(labelBuf);
-        m_dual.push_back(Dual());
+        m_dual.push_back(Dual(k, std::vector<REAL>(m_num_labels, 0)));
 		Dual& newDual = m_dual.back();
-		newDual.clear();
-		for (int i = 0; i < k; ++i) {
-			newDual.push_back(std::vector<REAL>(m_num_labels, 0));
-		}
+        
         ASSERT(energy >= 0);
         REAL avg = energy / k;
         int remainder = energy % k;
@@ -83,14 +80,12 @@ void SubmodularPrimalDual2::InitialDual() {
 void SubmodularPrimalDual2::InitialNodeCliqueList() {
     size_t n = m_labels.size();
     m_node_clique_list.clear();
-    for (size_t i = 0; i < n; ++i) {
-        std::vector<std::pair<size_t, size_t> > list;
-        m_node_clique_list.push_back(list);
-    }
+    m_node_clique_list.resize(n);
+
     int clique_index = 0;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
-        std::vector<NodeId> nodes = c.Nodes();
+        const std::vector<NodeId>& nodes = c.Nodes();
         const size_t k = nodes.size();
         for (size_t i = 0; i < k; ++i) {
             m_node_clique_list[nodes[i]].push_back(std::make_pair(clique_index, i));
@@ -157,8 +152,7 @@ void SubmodularPrimalDual2::SetupGraph(SubmodularIBFS& crf) {
         const size_t k = c.Size();
         ASSERT(k < 32);
         const Assgn max_assgn = 1 << k;
-        std::vector<REAL> energy_table(max_assgn, 0);
-        crf.AddClique(c.Nodes(), energy_table);
+        crf.AddClique(c.Nodes(), std::vector<REAL>(max_assgn, 0));
         ++clique_index;
     }
 
@@ -377,13 +371,14 @@ bool SubmodularPrimalDual2::CheckHeightInvariant() {
 
 bool SubmodularPrimalDual2::CheckLabelInvariant() {
     size_t clique_index = 0;
+    std::vector<Label> labelBuf;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
-        std::vector<NodeId> nodes = c.Nodes();
+        const std::vector<NodeId>& nodes = c.Nodes();
         const size_t k = nodes.size();
-        std::vector<Label> labelBuf;
+        labelBuf.resize(k);
         for (size_t i = 0; i < k; ++i) {
-            labelBuf.push_back(m_labels[nodes[i]]);
+            labelBuf[i] = m_labels[nodes[i]];
         }
         REAL energy = c.Energy(labelBuf);
         REAL sum = 0;
@@ -427,7 +422,7 @@ bool SubmodularPrimalDual2::CheckActiveInvariant() {
     size_t clique_index = 0;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
-        std::vector<NodeId> nodes = c.Nodes();
+        const std::vector<NodeId>& nodes = c.Nodes();
         const size_t k = nodes.size();
         for (size_t i = 0; i < k; ++i) {
             if (m_dual[clique_index][i][m_labels[nodes[i]]] < 0) {
