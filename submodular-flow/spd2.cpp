@@ -182,26 +182,29 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
 
     size_t clique_index = 0;
     SubmodularIBFS::CliqueVec& ibfs_cliques = crf.GetCliques();
+    std::vector<Label> label_buf;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
         auto& ibfs_c = *ibfs_cliques[clique_index];
         const size_t k = c.Size();
         ASSERT(k < 32);
         ASSERT(k == ibfs_c.Size());
+        label_buf.resize(k);
+        auto& lambda_C = m_dual[clique_index];
+
         const Assgn max_assgn = 1 << k;
         std::vector<REAL>& energy_table = ibfs_c.EnergyTable();
-        std::vector<Label> label_buf(k);
         for (Assgn a = 0; a < max_assgn; ++a) {
             REAL lambda = 0;
             for (size_t i_idx = 0; i_idx < k; ++i_idx) {
                 if (a & (1 << i_idx)) {
                     label_buf[i_idx] = alpha;
-                    lambda += m_dual[clique_index][i_idx][alpha];
+                    lambda += lambda_C[i_idx][alpha];
                 }
                 else {
                     Label x = m_labels[c.Nodes()[i_idx]];
                     label_buf[i_idx] = x;
-                    lambda += m_dual[clique_index][i_idx][x];
+                    lambda += lambda_C[i_idx][x];
                 }
             }
             energy_table[a] = c.Energy(label_buf) - lambda;
