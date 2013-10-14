@@ -76,11 +76,11 @@ void SubmodularPrimalDual2::InitialDual() {
 			if (cnt[i] != 0) {
 				for (size_t j = 0; j < k; ++j) {
 					if (labelBuf[j] == i) {
-						newDual[j][i] = m_mu * energy / k;
+						newDual[j][i] = energy / k;
 					}
 					else {
 						ASSERT(k != cnt[i]);
-						newDual[j][i] = -m_mu * energy / k * cnt[i] / (k - cnt[i]);
+						newDual[j][i] = -energy / k * cnt[i] / (k - cnt[i]);
 					}
 				}
 			}
@@ -126,7 +126,7 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
             lambdaA += m_dual[clique_index][i][label_buf[i]];
         }
         std::vector<REAL> psi;
-        REAL oldG = m_mu * energy - lambdaA;
+        REAL oldG = energy - lambdaA;
         /*if ((k == 4) && t) {
             for (size_t i = 0; i < k; ++i)
                 std::cout << label_buf[i] << " ";
@@ -145,7 +145,7 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
             lambdaB += m_dual[clique_index][i][alpha];
             label_buf[i] = alpha;
             energy = c.Energy(label_buf);
-            REAL newG = m_mu * energy - lambdaA - lambdaB;
+            REAL newG = energy - lambdaA - lambdaB;
             psi.push_back(oldG - newG);
             oldG = newG;
             //if ((k == 4) && t) std::cout << oldG << " ";
@@ -219,7 +219,7 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
                     lambda += m_dual[clique_index][i_idx][x];
                 }
             }
-            energy_table.push_back(m_mu * c.Energy(label_buf) - lambda);
+            energy_table.push_back(c.Energy(label_buf) - lambda);
         }
         /*if ((k == 4) && t){
             for (int i = 0; i < max_assgn; ++i) std::cout << energy_table[i] << " ";
@@ -236,7 +236,7 @@ bool SubmodularPrimalDual2::UpdatePrimalDual(Label alpha) {
     SubmodularIBFS crf;
     SetupAlphaEnergy(alpha, crf);
     crf.Solve();
-    size_t n = m_labels.size();
+    NodeId n = m_labels.size();
     for (NodeId i = 0; i < n; ++i) {
         int crf_label = crf.GetLabel(i);
         if (crf_label == 1) {
@@ -269,7 +269,7 @@ void SubmodularPrimalDual2::PostEditDual() {
 			labelBuf.push_back(m_labels[nodes[i]]);
 			cnt[m_labels[nodes[i]]]++;
 		}
-		REAL energy = m_mu * c.Energy(labelBuf);
+		REAL energy = c.Energy(labelBuf);
 		for (size_t i = 0; i < k; ++i) {
 		    delta[labelBuf[i]] += m_dual[clique_index][i][labelBuf[i]] - energy / k;
 		    m_dual[clique_index][i][labelBuf[i]] = energy / k;
@@ -287,10 +287,14 @@ void SubmodularPrimalDual2::PostEditDual() {
 }
 
 void SubmodularPrimalDual2::DualFit() {
+    // FIXME: This is the only function that doesn't work with integer division.
+    // It's also not really used for anything at the moment
+    /*
 	for (size_t i = 0; i < m_dual.size(); ++i)
 		for (size_t j = 0; j < m_dual[i].size(); ++j)
 			for (size_t k = 0; k < m_dual[i][j].size(); ++k)
 				m_dual[i][j][k] /= (m_mu * m_rho);
+                */
 }
 
 void SubmodularPrimalDual2::Solve() {
@@ -377,11 +381,10 @@ REAL SubmodularPrimalDual2::ComputeEnergy(const std::vector<Label>& labels) cons
 }
 
 void SubmodularPrimalDual2::SetMu(double mu) {
-    m_mu = mu;
 }
 
 double SubmodularPrimalDual2::GetMu() {
-    return m_mu;
+    return 1;
 }
         
 void SubmodularPrimalDual2::ComputeRho() {
@@ -452,7 +455,7 @@ bool SubmodularPrimalDual2::CheckLabelInvariant() {
         for (size_t i = 0; i < k; ++i) {
             labelBuf.push_back(m_labels[nodes[i]]);
         }
-        REAL energy = m_mu * c.Energy(labelBuf);
+        REAL energy = c.Energy(labelBuf);
         REAL sum = 0;
         for (size_t i = 0; i < k; ++i) {
             sum += m_dual[clique_index][i][labelBuf[i]];
@@ -472,7 +475,7 @@ bool SubmodularPrimalDual2::CheckDualBoundInvariant() {
     size_t clique_index = 0;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
-        REAL energyBound = c.m_f_max * m_mu;
+        REAL energyBound = c.m_f_max;
         for (size_t i = 0; i < m_dual[clique_index].size(); ++i) {
             for (size_t j = 0; j < m_num_labels; ++j) {
                 if (m_dual[clique_index][i][j] > energyBound + EPS) {
