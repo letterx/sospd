@@ -54,7 +54,6 @@ class SubmodularPrimalDual2 {
         bool CheckDualBoundInvariant();
         bool CheckActiveInvariant();
         bool CheckZeroSumInvariant();
-        const double EPS = 1e-7;
         const size_t m_num_labels;
         size_t m_num_cliques;
         REAL m_constant_term;
@@ -63,7 +62,6 @@ class SubmodularPrimalDual2 {
         std::vector<Label> m_labels;
         NodeCliqueList m_node_clique_list;
         std::vector<Dual> m_dual;
-        REAL m_mu;
         REAL m_rho;
 };
 

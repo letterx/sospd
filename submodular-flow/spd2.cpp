@@ -434,7 +434,7 @@ bool SubmodularPrimalDual2::CheckHeightInvariant() {
         for (Label alpha = 0; alpha < m_num_labels; ++alpha) {
             if (alpha == m_labels[i]) continue;
             REAL halpha = ComputeHeight(i, alpha);
-            if (hx > halpha + EPS) {
+            if (hx > halpha) {
                 std::cout << "Variable: " << i << std::endl;
                 std::cout << "Label: " << m_labels[i] << " Height: " << hx << std::endl;
                 std::cout << "Label: " << alpha << " Height: " << halpha << std::endl;
@@ -460,7 +460,7 @@ bool SubmodularPrimalDual2::CheckLabelInvariant() {
         for (size_t i = 0; i < k; ++i) {
             sum += m_dual[clique_index][i][labelBuf[i]];
         }
-        if (fabs(sum - energy) > EPS) {
+        if (abs(sum - energy)) {
             std::cout << "CliqueId: " << clique_index << std::endl;
             std::cout << "Energy: " << energy << std::endl;
             std::cout << "DualSum: " << sum << std::endl;
@@ -478,7 +478,7 @@ bool SubmodularPrimalDual2::CheckDualBoundInvariant() {
         REAL energyBound = c.m_f_max;
         for (size_t i = 0; i < m_dual[clique_index].size(); ++i) {
             for (size_t j = 0; j < m_num_labels; ++j) {
-                if (m_dual[clique_index][i][j] > energyBound + EPS) {
+                if (m_dual[clique_index][i][j] > energyBound) {
                     std::cout << "CliqueId: " << clique_index << std::endl;
                     std::cout << "NodeId (w.r.t. Clique): " << i << std::endl;
                     std::cout << "Label: " << j << std::endl;
@@ -500,7 +500,7 @@ bool SubmodularPrimalDual2::CheckActiveInvariant() {
         std::vector<NodeId> nodes = c.Nodes();
         const size_t k = nodes.size();
         for (size_t i = 0; i < k; ++i) {
-            if (m_dual[clique_index][i][m_labels[nodes[i]]] < -EPS) {
+            if (m_dual[clique_index][i][m_labels[nodes[i]]] < 0) {
                 std::cout << "CliqueId: " << clique_index << std::endl;
                 std::cout << "NodeId (w.r.t. Clique): " << i << std::endl;
                 std::cout << "Dual Value: " << m_dual[clique_index][i][m_labels[nodes[i]]] << std::endl;
@@ -522,7 +522,7 @@ bool SubmodularPrimalDual2::CheckZeroSumInvariant() {
             for (size_t j = 0; j < k; ++j) {
                 dualSum += m_dual[clique_index][j][i];
             }
-            if (fabs(dualSum) > EPS) {
+            if (abs(dualSum) > 0) {
                 std::cout << "CliqueId: " << clique_index << std::endl;
                 std::cout << "Label: " << i << std::endl;
                 std::cout << "Dual Sum: " << dualSum << std::endl;
