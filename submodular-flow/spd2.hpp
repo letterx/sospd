@@ -3,7 +3,6 @@
 
 #define PROGRESS_DISPLAY
 #define DEBUG
-//#define ZERO_SUM_CONSTRAINT
 
 #include "sos-common.hpp"
 #include "clique.hpp"
@@ -23,8 +22,6 @@ class SubmodularPrimalDual2 {
         SubmodularPrimalDual2() = delete;
         explicit SubmodularPrimalDual2(Label max_label);
         
-        void SetMu(double mu);
-        double GetMu();
         void ComputeRho();
         double GetRho();
 
@@ -54,7 +51,6 @@ class SubmodularPrimalDual2 {
         bool CheckLabelInvariant();
         bool CheckDualBoundInvariant();
         bool CheckActiveInvariant();
-        //bool CheckZeroSumInvariant();
         const size_t m_num_labels;
         size_t m_num_cliques;
         REAL m_constant_term;
@@ -63,7 +59,7 @@ class SubmodularPrimalDual2 {
         std::vector<Label> m_labels;
         NodeCliqueList m_node_clique_list;
         std::vector<Dual> m_dual;
-        REAL m_rho;
+        double m_rho;
 };
 
 #endif

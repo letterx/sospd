@@ -118,18 +118,6 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
         }
         std::vector<REAL> psi;
         REAL oldG = energy - lambdaA;
-        /*if ((k == 4) && t) {
-            for (size_t i = 0; i < k; ++i)
-                std::cout << label_buf[i] << " ";
-            std::cout << std::endl;
-            for (size_t i = 0; i < k; ++i)
-                std::cout << m_dual[clique_index][i][label_buf[i]] << " ";
-            std::cout << std::endl;
-            for (size_t i = 0; i < k; ++i)
-                std::cout << m_dual[clique_index][i][alpha] << " ";
-            std::cout << std::endl;
-        }*/
-        //if ((k == 4) && t) std::cout << oldG << " ";
         //This ordering here is important!
         for (int i = k - 1; i >= 0; --i){
             lambdaA -= m_dual[clique_index][i][label_buf[i]];
@@ -273,8 +261,6 @@ void SubmodularPrimalDual2::Solve() {
 		std::cout << "Iteration " << num_round << ": " << energy << std::endl;
 	#endif
 	#ifdef DEBUG
-	    std::cout << "Init Done!" << std::endl;
-	    //std::cout << m_dual[728][1][2] << std::endl;
         ASSERT(CheckLabelInvariant());
         ASSERT(CheckDualBoundInvariant());
         ASSERT(CheckActiveInvariant());
@@ -285,7 +271,6 @@ void SubmodularPrimalDual2::Solve() {
 		for (size_t alpha = 0; alpha < m_num_labels; ++alpha){
 			PreEditDual(alpha);
 			#ifdef DEBUG
-			    std::cout << "Pre-edit Done!" << std::endl;
                 ASSERT(CheckLabelInvariant());
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
@@ -293,7 +278,6 @@ void SubmodularPrimalDual2::Solve() {
 			if (UpdatePrimalDual(alpha)) labelChanged = true;
 			PostEditDual();
 			#ifdef DEBUG
-			    std::cout << "Post-edit Done!" << std::endl;
                 ASSERT(CheckLabelInvariant());
                 ASSERT(CheckDualBoundInvariant());
                 ASSERT(CheckActiveInvariant());
@@ -334,13 +318,6 @@ REAL SubmodularPrimalDual2::ComputeEnergy(const std::vector<Label>& labels) cons
     return energy;
 }
 
-void SubmodularPrimalDual2::SetMu(double mu) {
-}
-
-double SubmodularPrimalDual2::GetMu() {
-    return 1;
-}
-        
 void SubmodularPrimalDual2::ComputeRho() {
     m_rho = 1;
     for (const CliquePtr& cp : m_cliques) {
@@ -373,7 +350,7 @@ void SubmodularPrimalDual2::ComputeRho() {
         }
         c.m_f_max = max_energy;
         c.m_f_min = min_energy;
-        if (k * max_energy / min_energy > m_rho) m_rho = k * max_energy / min_energy;
+        if ((double)k * max_energy / min_energy > m_rho) m_rho = (double)k * max_energy / min_energy;
     }
 }
 

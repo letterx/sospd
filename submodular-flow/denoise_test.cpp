@@ -21,7 +21,6 @@ int main(){
     for (int i = 0; i < NUM_LABELS; ++i) val[i] = i * 256 / NUM_LABELS;
     
     SubmodularPrimalDual2 mrf = SubmodularPrimalDual2(NUM_LABELS);
-    mrf.SetMu(1.0);
     mrf.AddNode(n * m);
     for (int i = 0; i < m * n; ++i) {
         std::vector<REAL> cost;
