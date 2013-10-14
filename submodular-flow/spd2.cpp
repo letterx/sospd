@@ -133,10 +133,17 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
 
 REAL SubmodularPrimalDual2::ComputeHeight(NodeId i, Label x) {
     REAL ret = m_unary_cost[i][x];
-    for (size_t j = 0; j < m_node_clique_list[i].size(); ++j) {
-        size_t cliqueId = m_node_clique_list[i][j].first;
-        size_t nodeId = m_node_clique_list[i][j].second;
-        ret += m_dual[cliqueId][nodeId][x];
+    for (const auto& p : m_node_clique_list[i]) {
+        ret += m_dual[p.first][p.second][x];
+    }
+    return ret;
+}
+
+REAL SubmodularPrimalDual2::ComputeHeightDiff(NodeId i, Label l1, Label l2) const {
+    REAL ret = m_unary_cost[i][l1] - m_unary_cost[i][l2];
+    for (const auto& p : m_node_clique_list[i]) {
+        const auto& lambda_Ci = m_dual[p.first][p.second];
+        ret += lambda_Ci[l1] - lambda_Ci[l2];
     }
     return ret;
 }
@@ -165,13 +172,12 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
     crf.ClearUnaries();
     crf.AddConstantTerm(-crf.GetConstantTerm());
     for (size_t i = 0; i < n; ++i) {
-        REAL height_x = ComputeHeight(i, m_labels[i]);
-        REAL height_alpha = ComputeHeight(i, alpha);
-        if (height_x > height_alpha) {
-            crf.AddUnaryTerm(i, height_x - height_alpha, 0);
+        REAL height_diff = ComputeHeightDiff(i, m_labels[i], alpha);
+        if (height_diff > 0) {
+            crf.AddUnaryTerm(i, height_diff, 0);
         }
         else {
-            crf.AddUnaryTerm(i, 0, height_alpha - height_x);
+            crf.AddUnaryTerm(i, 0, -height_diff);
         }
     }
 

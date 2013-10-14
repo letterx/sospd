@@ -39,6 +39,7 @@ class SubmodularPrimalDual2 {
 
     protected:
         REAL ComputeHeight(NodeId, Label);
+        REAL ComputeHeightDiff(NodeId i, Label l1, Label l2) const;
         void SetupGraph(SubmodularIBFS& crf);
         void SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf);
         void InitialLabeling();
