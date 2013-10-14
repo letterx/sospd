@@ -12,7 +12,7 @@
 
 class SubmodularPrimalDual2 {
     public:
-        typedef size_t NodeId;
+        typedef int NodeId;
         typedef size_t Label;
         typedef std::shared_ptr<Clique> CliquePtr;
         typedef std::vector<REAL> UnaryCost;
