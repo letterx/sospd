@@ -8,6 +8,12 @@ LIBS = -lboost_serialization -lopencv_core -lopencv_imgproc -lopencv_highgui
 CORE_SRCS = submodular-flow.cpp \
 			submodular-ibfs.cpp 
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
+SRCS = $(CORE_SRCS) \
+	   ibfs.cpp \
+	   sos_ibfs_test.cpp \
+	   submodular-ibfs.cpp \
+	   spd2.cpp \
+	   denoise_test.cpp
 
 .PHONY: all
 all: ibfs_test sos_ibfs_test denoise_test
