@@ -101,12 +101,14 @@ void SubmodularPrimalDual2::InitialNodeCliqueList() {
 
 void SubmodularPrimalDual2::PreEditDual(Label alpha) {
     std::vector<Label> label_buf;
+    std::vector<REAL> psi;
     int clique_index = 0;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
         const size_t k = c.Nodes().size();
         ASSERT(k < 32);
         label_buf.resize(k);
+        psi.resize(k);
         for (size_t i = 0; i < k; ++i) {
             label_buf[i] = m_labels[c.Nodes()[i]];
         }
@@ -116,7 +118,6 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
         for (size_t i = 0; i < k; ++i) {
             lambdaA += m_dual[clique_index][i][label_buf[i]];
         }
-        std::vector<REAL> psi;
         REAL oldG = energy - lambdaA;
         //This ordering here is important!
         for (int i = k - 1; i >= 0; --i){
@@ -125,7 +126,7 @@ void SubmodularPrimalDual2::PreEditDual(Label alpha) {
             label_buf[i] = alpha;
             energy = c.Energy(label_buf);
             REAL newG = energy - lambdaA - lambdaB;
-            psi.push_back(oldG - newG);
+            psi[k-1-i] = oldG - newG;
             oldG = newG;
         }
         for (size_t i = 0; i < k; ++i) {
