@@ -9,7 +9,7 @@
 int val[NUM_LABELS];
 
 int main(){
-    cv::Mat image = cv::imread("test.png", CV_LOAD_IMAGE_GRAYSCALE);
+    cv::Mat image = cv::imread("medium-test.pgm", CV_LOAD_IMAGE_GRAYSCALE);
     if(! image.data )                              // Check for invalid input
     {
         printf("Could not open or find the image\n");
