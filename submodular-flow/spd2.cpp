@@ -184,7 +184,6 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
     size_t clique_index = 0;
     SubmodularIBFS::CliqueVec& ibfs_cliques = crf.GetCliques();
     std::vector<Label> label_buf;
-    std::vector<REAL> diffs;
     std::vector<Label> current_labels;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
@@ -193,15 +192,12 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
         ASSERT(k < 32);
         ASSERT(k == ibfs_c.Size());
         label_buf.resize(k);
+        current_labels.resize(k);
+        for (size_t i_idx = 0; i_idx < k; ++i_idx)
+            current_labels[i_idx] = m_labels[c.Nodes()[i_idx]];
+
         auto& lambda_C = m_dual[clique_index];
 
-        /* CAUTION: Black magic ahead!
-         *
-         * Using Gray codes to reduce work by factor of ~k
-         * Following code should remain equivalent to the following, 
-         * if you make changes, change the original please.
-         */
-        /*
         const Assgn max_assgn = 1 << k;
         std::vector<REAL>& energy_table = ibfs_c.EnergyTable();
         for (Assgn a = 0; a < max_assgn; ++a) {
@@ -212,47 +208,12 @@ void SubmodularPrimalDual2::SetupAlphaEnergy(Label alpha, SubmodularIBFS& crf) {
                     lambda += lambda_C[i_idx][alpha];
                 }
                 else {
-                    Label x = m_labels[c.Nodes()[i_idx]];
+                    Label x = current_labels[i_idx];
                     label_buf[i_idx] = x;
                     lambda += lambda_C[i_idx][x];
                 }
             }
             energy_table[a] = c.Energy(label_buf) - lambda;
-        }
-        */
-
-        const Assgn max_assgn = 1 << k;
-        std::vector<REAL>& energy_table = ibfs_c.EnergyTable();
-        diffs.resize(k);
-        current_labels.resize(k);
-        Assgn gray = 0;
-        Assgn last_gray = gray;
-        REAL lambda = 0;
-        {
-            // Separate out first run of loop
-            for (size_t i_idx = 0; i_idx < k; ++i_idx) {
-                Label x = m_labels[c.Nodes()[i_idx]];
-                label_buf[i_idx] = x;
-                lambda += lambda_C[i_idx][x];
-                diffs[i_idx] = lambda_C[i_idx][alpha] - lambda_C[i_idx][x];
-                current_labels[i_idx] = x;
-            }
-            energy_table[0] = c.Energy(label_buf) - lambda;
-        }
-        for (Assgn a = 1; a < max_assgn; ++a) {
-            gray = (a >> 1) ^ a;
-            Assgn gray_diff = gray ^ last_gray;
-            int flipped_idx = __builtin_ctz(gray_diff);
-            bool parity = gray & gray_diff;
-            if (parity) {
-                label_buf[flipped_idx] = alpha;
-                lambda += diffs[flipped_idx];
-            } else {
-                label_buf[flipped_idx] = current_labels[flipped_idx];
-                lambda -= diffs[flipped_idx];
-            }
-            energy_table[gray] = c.Energy(label_buf) - lambda;
-            last_gray = gray;
         }
         ++clique_index;
     }
