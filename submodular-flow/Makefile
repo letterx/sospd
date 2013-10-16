@@ -13,10 +13,11 @@ SRCS = $(CORE_SRCS) \
 	   sos_ibfs_test.cpp \
 	   submodular-ibfs.cpp \
 	   spd2.cpp \
-	   denoise_test.cpp
+	   denoise_test.cpp \
+	   submodular-functions.cpp
 
 .PHONY: all
-all: ibfs_test sos_ibfs_test denoise_test
+all: ibfs_test sos_ibfs_test denoise_test submodular_test
 
 ibfs_test: ibfs_test.o ibfs.o
 	$(CXX) $(CXX_FLAGS) -o $@ ibfs.o ibfs_test.o
@@ -26,6 +27,9 @@ sos_ibfs_test: sos_ibfs_test.o submodular-ibfs.o
 
 denoise_test: denoise_test.o spd2.o submodular-ibfs.o 
 	$(CXX) $(CXX_FLAGS) -o $@ denoise_test.o spd2.o submodular-ibfs.o $(LIBS)	
+
+submodular_test: submodular-functions.o submodular_test.o
+	$(CXX) $(CXX_FLAGS) -o $@ submodular_test.o submodular-functions.o $(LIBS)
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -MMD -o $@ -c $<

@@ -37,6 +37,7 @@ recover-crash
 denoise_test
 ibfs_test
 sos_ibfs_test
+submodular_test
 
 
 # Generated test files
