@@ -7,7 +7,7 @@
 #include "submodular-ibfs.hpp"
 
 int main(int argc, char **argv) {
-    typedef int64_t REAL;
+    typedef int REAL;
     typedef HigherOrderEnergy<REAL, 4> HOE;
     typedef typename HOE::NodeId NodeId;
     typedef std::chrono::system_clock::time_point TimePt;

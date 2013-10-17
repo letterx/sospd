@@ -54,14 +54,12 @@ void GenRandom(HigherOrder& ho,
     }
 }
 
+// Explicit instantiations
+#define GEN_RANDOM_INSTANTIATE(HO, R) template void GenRandom(HO&, size_t, size_t, size_t, R, R, R, unsigned int);
 
-void DummyInstantiateTemplates() {
-    HigherOrderEnergy<REAL, 4> hoe;
-    GenRandom(hoe, 0, 0, 0, (REAL)0, (REAL)0, (REAL)0, 0);
+typedef HigherOrderEnergy<REAL, 4> HO;
+GEN_RANDOM_INSTANTIATE(HO, REAL);
+GEN_RANDOM_INSTANTIATE(SubmodularIBFS, REAL);
+GEN_RANDOM_INSTANTIATE(SubmodularFlow, REAL);
 
-    SubmodularFlow sf;
-    GenRandom(sf, 0, 0, 0, (REAL)0, (REAL)0, (REAL)0, 0);
-
-    SubmodularIBFS ibfs;
-    GenRandom(ibfs, 0, 0, 0, (REAL)0, (REAL)0, (REAL)0, 0);
-}
+#undef GEN_RANDOM_INSTANTIATE
