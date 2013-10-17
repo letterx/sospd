@@ -159,7 +159,7 @@ void SubmodularPrimalDual2::SetupGraph(SubmodularIBFS& crf) {
         const size_t k = c.Size();
         ASSERT(k < 32);
         const Assgn max_assgn = 1 << k;
-        crf.AddClique(c.Nodes(), std::vector<REAL>(max_assgn, 0));
+        crf.AddClique(c.Nodes(), std::vector<REAL>(max_assgn, 0), false);
         ++clique_index;
     }
 

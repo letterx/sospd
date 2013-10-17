@@ -47,6 +47,7 @@ nohup.out
 stats.out
 *.dat
 sum-of-submodular.tar
+bisect.sh
 
 
 # images

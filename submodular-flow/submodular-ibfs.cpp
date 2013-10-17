@@ -75,7 +75,7 @@ void SubmodularIBFS::ClearUnaries() {
     }
 }
 
-void SubmodularIBFS::AddClique(const CliquePtr& cp) {
+void SubmodularIBFS::AddClique(const CliquePtr& cp, bool normalize) {
     ASSERT(s == -1);
     m_cliques.push_back(cp);
     for (NodeId i : cp->Nodes()) {
@@ -83,13 +83,14 @@ void SubmodularIBFS::AddClique(const CliquePtr& cp) {
         m_neighbors[i].push_back(m_num_cliques);
     }
     m_num_cliques++;
-    //cp->NormalizeEnergy(*this);//Chen
+    if (normalize)
+        cp->NormalizeEnergy(*this);//Chen
 }
 
-void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
+void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable, bool normalize) {
     ASSERT(s == -1);
     CliquePtr cp(new IBFSEnergyTableClique(nodes, energyTable));
-    AddClique(cp);
+    AddClique(cp, normalize);
 }
 
 void SubmodularIBFS::AddPairwiseTerm(NodeId i, NodeId j, REAL E00, REAL E01, REAL E10, REAL E11) {
@@ -646,7 +647,7 @@ static void CheckSubmodular(size_t n, const std::vector<REAL>& m_energy) {
 }
 
 void IBFSEnergyTableClique::NormalizeEnergy(SubmodularIBFS& sf) {
-    //EnforceSubmodularity();
+    EnforceSubmodularity();
     const size_t n = this->m_nodes.size();
     CheckSubmodular(n, m_energy);
     const Assignment num_assignments = 1 << n;
