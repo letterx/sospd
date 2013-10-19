@@ -130,6 +130,12 @@ void DualGuidedFusionMove::PreEditDual() {
         for (size_t i = 0; i < k; ++i) {
             m_dual[clique_index][i][m_fusion_labels[c.Nodes()[i]]] -= psi[k - i - 1];
         }
+        if (clique_index == 86) {
+            for (size_t i = 0; i < k; ++i) {
+                std::cout << psi[i] << " ";
+            }
+            std::cout << std::endl;
+        }
         ++clique_index;
     }
 }
@@ -188,12 +194,14 @@ void DualGuidedFusionMove::SetupAlphaEnergy(SubmodularIBFS& crf) {
     SubmodularIBFS::CliqueVec& ibfs_cliques = crf.GetCliques();
     std::vector<Label> label_buf;
     std::vector<Label> current_labels;
+    std::vector<REAL> psi;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
         auto& ibfs_c = *ibfs_cliques[clique_index];
         const size_t k = c.Size();
         ASSERT(k < 32);
         ASSERT(k == ibfs_c.Size());
+        psi.resize(k);
         label_buf.resize(k);
         current_labels.resize(k);
         for (size_t i_idx = 0; i_idx < k; ++i_idx)
@@ -221,6 +229,22 @@ void DualGuidedFusionMove::SetupAlphaEnergy(SubmodularIBFS& crf) {
         }
         std::vector<REAL> new_energy_table = SubmodularUpperBound(k, energy_table);
         for (Assgn a = 0; a < max_assgn; ++a) energy_table[a] = new_energy_table[a];
+        Assgn oldAssgn = 0;
+        for (int i = k - 1; i >= 0; --i){
+            Assgn newAssgn = oldAssgn | (1 << i);
+            psi[k-1-i] = energy_table[oldAssgn] - energy_table[newAssgn];
+            oldAssgn = newAssgn;
+        }
+        for (size_t i = 0; i < k; ++i) {
+            m_dual[clique_index][i][m_fusion_labels[c.Nodes()[i]]] -= psi[k - i - 1];
+        }
+        for (Assgn a = 0; a < max_assgn; ++a) {
+            for (size_t i = 0; i < k; ++i) {
+                if ((a >> i) & 1) {
+                    energy_table[a] += psi[i];
+                }
+            }
+        }
         ++clique_index;
     }
 }
@@ -326,12 +350,12 @@ void DualGuidedFusionMove::Solve() {
 	while (labelChanged){
         InitialFusionLabeling();
 		labelChanged = false;
-	    PreEditDual();
-		#ifdef CHECK_INVARIANTS
+	    //PreEditDual();
+		/*#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());
             ASSERT(CheckDualBoundInvariant());
             ASSERT(CheckActiveInvariant());
-	    #endif
+	    #endif*/
 		if (UpdatePrimalDual(crf)) labelChanged = true;
 		PostEditDual();
 		#ifdef CHECK_INVARIANTS
