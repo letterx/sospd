@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include "spd2.hpp"
+#include "dgfm.hpp"
 
 #define NUM_LABELS 8
 int val[NUM_LABELS];
@@ -20,7 +21,7 @@ int main(){
     int m = image.cols;
     for (int i = 0; i < NUM_LABELS; ++i) val[i] = i * 256 / NUM_LABELS;
     
-    SubmodularPrimalDual2 mrf = SubmodularPrimalDual2(NUM_LABELS);
+    DualGuidedFusionMove mrf = DualGuidedFusionMove(NUM_LABELS);
     mrf.AddNode(n * m);
     for (int i = 0; i < m * n; ++i) {
         std::vector<REAL> cost;
@@ -35,7 +36,7 @@ int main(){
             std::vector<NodeId> nodes;
             nodes.push_back(i * m + j);
             nodes.push_back(i * m + j + 1);
-            SubmodularPrimalDual2::CliquePtr cp(new PottsClique(nodes, 0, 10));
+            DualGuidedFusionMove::CliquePtr cp(new PottsClique(nodes, 0, 10));
             mrf.AddClique(cp);
         }
     }
@@ -45,7 +46,7 @@ int main(){
             std::vector<NodeId> nodes;
             nodes.push_back(i * m + j);
             nodes.push_back(i * m + j + m);
-            SubmodularPrimalDual2::CliquePtr cp(new PottsClique(nodes, 0, 10));
+            DualGuidedFusionMove::CliquePtr cp(new PottsClique(nodes, 0, 10));
             mrf.AddClique(cp);
         }
     }
@@ -57,7 +58,7 @@ int main(){
             nodes.push_back(i * m + j + 1);
             nodes.push_back(i * m + j + m);
             nodes.push_back(i * m + j + m + 1);
-            SubmodularPrimalDual2::CliquePtr cp(new PottsClique(nodes, 0, 10));
+            DualGuidedFusionMove::CliquePtr cp(new PottsClique(nodes, 0, 10));
             mrf.AddClique(cp);
         }
     }
@@ -70,11 +71,11 @@ int main(){
     
     for (int i = 0; i < m * n; ++i) image.data[i] = val[mrf.GetLabel(i)];
     
-    /*
+    
     cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );// Create a window for display.
     cv::imshow( "Display window", image );                   // Show our image inside it.
 
     cv::waitKey(0);    
-    */
+    
     return 0;
 }
