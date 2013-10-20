@@ -32,6 +32,7 @@ class DualGuidedFusionMove {
         void AddConstantTerm(REAL c);
         void AddUnaryTerm(NodeId i, const std::vector<REAL>& coeffs);
         void AddClique(const CliquePtr& cp);
+        void SetExpansionSubmodular(bool b) { m_expansion_submodular = b; }
 
         void Solve();
 
@@ -65,6 +66,7 @@ class DualGuidedFusionMove {
         NodeCliqueList m_node_clique_list;
         std::vector<Dual> m_dual;
         double m_rho;
+        bool m_expansion_submodular;
 };
 
 #endif

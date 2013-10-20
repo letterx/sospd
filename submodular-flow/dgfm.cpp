@@ -7,7 +7,8 @@ DualGuidedFusionMove::DualGuidedFusionMove(Label max_label)
     m_cliques(),
     m_unary_cost(),
     m_labels(),
-    m_fusion_labels()
+    m_fusion_labels(),
+    m_expansion_submodular(false)
 { }
 
 DualGuidedFusionMove::NodeId DualGuidedFusionMove::AddNode(int n) {
@@ -146,13 +147,15 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
             ASSERT(energy_table[a] >= 0);
         }
 
-        // Find g with g(S) >= f(S) and g submodular. Also want to make sure
-        // that g(S | T) == g(S) where T is the set of nodes with 
-        // current[i] == fusion[i]
-        std::vector<REAL> upper_bound = SubmodularUpperBound(k, energy_table);
-        upper_bound = ZeroMarginalSet(k, upper_bound, fusion_equals_current);
-        ASSERT(CheckUpperBoundInvariants(k, energy_table, upper_bound));
-        energy_table = upper_bound;
+        if (!m_expansion_submodular) {
+            // Find g with g(S) >= f(S) and g submodular. Also want to make sure
+            // that g(S | T) == g(S) where T is the set of nodes with 
+            // current[i] == fusion[i]
+            std::vector<REAL> upper_bound = SubmodularUpperBound(k, energy_table);
+            upper_bound = ZeroMarginalSet(k, upper_bound, fusion_equals_current);
+            ASSERT(CheckUpperBoundInvariants(k, energy_table, upper_bound));
+            energy_table = upper_bound;
+        }
 
         // Compute the residual function 
         // g(S) - lambda_fusion(S) - lambda_current(C\S)
