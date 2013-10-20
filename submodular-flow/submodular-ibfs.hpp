@@ -8,8 +8,6 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/shared_ptr.hpp>
 
-typedef int REAL;
-
 class IBFSEnergyTableClique;
 
 class SubmodularIBFS {

@@ -15,4 +15,6 @@
 #define ASSERT(cond) (void)0
 #endif
 
+typedef int REAL;
+
 #endif

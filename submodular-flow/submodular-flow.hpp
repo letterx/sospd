@@ -5,8 +5,6 @@
 #include "boost/optional/optional.hpp"
 #include <list>
 
-typedef int REAL;
-
 class EnergyTableClique;
 
 class SubmodularFlow {

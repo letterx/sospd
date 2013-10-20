@@ -14,7 +14,10 @@ TEST_OBJS = $(TEST_SRCS:.cpp=.o)
 CORE_SRCS = submodular-flow/submodular-flow.cpp \
 			submodular-flow/submodular-ibfs.cpp \
 			submodular-flow/gen-random.cpp \
-			submodular-flow/alpha-expansion.cpp
+			submodular-flow/alpha-expansion.cpp \
+			submodular-flow/spd2.cpp \
+			submodular-flow/dgfm.cpp \
+			submodular-flow/submodular-functions.cpp
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
 QPBO_DIR = ./higher-order-energy/qpbo
@@ -27,7 +30,11 @@ SRCS = $(CORE_SRCS) $(TEST_SRCS) $(QPBO_SRCS)
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
-all: $(SF_LIB) unit-test higher-order-experiment recover-crash add-noise
+all: $(SF_LIB) unit-test higher-order-experiment recover-crash add-noise submodular-flow
+
+.PHONY: submodular-flow
+submodular-flow:
+	$(MAKE) -C ./submodular-flow/
 
 unit-test: $(TEST_OBJS) $(SF_LIB)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(TEST_OBJS) $(SF_LIB) $(LIBS) -lboost_unit_test_framework 

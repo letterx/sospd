@@ -6,7 +6,7 @@
 BOOST_AUTO_TEST_SUITE(basicHigherOrder)
 
 BOOST_AUTO_TEST_CASE(sanityCheck) {
-    typedef int64_t REAL;
+    typedef int REAL;
     typedef HigherOrderEnergy<REAL, 4> HOE;
     typedef typename HOE::NodeId NodeId;
 

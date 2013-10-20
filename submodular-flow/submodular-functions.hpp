@@ -1,10 +1,10 @@
 #ifndef _SUBMODULAR_FUNCTIONS_HPP_
 #define _SUBMODULAR_FUNCTIONS_HPP_
 
+#include "sos-common.hpp"
 #include <vector>
 #include <cstdint>
 
-typedef int REAL;
 typedef uint32_t Assgn;
 
 std::vector<REAL> SubmodularUpperBound(int n, const std::vector<REAL>& energyTable);
