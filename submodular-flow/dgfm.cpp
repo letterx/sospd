@@ -96,46 +96,78 @@ void DualGuidedFusionMove::InitialNodeCliqueList() {
     }
 }
 
-void DualGuidedFusionMove::PreEditDual() {
+void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
+    // Allocate all the buffers we need in one place, resize as necessary
     std::vector<Label> label_buf;
+    std::vector<Label> current_labels;
+    std::vector<Label> fusion_labels;
     std::vector<REAL> psi;
+    std::vector<REAL> current_lambda;
+    std::vector<REAL> fusion_lambda;
+
+    SubmodularIBFS::CliqueVec& ibfs_cliques = crf.GetCliques();
     int clique_index = 0;
     for (const CliquePtr& cp : m_cliques) {
         const Clique& c = *cp;
         const size_t k = c.Nodes().size();
         ASSERT(k < 32);
-        label_buf.resize(k);
+
+        auto& ibfs_c = *ibfs_cliques[clique_index];
+        ASSERT(k == ibfs_c.Size());
+        std::vector<REAL>& energy_table = ibfs_c.EnergyTable();
+        Assgn max_assgn = 1 << k;
+        ASSERT(energy_table.size() == max_assgn);
+
         psi.resize(k);
+        label_buf.resize(k);
+        current_labels.resize(k);
+        fusion_labels.resize(k);
+        current_lambda.resize(k);
+        fusion_lambda.resize(k);
+        Assgn fusion_equals_current = 0;
         for (size_t i = 0; i < k; ++i) {
-            label_buf[i] = m_labels[c.Nodes()[i]];
+            current_labels[i] = m_labels[c.Nodes()[i]];
+            fusion_labels[i] = m_fusion_labels[c.Nodes()[i]];
+            current_lambda[i] = m_dual[clique_index][i][current_labels[i]];
+            fusion_lambda[i] = m_dual[clique_index][i][fusion_labels[i]];
+            if (current_labels[i] == fusion_labels[i])
+                fusion_equals_current |= (1 << i);
         }
-        REAL energy = c.Energy(label_buf);
-        REAL lambdaA = 0;
-        REAL lambdaB = 0;
-        for (size_t i = 0; i < k; ++i) {
-            lambdaA += m_dual[clique_index][i][label_buf[i]];
-        }
-        REAL oldG = energy - lambdaA;
-        //This ordering here is important!
-        for (int i = k - 1; i >= 0; --i){
-            Label alpha = m_fusion_labels[c.Nodes()[i]];
-            lambdaA -= m_dual[clique_index][i][label_buf[i]];
-            lambdaB += m_dual[clique_index][i][alpha];
-            label_buf[i] = alpha;
-            energy = c.Energy(label_buf);
-            REAL newG = energy - lambdaA - lambdaB;
-            psi[k-1-i] = oldG - newG;
-            oldG = newG;
-        }
-        for (size_t i = 0; i < k; ++i) {
-            m_dual[clique_index][i][m_fusion_labels[c.Nodes()[i]]] -= psi[k - i - 1];
-        }
-        if (clique_index == 86) {
-            for (size_t i = 0; i < k; ++i) {
-                std::cout << psi[i] << " ";
+        
+        // Compute costs of all fusion assignments
+        for (Assgn a = 0; a < max_assgn; ++a) {
+            for (size_t i_idx = 0; i_idx < k; ++i_idx) {
+                if (a & (1 << i_idx)) 
+                    label_buf[i_idx] = fusion_labels[i_idx];
+                else 
+                    label_buf[i_idx] = current_labels[i_idx];
             }
-            std::cout << std::endl;
+            energy_table[a] = c.Energy(label_buf);
+            ASSERT(energy_table[a] >= 0);
         }
+
+        // Find g with g(S) >= f(S) and g submodular. Also want to make sure
+        // that g(S | T) == g(S) where T is the set of nodes with 
+        // current[i] == fusion[i]
+        std::vector<REAL> upper_bound = SubmodularUpperBound(k, energy_table);
+        upper_bound = ZeroMarginalSet(k, upper_bound, fusion_equals_current);
+        ASSERT(CheckUpperBoundInvariants(k, energy_table, upper_bound));
+        energy_table = upper_bound;
+
+        // Compute the residual function 
+        // g(S) - lambda_fusion(S) - lambda_current(C\S)
+        SubtractLinear(k, energy_table, fusion_lambda, current_lambda);
+        ASSERT(energy_table[0] == 0); // Check tightness of current labeling
+
+        // Modify g, find psi so that g(S) + psi(S) >= 0
+        Normalize(k, energy_table, psi);
+
+        // Update lambda_fusion[i] so that 
+        // g(S) - lambda_fusion(S) - lambda_current(C\S) >= 0
+        for (size_t i = 0; i < k; ++i) {
+            m_dual[clique_index][i][fusion_labels[i]] -= psi[i];
+        }
+
         ++clique_index;
     }
 }
@@ -188,64 +220,6 @@ void DualGuidedFusionMove::SetupAlphaEnergy(SubmodularIBFS& crf) {
         else {
             crf.AddUnaryTerm(i, 0, -height_diff);
         }
-    }
-
-    size_t clique_index = 0;
-    SubmodularIBFS::CliqueVec& ibfs_cliques = crf.GetCliques();
-    std::vector<Label> label_buf;
-    std::vector<Label> current_labels;
-    std::vector<REAL> psi;
-    for (const CliquePtr& cp : m_cliques) {
-        const Clique& c = *cp;
-        auto& ibfs_c = *ibfs_cliques[clique_index];
-        const size_t k = c.Size();
-        ASSERT(k < 32);
-        ASSERT(k == ibfs_c.Size());
-        psi.resize(k);
-        label_buf.resize(k);
-        current_labels.resize(k);
-        for (size_t i_idx = 0; i_idx < k; ++i_idx)
-            current_labels[i_idx] = m_labels[c.Nodes()[i_idx]];
-
-        auto& lambda_C = m_dual[clique_index];
-
-        const Assgn max_assgn = 1 << k;
-        std::vector<REAL>& energy_table = ibfs_c.EnergyTable();
-        for (Assgn a = 0; a < max_assgn; ++a) {
-            REAL lambda = 0;
-            for (size_t i_idx = 0; i_idx < k; ++i_idx) {
-                Label alpha = m_fusion_labels[c.Nodes()[i_idx]];
-                if (a & (1 << i_idx)) {
-                    label_buf[i_idx] = alpha;
-                    lambda += lambda_C[i_idx][alpha];
-                }
-                else {
-                    Label x = current_labels[i_idx];
-                    label_buf[i_idx] = x;
-                    lambda += lambda_C[i_idx][x];
-                }
-            }
-            energy_table[a] = c.Energy(label_buf) - lambda;
-        }
-        std::vector<REAL> new_energy_table = SubmodularUpperBound(k, energy_table);
-        for (Assgn a = 0; a < max_assgn; ++a) energy_table[a] = new_energy_table[a];
-        Assgn oldAssgn = 0;
-        for (int i = k - 1; i >= 0; --i){
-            Assgn newAssgn = oldAssgn | (1 << i);
-            psi[k-1-i] = energy_table[oldAssgn] - energy_table[newAssgn];
-            oldAssgn = newAssgn;
-        }
-        for (size_t i = 0; i < k; ++i) {
-            m_dual[clique_index][i][m_fusion_labels[c.Nodes()[i]]] -= psi[k - i - 1];
-        }
-        for (Assgn a = 0; a < max_assgn; ++a) {
-            for (size_t i = 0; i < k; ++i) {
-                if ((a >> i) & 1) {
-                    energy_table[a] += psi[i];
-                }
-            }
-        }
-        ++clique_index;
     }
 }
 
@@ -310,19 +284,22 @@ void DualGuidedFusionMove::DualFit() {
                 */
 }
 
-void DualGuidedFusionMove::InitialFusionLabeling() {
+bool DualGuidedFusionMove::InitialFusionLabeling() {
     const size_t n = m_labels.size();
+    bool different = false;
     for (size_t i = 0; i < n; ++i) {
-        m_fusion_labels[i] = 0;
-        REAL h = ComputeHeight(i, 0);
-        for (Label l = 1; l < m_num_labels; ++l) {
+        m_fusion_labels[i] = m_labels[i];
+        REAL h = ComputeHeight(i, m_labels[i]);
+        for (Label l = 0; l < m_num_labels; ++l) {
             REAL newH = ComputeHeight(i, l);
             if (newH < h) {
+                different = true;
                 m_fusion_labels[i] = l;
                 h = newH;
             }
         }
     }
+    return different;
 }
 
 void DualGuidedFusionMove::Solve() {
@@ -348,15 +325,15 @@ void DualGuidedFusionMove::Solve() {
 	#endif
 	bool labelChanged = true;
 	while (labelChanged){
-        InitialFusionLabeling();
-		labelChanged = false;
-	    //PreEditDual();
-		/*#ifdef CHECK_INVARIANTS
+        labelChanged = InitialFusionLabeling();
+        if (!labelChanged) break;
+	    PreEditDual(crf);
+		#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());
             ASSERT(CheckDualBoundInvariant());
             ASSERT(CheckActiveInvariant());
-	    #endif*/
-		if (UpdatePrimalDual(crf)) labelChanged = true;
+	    #endif
+        UpdatePrimalDual(crf);
 		PostEditDual();
 		#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());

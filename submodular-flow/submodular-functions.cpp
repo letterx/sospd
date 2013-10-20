@@ -82,6 +82,54 @@ std::vector<REAL> ZeroMarginalSet(int n, const std::vector<REAL>& energyTable, A
     return result;
 }
 
+void AddLinear(int n, std::vector<REAL>& energyTable, const std::vector<REAL>& psi) {
+    Assgn max_assgn = 1 << n;
+    assert(max_assgn == energyTable.size());
+    assert(n == int(psi.size()));
+    for (Assgn a = 0; a < max_assgn; ++a) {
+        for (int i = 0; i < n; ++i) {
+            if (a & (1 << i))
+                energyTable[a] += psi[i];
+        }
+    }
+}
+
+void SubtractLinear(int n, std::vector<REAL>& energyTable, 
+        const std::vector<REAL>& psi1, const std::vector<REAL>& psi2) {
+    Assgn max_assgn = 1 << n;
+    assert(max_assgn == energyTable.size());
+    assert(n == int(psi1.size()));
+    assert(n == int(psi2.size()));
+    for (Assgn a = 0; a < max_assgn; ++a) {
+        for (int i = 0; i < n; ++i) {
+            if (a & (1 << i))
+                energyTable[a] -= psi1[i];
+            else
+                energyTable[a] -= psi2[i];
+        }
+    }
+}
+
+void Normalize(int n, std::vector<REAL>& energyTable, std::vector<REAL>& psi) {
+    Assgn max_assgn = 1 << n;
+    assert(max_assgn == energyTable.size());
+    assert(n == int(psi.size()));
+    assert(energyTable[0] == 0);
+    Assgn last_assgn = 0;
+    Assgn this_assgn = 0;
+    for (int i = 0; i < n; ++i) {
+        this_assgn |= (1 << i);
+        psi[i] = energyTable[last_assgn] - energyTable[this_assgn];
+        last_assgn = this_assgn;
+    }
+    AddLinear(n, energyTable, psi);
+
+    for (REAL e : energyTable)
+        assert(e >= 0);
+    assert(energyTable[0] == 0);
+    assert(energyTable[max_assgn-1] == 0);
+}
+
 bool CheckSubmodular(int n, const std::vector<REAL>& energyTable) {
     assert(n < 32);
     Assgn max_assgn = 1 << n;

@@ -46,8 +46,8 @@ class DualGuidedFusionMove {
         void InitialLabeling();
         void InitialDual();
         void InitialNodeCliqueList();
-        void InitialFusionLabeling();
-        void PreEditDual();
+        bool InitialFusionLabeling();
+        void PreEditDual(SubmodularIBFS& crf);
         bool UpdatePrimalDual(SubmodularIBFS& crf);
         void PostEditDual();
         void DualFit();

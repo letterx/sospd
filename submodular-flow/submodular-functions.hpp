@@ -15,6 +15,20 @@ std::vector<REAL> SubmodularLowerBound(int n, const std::vector<REAL>& energyTab
 // I.e., creates a set s whose members have zero marginal gain for all t
 std::vector<REAL> ZeroMarginalSet(int n, const std::vector<REAL>& energyTable, Assgn s);
 
+// Updates f to f'(S) = f(S) + psi(S)
+void AddLinear(int n, std::vector<REAL>& energyTable, const std::vector<REAL>& psi);
+
+// Updates f to f'(S) = f(S) - psi1(S) - psi2(V\S)
+void SubtractLinear(int n, std::vector<REAL>& energyTable, 
+        const std::vector<REAL>& psi1, const std::vector<REAL>& psi2);
+
+// Modifies an energy function to be >= 0, with f(0) = f(V) = 0
+// energyTable is modified in place, must be submodular
+// psi must be length n, gets filled so that 
+//  f'(S) = f(S) + psi(S)
+// where f' is the new energyTable, and f is the old one
+void Normalize(int n, std::vector<REAL>& energyTable, std::vector<REAL>& psi);
+
 bool CheckSubmodular(int n, const std::vector<REAL>& energyTable);
 bool CheckUpperBoundInvariants(int n, const std::vector<REAL>& energyTable,
         const std::vector<REAL>& upperBound);
