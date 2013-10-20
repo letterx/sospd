@@ -287,18 +287,23 @@ void DualGuidedFusionMove::DualFit() {
 bool DualGuidedFusionMove::InitialFusionLabeling() {
     const size_t n = m_labels.size();
     bool different = false;
-    for (size_t i = 0; i < n; ++i) {
-        m_fusion_labels[i] = m_labels[i];
-        REAL h = ComputeHeight(i, m_labels[i]);
-        for (Label l = 0; l < m_num_labels; ++l) {
-            REAL newH = ComputeHeight(i, l);
-            if (newH < h) {
-                different = true;
-                m_fusion_labels[i] = l;
-                h = newH;
-            }
+    REAL max_s_capacity = 0;
+    Label alpha = 0;
+    for (Label l = 0; l < m_num_labels; ++l) {
+        REAL s_capacity = 0;
+        for (size_t i = 0; i < n; ++i) {
+            REAL diff = ComputeHeightDiff(i, m_labels[i], l);
+            if (diff > 0)
+                s_capacity += diff;
+        }
+        if (s_capacity > max_s_capacity) {
+            max_s_capacity = s_capacity;
+            alpha = l;
         }
     }
+    different = (max_s_capacity > 0);
+    for (size_t i = 0; i < n; ++i)
+        m_fusion_labels[i] = alpha;
     return different;
 }
 
