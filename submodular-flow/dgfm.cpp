@@ -125,26 +125,30 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
         fusion_labels.resize(k);
         current_lambda.resize(k);
         fusion_lambda.resize(k);
-        Assgn fusion_equals_current = 0;
         for (size_t i = 0; i < k; ++i) {
             current_labels[i] = m_labels[c.Nodes()[i]];
             fusion_labels[i] = m_fusion_labels[c.Nodes()[i]];
             current_lambda[i] = m_dual[clique_index][i][current_labels[i]];
             fusion_lambda[i] = m_dual[clique_index][i][fusion_labels[i]];
-            if (current_labels[i] == fusion_labels[i])
-                fusion_equals_current |= (1 << i);
         }
         
         // Compute costs of all fusion assignments
-        for (Assgn a = 0; a < max_assgn; ++a) {
-            for (size_t i_idx = 0; i_idx < k; ++i_idx) {
-                if (a & (1 << i_idx)) 
-                    label_buf[i_idx] = fusion_labels[i_idx];
-                else 
-                    label_buf[i_idx] = current_labels[i_idx];
+        {
+            Assgn last_gray = 0;
+            for (size_t i_idx = 0; i_idx < k; ++i_idx)
+                label_buf[i_idx] = current_labels[i_idx];
+            energy_table[0] = c.Energy(label_buf);
+            for (Assgn a = 1; a < max_assgn; ++a) {
+                Assgn gray = a ^ (a >> 1);
+                Assgn diff = gray ^ last_gray;
+                int changed_idx = __builtin_ctz(diff);
+                if (diff & gray)
+                    label_buf[changed_idx] = fusion_labels[changed_idx];
+                else
+                    label_buf[changed_idx] = current_labels[changed_idx];
+                last_gray = gray;
+                energy_table[gray] = c.Energy(label_buf);
             }
-            energy_table[a] = c.Energy(label_buf);
-            ASSERT(energy_table[a] >= 0);
         }
 
         if (!m_expansion_submodular) {
@@ -152,6 +156,11 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
             // that g(S | T) == g(S) where T is the set of nodes with 
             // current[i] == fusion[i]
             std::vector<REAL> upper_bound = SubmodularUpperBound(k, energy_table);
+            Assgn fusion_equals_current = 0;
+            for (int i = 0; i < k; ++i) {
+                if (current_labels[i] == fusion_labels[i])
+                    fusion_equals_current |= (1 << i);
+            }
             upper_bound = ZeroMarginalSet(k, upper_bound, fusion_equals_current);
             ASSERT(CheckUpperBoundInvariants(k, energy_table, upper_bound));
             energy_table = upper_bound;

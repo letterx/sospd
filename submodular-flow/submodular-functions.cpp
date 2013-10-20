@@ -86,11 +86,18 @@ void AddLinear(int n, std::vector<REAL>& energyTable, const std::vector<REAL>& p
     Assgn max_assgn = 1 << n;
     assert(max_assgn == energyTable.size());
     assert(n == int(psi.size()));
-    for (Assgn a = 0; a < max_assgn; ++a) {
-        for (int i = 0; i < n; ++i) {
-            if (a & (1 << i))
-                energyTable[a] += psi[i];
-        }
+    REAL sum = 0;
+    Assgn last_gray = 0;
+    for (Assgn a = 1; a < max_assgn; ++a) {
+        Assgn gray = a ^ (a >> 1);
+        Assgn diff = gray ^ last_gray;
+        int changed_bit = __builtin_ctz(diff);
+        if (gray & diff)
+            sum += psi[changed_bit];
+        else
+            sum -= psi[changed_bit];
+        energyTable[gray] += sum;
+        last_gray = gray;
     }
 }
 
@@ -100,13 +107,21 @@ void SubtractLinear(int n, std::vector<REAL>& energyTable,
     assert(max_assgn == energyTable.size());
     assert(n == int(psi1.size()));
     assert(n == int(psi2.size()));
-    for (Assgn a = 0; a < max_assgn; ++a) {
-        for (int i = 0; i < n; ++i) {
-            if (a & (1 << i))
-                energyTable[a] -= psi1[i];
-            else
-                energyTable[a] -= psi2[i];
-        }
+    REAL sum = 0;
+    for (int i = 0; i < n; ++i)
+        sum += psi2[i];
+    energyTable[0] -= sum;
+    Assgn last_gray = 0;
+    for (Assgn a = 1; a < max_assgn; ++a) {
+        Assgn gray = a ^ (a >> 1);
+        Assgn diff = gray ^ last_gray;
+        int changed_idx = __builtin_ctz(diff);
+        if (gray & diff)
+            sum += psi1[changed_idx] - psi2[changed_idx];
+        else
+            sum += psi2[changed_idx] - psi1[changed_idx];
+        energyTable[gray] -= sum;
+        last_gray = gray;
     }
 }
 
