@@ -5,7 +5,7 @@
 #define DEBUG
 //#define ZERO_SUM_CONSTRAINT
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include "clique.hpp"
 #include "submodular-flow.hpp"
 #include "submodular-ibfs.hpp"

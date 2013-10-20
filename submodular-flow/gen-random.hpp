@@ -1,7 +1,7 @@
 #ifndef _GEN_RANDOM_HPP_
 #define _GEN_RANDOM_HPP_
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 
 /* Generate a random submodular higher-order function
  *

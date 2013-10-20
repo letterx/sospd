@@ -1,6 +1,6 @@
 #include <iostream>
 #include <chrono>
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include "higher-order.hpp"
 #include "QPBO.h"
 #include "gen-random.hpp"

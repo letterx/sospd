@@ -1,7 +1,7 @@
 #ifndef _SUBMODULAR_FLOW_HPP_
 #define _SUBMODULAR_FLOW_HPP_
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include "boost/optional/optional.hpp"
 #include <list>
 

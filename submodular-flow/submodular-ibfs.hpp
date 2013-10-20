@@ -1,7 +1,7 @@
 #ifndef _SUBMODULAR_IBFS_HPP_
 #define _SUBMODULAR_IBFS_HPP_
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include <list>
 #include <algorithm>
 #include <boost/serialization/access.hpp>

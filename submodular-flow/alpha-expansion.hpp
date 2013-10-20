@@ -1,7 +1,7 @@
 #ifndef _ALPHA_EXPANSION_HPP_
 #define _ALPHA_EXPANSION_HPP_
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include "submodular-flow.hpp"
 #include "submodular-ibfs.hpp"
 #include <vector>

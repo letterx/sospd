@@ -4,7 +4,7 @@
 #define PROGRESS_DISPLAY
 //#define DEBUG
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include "clique.hpp"
 #include "ibfs.h"
 #include <vector>

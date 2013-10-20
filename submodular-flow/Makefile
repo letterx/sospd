@@ -2,7 +2,7 @@ CXX ?= g++
 AR = ar
 DEFS = 
 OPT ?= -O3
-CXX_FLAGS = $(OPT) -Wall -std=c++11 
+CXX_FLAGS = $(OPT) -Wall -std=c++11 -I../include
 LD_FLAGS = 
 LIBS = -lboost_serialization -lopencv_core -lopencv_imgproc -lopencv_highgui
 CORE_SRCS = submodular-flow.cpp \
@@ -48,3 +48,7 @@ clean:
 	rm -rf *.P
 	rm -rf *.d
 	rm -rf *~
+
+.PHONY: distclean
+distclean: clean
+	rm -rf denoise_test sos_ibfs_test submodular_test ibfs_test

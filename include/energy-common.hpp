@@ -1,5 +1,5 @@
-#ifndef _SOS_COMMON_HPP_
-#define _SOS_COMMON_HPP_
+#ifndef _ENERGY_COMMON_HPP_
+#define _ENERGY_COMMON_HPP_
 
 #include <stdint.h>
 #include <limits>

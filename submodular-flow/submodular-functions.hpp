@@ -1,7 +1,7 @@
 #ifndef _SUBMODULAR_FUNCTIONS_HPP_
 #define _SUBMODULAR_FUNCTIONS_HPP_
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include <vector>
 #include <cstdint>
 

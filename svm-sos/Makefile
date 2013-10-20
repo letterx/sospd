@@ -9,7 +9,7 @@ CXX ?= g++
 LD = $(CXX)
 
 OPT ?= -g
-CFLAGS =   $(SFLAGS) $(OPT) -ffast-math -Wall -std=c++11 -I../submodular-flow/ -I../higher-order-energy/qpbo/ -I../higher-order-energy/include/
+CFLAGS =   $(SFLAGS) $(OPT) -ffast-math -Wall -std=c++11 -I../include -I../submodular-flow/ -I../higher-order-energy/qpbo/ -I../higher-order-energy/include/
 LDFLAGS =  $(SFLAGS) $(OPT)  -L../lib 
 LIBS = -lm -Wall -lopencv_core -lopencv_highgui -lopencv_imgproc -lsubmodular-flow -lboost_serialization -lboost_program_options
 #CFLAGS =  $(SFLAGS) -pg -Wall

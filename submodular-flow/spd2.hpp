@@ -4,7 +4,7 @@
 #define PROGRESS_DISPLAY
 //#define CHECK_INVARIANTS
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include "clique.hpp"
 #include "submodular-flow.hpp"
 #include "submodular-ibfs.hpp"

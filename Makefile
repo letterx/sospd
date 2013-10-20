@@ -1,7 +1,7 @@
 CXX ?= g++
 AR = ar
 DEFS = 
-INCLUDES = -I./submodular-flow/ -I./higher-order-energy/include -I./higher-order-energy/qpbo
+INCLUDES = -I./include -I./submodular-flow/ -I./higher-order-energy/include -I./higher-order-energy/qpbo
 OPT ?= -O3
 CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = 
@@ -80,12 +80,16 @@ clean:
 	rm -rf submodular-flow/*.P
 	rm -rf submodular-flow/*.d
 	rm -rf submodular-flow/*~
+	cd submodular-flow; $(MAKE) clean
 
 .PHONY: distclean
 distclean: clean
 	rm -rf unit-test
 	rm -rf higher-order-experiment
 	rm -rf ./lib
+	rm -rf recover-crash
+	rm -rf add-noise
+	cd submodular-flow; $(MAKE) distclean
 
 .PHONY: check
 check: ./unit-test

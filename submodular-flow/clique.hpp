@@ -1,7 +1,7 @@
 #ifndef _CLIQUE_HPP_
 #define _CLIQUE_HPP_
 
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include "submodular-flow.hpp"
 #include "submodular-ibfs.hpp"
 

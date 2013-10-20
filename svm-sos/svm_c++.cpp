@@ -8,7 +8,7 @@ extern "C" {
 }
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include "sos-common.hpp"
+#include "energy-common.hpp"
 #include "svm_c++.hpp"
 #include "svm_struct_options.hpp"
 #include "stats.hpp"
