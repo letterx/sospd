@@ -8,25 +8,19 @@ typedef size_t Label;
 
 class Clique {
     public:   
-        Clique(const std::vector<NodeId>& nodes)
-            : m_f_min(1),
-            m_f_max(1),
-            m_nodes(nodes)
-        { }
+        Clique() { }
         virtual ~Clique() = default;
 
-        // labels is a vector of length m_nodes.size() with the labels
-        // of m_nodes. Returns the energy of the clique at that labeling
-        virtual REAL Energy(const std::vector<Label>& labels) const = 0;
+        // labels must be an array of length this->Size() with the labels
+        // corresponding to the nodes.
+        // Returns the energy of the clique at that labeling
+        virtual REAL Energy(const Label* labels) const = 0;
+        virtual const NodeId* Nodes() const = 0;
+        virtual size_t Size() const = 0;
+        virtual double Rho() const { return std::numeric_limits<double>::infinity(); }
+        virtual REAL FMax() const { return std::numeric_limits<REAL>::max(); }
 
-        const std::vector<NodeId>& Nodes() const { return m_nodes; }
-        size_t Size() const { return m_nodes.size(); }
-        virtual double Rho() const { return Size()*double(m_f_max)/double(m_f_min); }
-        REAL m_f_min, m_f_max;
-
-    protected:
-        std::vector<NodeId> m_nodes;
-
+    private:
         // Remove move and copy operators to prevent slicing of base classes
         Clique(Clique&&) = delete;
         Clique& operator=(Clique&&) = delete;
@@ -34,36 +28,46 @@ class Clique {
         Clique& operator=(const Clique&) = delete;
 };
 
+template <int Degree>
 class PottsClique : public Clique {
     public:
-
         PottsClique(const std::vector<NodeId>& nodes, REAL same_cost, REAL diff_cost)
-            : Clique(nodes),
-            m_same_cost(same_cost),
+            : m_same_cost(same_cost),
             m_diff_cost(diff_cost)
         { 
             ASSERT(m_diff_cost >= m_same_cost);
-            this->m_f_max = m_diff_cost;
-            if (m_same_cost == 0)
-                this->m_f_min = m_diff_cost;
-            else
-                this->m_f_min = m_same_cost;
+            for (int i = 0; i < Degree; ++i)
+                m_nodes[i] = nodes[i];
         }
 
-        virtual REAL Energy(const std::vector<Label>& labels) const override {
-            const int n = labels.size();
+        virtual REAL Energy(const Label* labels) const override {
             const Label l = labels[0];
-            for (int i = 1; i < n; ++i) {
+            for (int i = 1; i < Degree; ++i) {
                 if (labels[i] != l)
                     return m_diff_cost;
             }
             return m_same_cost;
         }
+        virtual const NodeId* Nodes() const override {
+            return m_nodes;
+        }
+        virtual size_t Size() const override { return Degree; }
+        virtual double Rho() const override {
+            double f_max = m_diff_cost;
+            double f_min;
+            if (m_same_cost == 0)
+                f_min = m_diff_cost;
+            else
+                f_min = m_same_cost;
+            return f_max / f_min;
+        }
     private:
+        NodeId m_nodes[Degree];
         REAL m_same_cost;
         REAL m_diff_cost;
 };
 
+/*
 class SeparableClique : public Clique {
     public:
         typedef uint32_t Assgn;
@@ -87,5 +91,5 @@ class SeparableClique : public Clique {
     private:
         EnergyTable m_energy_table;
 };
-
+*/
 #endif

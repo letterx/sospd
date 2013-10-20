@@ -36,7 +36,7 @@ int main(){
             std::vector<NodeId> nodes;
             nodes.push_back(i * m + j);
             nodes.push_back(i * m + j + 1);
-            DualGuidedFusionMove::CliquePtr cp(new PottsClique(nodes, 0, 10));
+            DualGuidedFusionMove::CliquePtr cp(new PottsClique<2>(nodes, 0, 10));
             mrf.AddClique(cp);
         }
     }
@@ -46,7 +46,7 @@ int main(){
             std::vector<NodeId> nodes;
             nodes.push_back(i * m + j);
             nodes.push_back(i * m + j + m);
-            DualGuidedFusionMove::CliquePtr cp(new PottsClique(nodes, 0, 10));
+            DualGuidedFusionMove::CliquePtr cp(new PottsClique<2>(nodes, 0, 10));
             mrf.AddClique(cp);
         }
     }
@@ -58,7 +58,7 @@ int main(){
             nodes.push_back(i * m + j + 1);
             nodes.push_back(i * m + j + m);
             nodes.push_back(i * m + j + m + 1);
-            DualGuidedFusionMove::CliquePtr cp(new PottsClique(nodes, 0, 10));
+            DualGuidedFusionMove::CliquePtr cp(new PottsClique<4>(nodes, 0, 10));
             mrf.AddClique(cp);
         }
     }
