@@ -2,8 +2,6 @@
 #define _CLIQUE_HPP_
 
 #include "energy-common.hpp"
-#include "submodular-flow.hpp"
-#include "submodular-ibfs.hpp"
 
 typedef int NodeId;
 typedef size_t Label;
