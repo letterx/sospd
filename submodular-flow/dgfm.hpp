@@ -2,7 +2,7 @@
 #define _DGFM_HPP_
 
 #define PROGRESS_DISPLAY
-#define CHECK_INVARIANTS
+//#define CHECK_INVARIANTS
 
 #include "sos-common.hpp"
 #include "clique.hpp"
