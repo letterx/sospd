@@ -18,6 +18,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <boost/program_options.hpp>
 #include "clique.hpp"
 #include "foe-cliques.hpp"
 #include "higher-order-energy.hpp"
@@ -31,22 +32,46 @@ int thresholdIters = 20;
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image);
 void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
 template <typename Optimizer>
-void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current);
+void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current, int iterations);
 
 int width = 0;
 int height = 0;
 
 int main(int argc, char **argv) {
-    // Parse command arguments
-    if (argc != 3){
-        std::cerr << "Usage: denoise infile outfile" << std::endl;
+    namespace po = boost::program_options;
+    // Variables set by program options
+    std::string basename;
+    std::string infilename;
+    std::string outfilename;
+    int iterations;
+    std::string method;
+
+    po::options_description options_desc("Denoising arguments");
+    options_desc.add_options()
+        ("help", "Display this help message")
+        ("iters,i", po::value<int>(&iterations)->default_value(300), "Maximum number of iterations")
+        ("image", po::value<std::string>(&basename)->required(), "Name of image (without extension)")
+    ;
+
+    po::positional_options_description popts_desc;
+    popts_desc.add("image", 1);
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).
+            options(options_desc).positional(popts_desc).run(), vm);
+
+    try {
+        po::notify(vm);
+    } catch (std::exception& e) {
+        std::cout << "Parsing error: " << e.what() << "\n";
+        std::cout << "Usage: denoise [options] basename\n";
+        std::cout << options_desc;
         exit(-1);
     }
+    infilename = basename + ".pgm";
+    outfilename = basename + "-out.pgm";
 
-    char *infilename = argv[1];
-    char *outfilename = argv[2];
-
-    cv::Mat image = cv::imread(infilename, CV_LOAD_IMAGE_GRAYSCALE);
+    cv::Mat image = cv::imread(infilename.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
     if (!image.data) {
         std::cout << "Could not load image: " << infilename << "\n";
         exit(-1);
@@ -62,15 +87,15 @@ int main(int argc, char **argv) {
     /*
     FusionMove<4>::ProposalCallback pc(FusionProposal);
     FusionMove<4> fusion(&energy_function, pc, current);
-    Optimize(fusion, energy_function, image, current);
+    Optimize(fusion, energy_function, image, current, iterations);
     */
 
     {
         DualGuidedFusionMove dgfm(&energy_function);
-        Optimize(dgfm, energy_function, image, current);
+        Optimize(dgfm, energy_function, image, current, iterations);
     }
 
-    cv::imwrite(outfilename, image); 
+    cv::imwrite(outfilename.c_str(), image); 
 
     REAL energy  = energy_function.ComputeEnergy(current);
     std::cout << "Final Energy: " << energy << std::endl;
@@ -79,12 +104,11 @@ int main(int argc, char **argv) {
 }
 
 template <typename Optimizer>
-void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current) {
+void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current, int iterations) {
     // energies keeps track of last [thresholdIters] energy values to know
     // when we reach convergence
     REAL energies[thresholdIters];
 
-    int iterations = 300;
     for (int i = 0; i < iterations; ++i) {
         std::cout << "Iteration " << i+1 << std::endl;
 

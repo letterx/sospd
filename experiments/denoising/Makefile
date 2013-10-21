@@ -5,7 +5,7 @@ INCLUDES = -I$(BASE_DIR)include -I$(BASE_DIR)/submodular-flow/ -I$(BASE_DIR)/hig
 OPT ?= -O3
 CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = -L$(BASE_DIR)/lib/
-LIBS = -lsubmodular-flow -lboost_serialization -lopencv_core -lopencv_imgproc -lopencv_highgui
+LIBS = -lsubmodular-flow -lboost_serialization -lopencv_core -lopencv_imgproc -lopencv_highgui -lboost_program_options
 
 SRCS = denoise.cpp \
 	   foe-cliques.cpp
