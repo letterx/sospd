@@ -16,8 +16,7 @@ CORE_SRCS = submodular-flow/submodular-flow.cpp \
 			submodular-flow/gen-random.cpp \
 			submodular-flow/alpha-expansion.cpp \
 			submodular-flow/spd2.cpp \
-			submodular-flow/dgfm.cpp \
-			submodular-flow/submodular-functions.cpp
+			submodular-flow/dgfm.cpp
 CORE_OBJS = $(CORE_SRCS:.cpp=.o)
 
 QPBO_DIR = ./higher-order-energy/qpbo
