@@ -1,7 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include "energy-common.hpp"
-#include "higher-order.hpp"
+#include "higher-order-energy.hpp"
 #include "QPBO.h"
 #include "gen-random.hpp"
 #include "submodular-flow.hpp"

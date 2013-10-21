@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include "spd2.hpp"
 #include "dgfm.hpp"
+#include "clique.hpp"
 
 #define NUM_LABELS 8
 int val[NUM_LABELS];
@@ -20,8 +21,9 @@ int main(){
     int n = image.rows;
     int m = image.cols;
     for (int i = 0; i < NUM_LABELS; ++i) val[i] = i * 256 / NUM_LABELS;
+
+    MultilabelEnergy mrf(NUM_LABELS);
     
-    DualGuidedFusionMove mrf = DualGuidedFusionMove(NUM_LABELS);
     mrf.AddNode(n * m);
     for (int i = 0; i < m * n; ++i) {
         std::vector<REAL> cost;
@@ -36,8 +38,7 @@ int main(){
             std::vector<NodeId> nodes;
             nodes.push_back(i * m + j);
             nodes.push_back(i * m + j + 1);
-            DualGuidedFusionMove::CliquePtr cp(new PottsClique<2>(nodes, 0, 10));
-            mrf.AddClique(cp);
+            mrf.AddClique(new PottsClique<2>(nodes, 0, 10));
         }
     }
     
@@ -46,8 +47,7 @@ int main(){
             std::vector<NodeId> nodes;
             nodes.push_back(i * m + j);
             nodes.push_back(i * m + j + m);
-            DualGuidedFusionMove::CliquePtr cp(new PottsClique<2>(nodes, 0, 10));
-            mrf.AddClique(cp);
+            mrf.AddClique(new PottsClique<2>(nodes, 0, 10));
         }
     }
     
@@ -58,19 +58,16 @@ int main(){
             nodes.push_back(i * m + j + 1);
             nodes.push_back(i * m + j + m);
             nodes.push_back(i * m + j + m + 1);
-            DualGuidedFusionMove::CliquePtr cp(new PottsClique<4>(nodes, 0, 10));
-            mrf.AddClique(cp);
+            mrf.AddClique(new PottsClique<4>(nodes, 0, 10));
         }
     }
-    mrf.SetExpansionSubmodular(true);
-    
-    mrf.ComputeRho();
-    std::cout << "Rho = " << mrf.GetRho() << std::endl;
-    
-    mrf.Solve();
+    std::cout << "Rho = " << mrf.Rho() << std::endl;
     
     
-    for (int i = 0; i < m * n; ++i) image.data[i] = val[mrf.GetLabel(i)];
+    DualGuidedFusionMove dgfm(&mrf);
+    dgfm.SetExpansionSubmodular(true);
+    dgfm.Solve();
+    for (int i = 0; i < m * n; ++i) image.data[i] = val[dgfm.GetLabel(i)];
     
     
     /*

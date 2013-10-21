@@ -1,6 +1,6 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
-#include "higher-order.hpp"
+#include "higher-order-energy.hpp"
 #include "QPBO.h"
 
 BOOST_AUTO_TEST_SUITE(basicHigherOrder)

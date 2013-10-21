@@ -3,7 +3,7 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 #include "submodular-flow.hpp"
-#include "higher-order.hpp"
+#include "higher-order-energy.hpp"
 #include "gen-random.hpp"
 #include "QPBO.h"
 

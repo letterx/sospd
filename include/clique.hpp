@@ -28,6 +28,37 @@ class Clique {
         Clique& operator=(const Clique&) = delete;
 };
 
+class MultilabelEnergy { 
+    public:
+        typedef ::NodeId NodeId;
+        typedef ::Label Label;
+        typedef std::unique_ptr<Clique> CliquePtr;
+
+        MultilabelEnergy() = delete;
+        MultilabelEnergy(Label max_label);
+
+        NodeId AddNode(int i = 1);
+        void AddConstantTerm(REAL c);
+        void AddUnaryTerm(NodeId i, const std::vector<REAL>& coeffs);
+        void AddClique(Clique* c);
+
+        NodeId NumNodes() const { return m_num_nodes; }
+        size_t NumCliques() const { return m_cliques.size(); }
+        Label NumLabels() const { return m_max_label; }
+        double Rho() const;
+        REAL ComputeEnergy(const std::vector<Label>& labels) const;
+        const std::vector<CliquePtr>& Cliques() const { return m_cliques; }
+        REAL Unary(NodeId i, Label l) const { return m_unary[i][l]; }
+        REAL& Unary(NodeId i, Label l) { return m_unary[i][l]; }
+
+    protected:
+        Label m_max_label;
+        NodeId m_num_nodes;
+        REAL m_constant_term;
+        std::vector<std::vector<REAL>> m_unary;
+        std::vector<CliquePtr> m_cliques;
+};
+
 template <int Degree>
 class PottsClique : public Clique {
     public:
@@ -92,4 +123,63 @@ class SeparableClique : public Clique {
         EnergyTable m_energy_table;
 };
 */
+
+/********* Multilabel Implementation ***************/
+
+inline MultilabelEnergy::MultilabelEnergy(Label max_label)
+    : m_max_label(max_label),
+    m_num_nodes(0),
+    m_constant_term(0),
+    m_unary(),
+    m_cliques()
+{ }
+
+inline NodeId MultilabelEnergy::AddNode(int i) {
+    NodeId ret = m_num_nodes;
+    for (int j = 0; j < i; ++j) {
+        m_unary.push_back(std::vector<REAL>(m_max_label, 0));
+    }
+    m_num_nodes += i;
+    return ret;
+}
+
+inline void MultilabelEnergy::AddConstantTerm(REAL c) {
+    m_constant_term++;
+}
+
+inline void MultilabelEnergy::AddUnaryTerm(NodeId i, const std::vector<REAL>& coeffs) {
+    ASSERT(i < m_num_nodes);
+    ASSERT(Label(coeffs.size()) == m_max_label);
+    for (Label l = 0; l < coeffs.size(); ++l)
+        m_unary[i][l] += coeffs[l];
+}
+
+inline void MultilabelEnergy::AddClique(Clique* c) {
+    m_cliques.push_back(CliquePtr(c));
+}
+
+inline double MultilabelEnergy::Rho() const {
+    double rho = 0;
+    for (const CliquePtr& cp : m_cliques)
+        rho = std::max(rho, cp->Rho());
+    return rho;
+}
+
+inline REAL MultilabelEnergy::ComputeEnergy(const std::vector<Label>& labels) const {
+    ASSERT(NodeId(labels.size()) == m_num_nodes);
+    REAL energy = 0;
+    std::vector<Label> label_buf;
+    for (const CliquePtr& cp : m_cliques) {
+        int k = cp->Size();
+        label_buf.resize(k);
+        const NodeId* nodes = cp->Nodes();
+        for (int i = 0; i < k; ++i)
+            label_buf[i] = labels[nodes[i]];
+        energy += cp->Energy(label_buf.data());
+    }
+    for (NodeId i = 0; i < m_num_nodes; ++i)
+        energy += m_unary[i][labels[i]];
+    return energy;
+}
+
 #endif

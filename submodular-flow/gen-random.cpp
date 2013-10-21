@@ -2,7 +2,7 @@
 #include <random>
 #include <algorithm>
 #include "submodular-flow.hpp"
-#include "higher-order.hpp"
+#include "higher-order-energy.hpp"
 #include "submodular-ibfs.hpp"
 
 template <typename REAL>
