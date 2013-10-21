@@ -139,15 +139,14 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
             // Find g with g(S) >= f(S) and g submodular. Also want to make sure
             // that g(S | T) == g(S) where T is the set of nodes with 
             // current[i] == fusion[i]
-            std::vector<REAL> upper_bound = SubmodularUpperBound(k, energy_table);
+            SubmodularUpperBound(k, energy_table);
             Assgn fusion_equals_current = 0;
             for (size_t i = 0; i < k; ++i) {
                 if (current_labels[i] == fusion_labels[i])
                     fusion_equals_current |= (1 << i);
             }
-            upper_bound = ZeroMarginalSet(k, upper_bound, fusion_equals_current);
-            ASSERT(CheckUpperBoundInvariants(k, energy_table, upper_bound));
-            energy_table = upper_bound;
+            ZeroMarginalSet(k, energy_table, fusion_equals_current);
+            //ASSERT(CheckUpperBoundInvariants(k, energy_table, upper_bound));
         }
 
         // Compute the residual function 

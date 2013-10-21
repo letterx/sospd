@@ -6,6 +6,7 @@ OPT ?= -O3
 CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = -L$(BASE_DIR)/lib/
 LIBS = -lsubmodular-flow -lboost_serialization -lopencv_core -lopencv_imgproc -lopencv_highgui -lboost_program_options
+SF_LIB = ../../lib/libsubmodular-flow.a
 
 SRCS = denoise.cpp \
 	   foe-cliques.cpp

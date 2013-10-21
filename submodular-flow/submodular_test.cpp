@@ -18,14 +18,16 @@ int main(int argc, char **argv) {
     PrintEnergy(energy);
     std::cout << "\n";
 
-    std::vector<REAL> submodular = SubmodularLowerBound(n, energy);
+    std::vector<REAL> submodular = energy;
+    SubmodularLowerBound(n, submodular);
     std::cout << "Lower Bound:     ";
     PrintEnergy(submodular);
     std::cout << "\n";
 
     std::cout << "Submodular:      " << CheckSubmodular(n, submodular) << "\n";
 
-    std::vector<REAL> upper = SubmodularUpperBound(n, energy);
+    std::vector<REAL> upper = energy;
+    SubmodularUpperBound(n, upper);
     std::cout << "Upper bound:     ";
     PrintEnergy(upper);
     std::cout << "\n";
