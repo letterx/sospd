@@ -15,9 +15,13 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include "clique.hpp"
 #include "foe-cliques.hpp"
-#include "image.hpp"
-#include "higher-order.hpp"
+#include "higher-order-energy.hpp"
+#include "fusion-move.hpp"
 
 double sigma = 20.0;
 int kernelRadius;
@@ -25,10 +29,11 @@ std::vector<double> gaussianKernel;
 REAL threshold = 100.0 * DoubleToREAL;
 int thresholdIters = 20;
 
-Image_uc GetProposedImage(const Image_uc& im, unsigned int iteration, Image_uc& blur);
-CliqueSystem<REAL, unsigned char, 4> SetupCliques(const Image_uc& im);
-void InitGaussKernel(double sigma, int& radius, std::vector<double>& kernel);
-Image_uc ApplyGaussBlur(const Image_uc& im, int radius, const std::vector<double>& kernel);
+MultilabelEnergy SetupEnergy(const std::vector<Label>& image);
+void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
+
+int width = 0;
+int height = 0;
 
 int main(int argc, char **argv) {
     // Parse command arguments
@@ -37,19 +42,21 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
-    // Initialize the gaussian kernel for blurring the image
-    InitGaussKernel(sigma, kernelRadius, gaussianKernel);
-
     char *infilename = argv[1];
     char *outfilename = argv[2];
 
-    Image_uc in = ImageFromFile(infilename);
-    Image_uc current, blur;
-    current.Copy(in);
+    cv::Mat image = cv::imread(infilename, CV_LOAD_IMAGE_GRAYSCALE);
+    if (!image.data) {
+        std::cout << "Could not load image: " << infilename << "\n";
+        exit(-1);
+    }
 
-    // Set up the clique system, which defines the energy to be minimized
-    // by fusion move
-    CliqueSystem<REAL, unsigned char, 4> cliques = SetupCliques(in);
+    width = image.cols;
+    height = image.rows;
+
+    std::vector<Label> current(image.data, image.data + width*height);
+
+    MultilabelEnergy energy_function = SetupEnergy(current);
 
     // energies keeps track of last [thresholdIters] energy values to know
     // when we reach convergence
@@ -57,10 +64,13 @@ int main(int argc, char **argv) {
 
     int iterations = 300;
 
+    FusionMove<4>::ProposalCallback pc(FusionProposal);
+    FusionMove<4> fusion(&energy_function, pc, current);
+
     for (int i = 0; i < iterations; ++i) {
         std::cout << "Iteration " << i+1 << std::endl;
 
-        REAL energy  = cliques.Energy(current.Data()); 
+        REAL energy  = energy_function.ComputeEnergy(current); 
         // check if we've reached convergence
         if (i > thresholdIters 
                 && energies[i%thresholdIters] - energy < threshold) {
@@ -70,20 +80,23 @@ int main(int argc, char **argv) {
         energies[i%thresholdIters] = energy;
         std::cout << "    Current Energy: " << (double)energy / DoubleToREAL << std::endl;
 
-        // Real work here: get proposed image, then fuse it with current image
-        Image_uc proposed;
-        proposed = GetProposedImage(current, i, blur);
-
-        FusionMove(current.Height()*current.Width(), current.Data(), proposed.Data(), current.Data(), cliques);
+        fusion.Solve(1);
+        for (int i = 0; i < width*height; ++i)
+            current[i] = fusion.GetLabel(i);
     }
-    ImageToFile(current, outfilename);
-    REAL energy  = cliques.Energy(current.Data());
+
+    for (int i = 0; i < width*height; ++i)
+        image.data[i] = fusion.GetLabel(i);
+
+    cv::imwrite(outfilename, image); 
+
+    REAL energy  = energy_function.ComputeEnergy(current);
     std::cout << "Final Energy: " << energy << std::endl;
 
     return 0;
 }
 
-Image_uc GetProposedImage(const Image_uc& im, unsigned int iteration, Image_uc& blur) {
+void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {
     // Set up the RNGs
     static boost::mt19937 rng;
     static boost::uniform_int<> uniform255(0, 255);
@@ -91,100 +104,61 @@ Image_uc GetProposedImage(const Image_uc& im, unsigned int iteration, Image_uc& 
     static boost::variate_generator<boost::mt19937&, boost::uniform_int<> > noise255(rng, uniform255);
     static boost::variate_generator<boost::mt19937&, boost::uniform_int<> > noise3sigma(rng, uniform3sigma);
 
-    Image_uc proposed(im.Height(), im.Width());
-    if (iteration % 2 == 0) {
+    proposed.resize(height*width);
+    if (niter % 2 == 0) {
         // On even iterations, proposal is a gaussian-blurred version of the 
         // current image, plus a small amount of gaussian noise
-        blur = ApplyGaussBlur(im, kernelRadius, gaussianKernel);
-        for (int i = 0; i < im.Height(); ++i) {
-            for (int j = 0; j < im.Width(); ++j) {
-                int p = (int)blur(i, j) + (int)noise3sigma();
+        cv::Mat image(height, width, CV_32FC1);
+        for (int i = 0; i < height*width; ++i)
+            image.data[i] = current[i];
+        cv::Mat blur(height, width, CV_32FC1);
+        cv::Size ksize(0,0);
+        cv::GaussianBlur(image, blur, ksize, 3.0, 3.0, cv::BORDER_REPLICATE);
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                int n = i*width+j;
+                int p = blur.data[n] + noise3sigma();
                 if (p > 255) p = 255;
                 if (p < 0) p = 0;
-                proposed(i, j) = (unsigned char)p;
+                proposed[n] = (Label)p;
             }
         }
     } else {
         // On odd iterations, proposal is a uniform random image
-        for (int i = 0; i < im.Height(); ++i) {
-            for (int j = 0; j < im.Width(); ++j) {
-                proposed(i, j) = (unsigned char)(noise255());
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                proposed[i*width+j] = (Label)(noise255());
             }
         }
     }
-    return proposed;
 }
 
-CliqueSystem<REAL, unsigned char, 4> SetupCliques(const Image_uc& im) {
-    CliqueSystem<REAL, unsigned char, 4> cs;
-    int height = im.Height();
-    int width = im.Width();
+MultilabelEnergy SetupEnergy(const std::vector<Label>& image) {
+    MultilabelEnergy energy(256);
+    energy.AddNode(width*height);
+    
     // For each 2x2 patch, add in a Field of Experts clique
     for (int i = 0; i < height - 1; ++i) {
         for (int j = 0; j < width - 1; ++j) {
-            int buf[4];
+            int nodes[4];
             int bufIdx = 0;
-            buf[bufIdx++] = i*width + j;
-            buf[bufIdx++] = (i+1)*width + j;
-            buf[bufIdx++] = i*width + j+1;
-            buf[bufIdx++] = (i+1)*width + j+1;
-            cs.AddClique(CliqueSystem<REAL, unsigned char, 4>::CliquePointer(new FoEEnergy(4, buf)));
+            nodes[bufIdx++] = i*width + j;
+            nodes[bufIdx++] = (i+1)*width + j;
+            nodes[bufIdx++] = i*width + j+1;
+            nodes[bufIdx++] = (i+1)*width + j+1;
+            energy.AddClique(new FoEEnergy(nodes));
         }
     }
     // Add the unary terms
+    std::vector<REAL> unary(256);
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
-            int buf[1];
-            buf[0] = i*width + j;
-            cs.AddClique(CliqueSystem<REAL, unsigned char, 4>::CliquePointer(new FoEUnaryEnergy(buf, im(i, j))));
+            NodeId n = i*width + j;
+            for (int l = 0; l < 256; ++l)
+                unary[l] = FoEUnaryEnergy(image[n], l, sigma);
+            energy.AddUnaryTerm(n, unary);
         }
     }
-    return cs;
+    return energy;
 }
 
-// Calculate the gaussian kernel, given a std-dev sigma
-void InitGaussKernel(double sigma, int& radius, std::vector<double>& kernel) {
-    radius = ceil(3*sigma); 
-    kernel.reserve(2*radius + 1);
-    double pi = 4.0 * atan(1.0);
-    double oneOverSqrt2PiSigmaSquared = 1.0 / (sqrt(2.0 * pi) * sigma);
-    double oneOverTwoSigmaSquared = 1.0 / (2.0* sigma * sigma);
-    for (int i = 0; i <= radius; ++i) {
-        double value = oneOverSqrt2PiSigmaSquared 
-            * exp(-(i*i)*oneOverTwoSigmaSquared);
-        kernel[radius+i] = value;
-        kernel[radius-i] = value;
-    }
-    double sum = 0.0;
-    for (int i = 0; i < 2*radius + 1; ++i) {
-        sum += kernel[i];
-    }
-    for (int i = 0; i < 2*radius + 1; ++i) {
-        kernel[i] = kernel[i] / sum;
-    }
-}
-
-// Blur an image, given a kernel and its size
-Image_uc ApplyGaussBlur(const Image_uc& im, int radius, const std::vector<double>& kernel) {
-    Image_uc vertical(im.Height(), im.Width());
-    for (int i = 0; i < im.Height(); ++i) {
-        for (int j = 0; j < im.Width(); ++j) {
-            double acc = 0.0;
-            for (int k = 0; k < 2*radius+1; ++k) {
-                acc += kernel[k] * im(i + k - radius, j);
-            }
-            vertical(i, j) = (unsigned char)acc;
-        }
-    }
-    Image_uc horizontal(im.Height(), im.Width());
-    for (int i = 0; i < im.Height(); ++i) {
-        for (int j = 0; j < im.Width(); ++j) {
-            double acc = 0.0;
-            for (int k = 0; k < 2*radius+1; ++k) {
-                acc += kernel[k] * vertical(i, j + k - radius);
-            }
-            horizontal(i, j) = (unsigned char)acc;
-        }
-    }
-    return horizontal;
-}

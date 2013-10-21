@@ -16,11 +16,8 @@ double expert[3][4] = {
 };
 
 
-REAL FoEEnergy::operator()(const unsigned char buf[]) const {
+REAL FoEEnergy::Energy(const Label* buf) const {
     double energy = 0.0;
-    if (_size != 4) {
-        throw "Wrong size for FoeEnergy";
-    }
     for (int i = 0; i < 3; ++i) {
         double dot = 0.0;
         for (int j = 0; j < 4; ++j) {
@@ -31,10 +28,8 @@ REAL FoEEnergy::operator()(const unsigned char buf[]) const {
     return energy*DoubleToREAL;
 }
 
-double FoEUnaryEnergy::sigma = 20.0;
-
-REAL FoEUnaryEnergy::operator()(const unsigned char buf[]) const {
-        double dist = (double)_orig - (double)buf[0];
+REAL FoEUnaryEnergy(unsigned char orig, unsigned char label, double sigma) {
+        double dist = (double)orig - (double)label;
         double e = dist*dist / (sigma*sigma * 2);
         return DoubleToREAL * e;
 }

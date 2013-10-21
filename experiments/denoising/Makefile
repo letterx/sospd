@@ -1,23 +1,22 @@
 CXX ?= g++
 DEFS = 
 BASE_DIR = ../../
-INCLUDES = -I$(BASE_DIR)/submodular-flow/ -I$(BASE_DIR)/higher-order-energy/include -I$(BASE_DIR)/higher-order-energy/qpbo
+INCLUDES = -I$(BASE_DIR)include -I$(BASE_DIR)/submodular-flow/ -I$(BASE_DIR)/higher-order-energy/include -I$(BASE_DIR)/higher-order-energy/qpbo
 OPT ?= -O3
 CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = -L$(BASE_DIR)/lib/
-LIBS = -lsubmodular-flow -lboost_serialization
+LIBS = -lsubmodular-flow -lboost_serialization -lopencv_core -lopencv_imgproc -lopencv_highgui
 SF_LIB = $(BASE_DIR)/lib/libsubmodular-flow.a
 
 SRCS = denoise.cpp \
-	   foe-cliques.cpp \
-	   image.cpp
+	   foe-cliques.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
 all: $(SF_LIB) denoise
 
-denoise: denoise.o $(SF_LIB)
-	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ denoise.o $(LIBS)
+denoise: $(OBJS) $(SF_LIB)
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(OBJS) $(LIBS)
 
 $(SF_LIB):
 	$(MAKE) -C $(BASE_DIR)

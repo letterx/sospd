@@ -14,7 +14,6 @@
 #include <math.h>
 #include <iostream>
 
-typedef int REAL;
 const double DoubleToREAL = 1000;
 
 /*
@@ -23,29 +22,25 @@ const double DoubleToREAL = 1000;
  * base class is operator(), which actually calculates the FoE energy of a 
  * 2x2 patch.
  */
-class FoEEnergy : public CliqueEnergy<REAL, unsigned char, 4> {
+class FoEEnergy : public Clique {
     public:
-        FoEEnergy(int size, int nbd[])
-            : CliqueEnergy<REAL, unsigned char, 4>(size, nbd) { }
-        virtual REAL operator()(const unsigned char buf[]) const;
+        FoEEnergy(const int* nodes) {
+            for (int i = 0; i < 4; ++i)
+                m_nodes[i] = nodes[i];
+        }
+
+        virtual REAL Energy(const Label buf[]) const override;
+        virtual const NodeId* Nodes() const override { return m_nodes; }
+        virtual size_t Size() const override { return 4; }
+
+    protected:
+        NodeId m_nodes[4];
 };
 
 /*
- * The unary energy is defined for a single pixel. It penalizes the squared
- * distance from the original observed value. Note that we've added a new data
- * member _orig, which keeps track of the originally observed value. 
+ * The unary energy penalizes the squared distance from the original 
+ * observed value. 
  */
-class FoEUnaryEnergy : public CliqueEnergy<REAL, unsigned char, 4> {
-    public:
-        FoEUnaryEnergy(int *index, unsigned char originalImagePixel) 
-            : CliqueEnergy<REAL, unsigned char, 4>(1, index),
-              _orig(originalImagePixel) { }
-
-        virtual REAL operator()(const unsigned char buf[]) const;
-        static double sigma;
-
-    private:
-        unsigned char _orig;
-};
+REAL FoEUnaryEnergy(unsigned char orig, unsigned char label, double sigma);
 
 #endif

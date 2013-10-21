@@ -39,6 +39,7 @@ ibfs_test
 sos_ibfs_test
 submodular_test
 add-noise
+denoise
 
 
 # Generated test files
