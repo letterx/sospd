@@ -4,7 +4,7 @@
 SubmodularPrimalDual2::SubmodularPrimalDual2(const MultilabelEnergy* energy)
     : m_energy(energy),
     m_num_labels(energy->NumLabels()),
-    m_labels(energy->NumNodes())
+    m_labels(energy->NumNodes(), 0)
 { }
 
 int SubmodularPrimalDual2::GetLabel(NodeId i) const {

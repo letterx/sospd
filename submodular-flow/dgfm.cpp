@@ -4,8 +4,8 @@
 DualGuidedFusionMove::DualGuidedFusionMove(const MultilabelEnergy* energy)
     : m_energy(energy),
     m_num_labels(energy->NumLabels()),
-    m_labels(),
-    m_fusion_labels(),
+    m_labels(energy->NumNodes(), 0),
+    m_fusion_labels(energy->NumNodes(), 0),
     m_expansion_submodular(false)
 { }
 
