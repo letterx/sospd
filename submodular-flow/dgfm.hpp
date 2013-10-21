@@ -44,6 +44,7 @@ class DualGuidedFusionMove {
         bool CheckLabelInvariant();
         bool CheckDualBoundInvariant();
         bool CheckActiveInvariant();
+        REAL& Height(NodeId i, Label l) { return m_heights[i*m_num_labels+l]; }
 
         const MultilabelEnergy* m_energy;
         SubmodularIBFS m_ibfs;
@@ -52,6 +53,7 @@ class DualGuidedFusionMove {
         std::vector<Label> m_fusion_labels;
         NodeCliqueList m_node_clique_list;
         std::vector<Dual> m_dual;
+        std::vector<REAL> m_heights;
         bool m_expansion_submodular;
         int m_iter;
 };
