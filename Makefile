@@ -30,11 +30,15 @@ SRCS = $(CORE_SRCS) $(TEST_SRCS) $(QPBO_SRCS)
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
-all: $(SF_LIB) unit-test higher-order-experiment recover-crash add-noise submodular-flow
+all: $(SF_LIB) unit-test higher-order-experiment recover-crash add-noise submodular-flow experiment
 
 .PHONY: submodular-flow
 submodular-flow:
 	$(MAKE) -C ./submodular-flow/
+
+.PHONY: experiment
+experiment: $(SF_LIB)
+	$(MAKE) -C ./experiments/denoising/
 
 unit-test: $(TEST_OBJS) $(SF_LIB)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(TEST_OBJS) $(SF_LIB) $(LIBS) -lboost_unit_test_framework 

@@ -6,20 +6,16 @@ OPT ?= -O3
 CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = -L$(BASE_DIR)/lib/
 LIBS = -lsubmodular-flow -lboost_serialization -lopencv_core -lopencv_imgproc -lopencv_highgui
-SF_LIB = $(BASE_DIR)/lib/libsubmodular-flow.a
 
 SRCS = denoise.cpp \
 	   foe-cliques.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
-all: $(SF_LIB) denoise
+all: denoise
 
 denoise: $(OBJS) $(SF_LIB)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(OBJS) $(LIBS)
-
-$(SF_LIB):
-	$(MAKE) -C $(BASE_DIR)
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -MMD -o $@ -c $<
