@@ -22,7 +22,7 @@ class DualGuidedFusionMove {
         DualGuidedFusionMove() = delete;
         explicit DualGuidedFusionMove(const MultilabelEnergy* energy);
 
-        void Solve();
+        void Solve(int niters = std::numeric_limits<int>::max());
         int GetLabel(NodeId i) const;
 
         void SetExpansionSubmodular(bool b) { m_expansion_submodular = b; }
@@ -46,12 +46,14 @@ class DualGuidedFusionMove {
         bool CheckActiveInvariant();
 
         const MultilabelEnergy* m_energy;
+        SubmodularIBFS m_ibfs;
         const size_t m_num_labels;
         std::vector<Label> m_labels;
         std::vector<Label> m_fusion_labels;
         NodeCliqueList m_node_clique_list;
         std::vector<Dual> m_dual;
         bool m_expansion_submodular;
+        int m_iter;
 };
 
 #endif

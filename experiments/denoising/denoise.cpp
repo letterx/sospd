@@ -22,15 +22,16 @@
 #include "foe-cliques.hpp"
 #include "higher-order-energy.hpp"
 #include "fusion-move.hpp"
+#include "dgfm.hpp"
 
 double sigma = 20.0;
-int kernelRadius;
-std::vector<double> gaussianKernel;
 REAL threshold = 100.0 * DoubleToREAL;
 int thresholdIters = 20;
 
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image);
 void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
+template <typename Optimizer>
+void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current);
 
 int width = 0;
 int height = 0;
@@ -58,15 +59,32 @@ int main(int argc, char **argv) {
 
     MultilabelEnergy energy_function = SetupEnergy(current);
 
+    /*
+    FusionMove<4>::ProposalCallback pc(FusionProposal);
+    FusionMove<4> fusion(&energy_function, pc, current);
+    Optimize(fusion, energy_function, image, current);
+    */
+
+    {
+        DualGuidedFusionMove dgfm(&energy_function);
+        Optimize(dgfm, energy_function, image, current);
+    }
+
+    cv::imwrite(outfilename, image); 
+
+    REAL energy  = energy_function.ComputeEnergy(current);
+    std::cout << "Final Energy: " << energy << std::endl;
+
+    return 0;
+}
+
+template <typename Optimizer>
+void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current) {
     // energies keeps track of last [thresholdIters] energy values to know
     // when we reach convergence
     REAL energies[thresholdIters];
 
     int iterations = 300;
-
-    FusionMove<4>::ProposalCallback pc(FusionProposal);
-    FusionMove<4> fusion(&energy_function, pc, current);
-
     for (int i = 0; i < iterations; ++i) {
         std::cout << "Iteration " << i+1 << std::endl;
 
@@ -80,20 +98,13 @@ int main(int argc, char **argv) {
         energies[i%thresholdIters] = energy;
         std::cout << "    Current Energy: " << (double)energy / DoubleToREAL << std::endl;
 
-        fusion.Solve(1);
+        opt.Solve(1);
         for (int i = 0; i < width*height; ++i)
-            current[i] = fusion.GetLabel(i);
+            current[i] = opt.GetLabel(i);
     }
 
     for (int i = 0; i < width*height; ++i)
-        image.data[i] = fusion.GetLabel(i);
-
-    cv::imwrite(outfilename, image); 
-
-    REAL energy  = energy_function.ComputeEnergy(current);
-    std::cout << "Final Energy: " << energy << std::endl;
-
-    return 0;
+        image.data[i] = current[i];
 }
 
 void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {

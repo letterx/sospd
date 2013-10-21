@@ -3,10 +3,12 @@
 
 DualGuidedFusionMove::DualGuidedFusionMove(const MultilabelEnergy* energy)
     : m_energy(energy),
+    m_ibfs(),
     m_num_labels(energy->NumLabels()),
     m_labels(energy->NumNodes(), 0),
     m_fusion_labels(energy->NumNodes(), 0),
-    m_expansion_submodular(false)
+    m_expansion_submodular(false),
+    m_iter(0)
 { }
 
 int DualGuidedFusionMove::GetLabel(NodeId i) const {
@@ -291,19 +293,16 @@ bool DualGuidedFusionMove::InitialFusionLabeling() {
     return different;
 }
 
-void DualGuidedFusionMove::Solve() {
+void DualGuidedFusionMove::Solve(int niters) {
+    if (m_iter == 0) {
+        SetupGraph(m_ibfs);
+        InitialLabeling();
+        InitialDual();
+        InitialNodeCliqueList();
+    }
 	#ifdef PROGRESS_DISPLAY
-		std::cout << "(" << std::endl;
-	#endif
-    SubmodularIBFS crf;
-    SetupGraph(crf);
-	InitialLabeling();
-	InitialDual();
-	InitialNodeCliqueList();
-	#ifdef PROGRESS_DISPLAY
-		size_t num_round = 0;
 		REAL energy = m_energy->ComputeEnergy(m_labels);
-		std::cout << "Iteration " << num_round << ": " << energy << std::endl;
+		std::cout << "Iteration " << m_iter << ": " << energy << std::endl;
 	#endif
 	#ifdef CHECK_INVARIANTS
         ASSERT(CheckLabelInvariant());
@@ -311,35 +310,34 @@ void DualGuidedFusionMove::Solve() {
         ASSERT(CheckActiveInvariant());
 	#endif
 	bool labelChanged = true;
-	while (labelChanged){
+    int this_iter = 0;
+	while (labelChanged && this_iter < niters){
         labelChanged = InitialFusionLabeling();
         if (!labelChanged) break;
-	    PreEditDual(crf);
+	    PreEditDual(m_ibfs);
 		#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());
             ASSERT(CheckDualBoundInvariant());
             ASSERT(CheckActiveInvariant());
 	    #endif
-        UpdatePrimalDual(crf);
+        UpdatePrimalDual(m_ibfs);
 		PostEditDual();
 		#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());
             ASSERT(CheckDualBoundInvariant());
             ASSERT(CheckActiveInvariant());
 	    #endif
+        this_iter++;
+        m_iter++;
 		#ifdef PROGRESS_DISPLAY
 			energy = m_energy->ComputeEnergy(m_labels);
-			num_round++;
-			std::cout << "Iteration " << num_round << ": " << energy << std::endl;
+			std::cout << "Iteration " << m_iter << ": " << energy << std::endl;
 		#endif
 	}
 	#ifdef CHECK_INVARIANTS
+    if (!labelChanged)
 	    ASSERT(CheckHeightInvariant());
 	#endif
-	DualFit();
-    #ifdef PROGRESS_DISPLAY
-	    std::cout << ")" << std::endl;
-    #endif
 }
 
 bool DualGuidedFusionMove::CheckHeightInvariant() {
