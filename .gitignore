@@ -50,6 +50,7 @@ stats.out
 *.dat
 sum-of-submodular.tar
 bisect.sh
+*.stats
 
 
 # images

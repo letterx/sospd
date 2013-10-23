@@ -12,6 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
@@ -29,10 +30,24 @@ double sigma = 20.0;
 REAL threshold = 100.0 * DoubleToREAL;
 int thresholdIters = 20;
 
+struct IterationStat {
+    int iter;
+    REAL start_energy;
+    REAL end_energy;
+    double iter_time;
+    double total_time;
+};
+
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image);
 void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
+
 template <typename Optimizer>
-void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current, int iterations);
+void Optimize(Optimizer& opt, 
+        const MultilabelEnergy& energy_function, 
+        cv::Mat& image, 
+        std::vector<Label>& current, 
+        int iterations, 
+        std::vector<IterationStat>& stats);
 
 int width = 0;
 int height = 0;
@@ -43,6 +58,7 @@ int main(int argc, char **argv) {
     std::string basename;
     std::string infilename;
     std::string outfilename;
+    std::string statsfilename;
     int iterations;
     std::string method;
 
@@ -70,7 +86,8 @@ int main(int argc, char **argv) {
         exit(-1);
     }
     infilename = basename + ".pgm";
-    outfilename = basename + "-out.pgm";
+    outfilename = basename + "-" + method + ".pgm";
+    statsfilename = basename + "-" + method + ".stats";
 
     cv::Mat image = cv::imread(infilename.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
     if (!image.data) {
@@ -80,33 +97,44 @@ int main(int argc, char **argv) {
 
     width = image.cols;
     height = image.rows;
+    std::vector<IterationStat> stats;
 
     std::vector<Label> current(image.data, image.data + width*height);
-
     MultilabelEnergy energy_function = SetupEnergy(current);
 
     if (method == std::string("reduction")) {
         FusionMove<4>::ProposalCallback pc(FusionProposal);
         FusionMove<4> fusion(&energy_function, pc, current);
-        Optimize(fusion, energy_function, image, current, iterations);
+        Optimize(fusion, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetAlphaExpansion();
-        Optimize(dgfm, energy_function, image, current, iterations);
+        Optimize(dgfm, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha-height")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetHeightAlphaExpansion();
-        Optimize(dgfm, energy_function, image, current, iterations);
+        Optimize(dgfm, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-blur-random")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetProposalCallback(FusionProposal);
-        Optimize(dgfm, energy_function, image, current, iterations);
+        Optimize(dgfm, energy_function, image, current, iterations, stats);
     } else {
         std::cout << "Unrecognized method: " << method << "!\n";
         exit(-1);
     }
 
     cv::imwrite(outfilename.c_str(), image); 
+
+    std::ofstream statsfile(statsfilename);
+    for (const IterationStat& s : stats) {
+        statsfile << s.iter << "\t";
+        statsfile << s.iter_time << "\t";
+        statsfile << s.total_time << "\t";
+        statsfile << s.start_energy << "\t";
+        statsfile << s.end_energy << "\n";
+    }
+    statsfile.close();
+
 
     REAL energy  = energy_function.ComputeEnergy(current);
     std::cout << "Final Energy: " << energy << std::endl;
@@ -115,27 +143,43 @@ int main(int argc, char **argv) {
 }
 
 template <typename Optimizer>
-void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current, int iterations) {
+void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current, int iterations, std::vector<IterationStat>& stats) {
     // energies keeps track of last [thresholdIters] energy values to know
     // when we reach convergence
     REAL energies[thresholdIters];
 
+    REAL last_energy = energy_function.ComputeEnergy(current);
+    std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
     for (int i = 0; i < iterations; ++i) {
+        std::chrono::system_clock::time_point iterStartTime = std::chrono::system_clock::now();
+        IterationStat s;
+        s.iter = i;
         std::cout << "Iteration " << i+1 << std::endl;
 
-        REAL energy  = energy_function.ComputeEnergy(current); 
+        s.start_energy = last_energy;
         // check if we've reached convergence
         if (i > thresholdIters 
-                && energies[i%thresholdIters] - energy < threshold) {
+                && energies[i%thresholdIters] - last_energy < threshold) {
             break;
         }
         // Do some statistic gathering
-        energies[i%thresholdIters] = energy;
-        std::cout << "    Current Energy: " << (double)energy / DoubleToREAL << std::endl;
+        energies[i%thresholdIters] = last_energy;
+        std::cout << "    Current Energy: " << (double)last_energy / DoubleToREAL << std::endl;
 
         opt.Solve(1);
+
+        std::chrono::system_clock::time_point iterStopTime = std::chrono::system_clock::now();
+        std::chrono::duration<double> iterTime = iterStopTime - iterStartTime;
+        s.iter_time = iterTime.count();
+        std::chrono::duration<double> totalTime = iterStopTime - startTime;
+        s.total_time = totalTime.count();
+
         for (int i = 0; i < width*height; ++i)
             current[i] = opt.GetLabel(i);
+        REAL energy  = energy_function.ComputeEnergy(current); 
+        last_energy = energy;
+        s.end_energy = energy;
+        stats.push_back(s);
     }
 
     for (int i = 0; i < width*height; ++i)
