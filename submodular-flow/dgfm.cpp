@@ -10,7 +10,8 @@ DualGuidedFusionMove::DualGuidedFusionMove(const MultilabelEnergy* energy)
     m_dual(),
     m_heights(),
     m_expansion_submodular(false),
-    m_iter(0)
+    m_iter(0),
+    m_pc([&](int, const std::vector<Label>&, std::vector<Label>&) { HeightAlphaProposal(); })
 { }
 
 int DualGuidedFusionMove::GetLabel(NodeId i) const {
@@ -285,8 +286,16 @@ void DualGuidedFusionMove::DualFit() {
 }
 
 bool DualGuidedFusionMove::InitialFusionLabeling() {
+    m_pc(m_iter, m_labels, m_fusion_labels);
+    for (size_t i = 0; i < m_labels.size(); ++i) {
+        if (m_labels[i] != m_fusion_labels[i])
+            return true;
+    }
+    return false;
+}
+
+void DualGuidedFusionMove::HeightAlphaProposal() {
     const size_t n = m_labels.size();
-    bool different = false;
     REAL max_s_capacity = 0;
     Label alpha = 0;
     for (Label l = 0; l < m_num_labels; ++l) {
@@ -301,11 +310,17 @@ bool DualGuidedFusionMove::InitialFusionLabeling() {
             alpha = l;
         }
     }
-    different = (max_s_capacity > 0);
     for (size_t i = 0; i < n; ++i)
         m_fusion_labels[i] = alpha;
-    return different;
 }
+
+void DualGuidedFusionMove::AlphaProposal() {
+    Label alpha = m_iter & m_num_labels;
+    const size_t n = m_labels.size();
+    for (size_t i = 0; i < n; ++i)
+        m_fusion_labels[i] = alpha;
+}
+
 
 void DualGuidedFusionMove::Solve(int niters) {
     if (m_iter == 0) {

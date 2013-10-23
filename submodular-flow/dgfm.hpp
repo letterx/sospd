@@ -10,6 +10,7 @@
 #include "submodular-ibfs.hpp"
 #include "submodular-functions.hpp"
 #include <vector>
+#include <functional>
 
 class DualGuidedFusionMove {
     public:
@@ -18,6 +19,7 @@ class DualGuidedFusionMove {
         typedef MultilabelEnergy::CliquePtr CliquePtr;
         typedef std::vector<std::vector<REAL> > Dual;
         typedef std::vector<std::vector<std::pair<size_t, size_t> > > NodeCliqueList;
+        typedef std::function<void(int, const std::vector<Label>&, std::vector<Label>&)> ProposalCallback;
 
         DualGuidedFusionMove() = delete;
         explicit DualGuidedFusionMove(const MultilabelEnergy* energy);
@@ -26,6 +28,19 @@ class DualGuidedFusionMove {
         int GetLabel(NodeId i) const;
 
         void SetExpansionSubmodular(bool b) { m_expansion_submodular = b; }
+        void SetProposalCallback(const ProposalCallback& pc) { m_pc = pc; }
+        // Set the proposal method to regular alpha-expansion
+        void SetAlphaExpansion() { 
+            m_pc = [&](int, const std::vector<Label>&, std::vector<Label>&) {
+                AlphaProposal();
+            };
+        }
+        // Set the proposal method to best-height alpha-expansion
+        void SetHeightAlphaExpansion() { 
+            m_pc = [&](int, const std::vector<Label>&, std::vector<Label>&) {
+                HeightAlphaProposal();
+            };
+        }
 
     protected:
         REAL ComputeHeight(NodeId, Label);
@@ -46,6 +61,10 @@ class DualGuidedFusionMove {
         bool CheckActiveInvariant();
         REAL& Height(NodeId i, Label l) { return m_heights[i*m_num_labels+l]; }
 
+        // Move Proposals
+        void HeightAlphaProposal();
+        void AlphaProposal();
+
         const MultilabelEnergy* m_energy;
         SubmodularIBFS m_ibfs;
         const size_t m_num_labels;
@@ -56,6 +75,7 @@ class DualGuidedFusionMove {
         std::vector<REAL> m_heights;
         bool m_expansion_submodular;
         int m_iter;
+        ProposalCallback m_pc;
 };
 
 #endif

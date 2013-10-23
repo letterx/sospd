@@ -92,6 +92,7 @@ int main(int argc, char **argv) {
 
     {
         DualGuidedFusionMove dgfm(&energy_function);
+        dgfm.SetProposalCallback(FusionProposal);
         Optimize(dgfm, energy_function, image, current, iterations);
     }
 
