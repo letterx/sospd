@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
         ("help", "Display this help message")
         ("iters,i", po::value<int>(&iterations)->default_value(300), "Maximum number of iterations")
         ("image", po::value<std::string>(&basename)->required(), "Name of image (without extension)")
+        ("method,m", po::value<std::string>(&method)->default_value(std::string("spd")), "Optimization method")
     ;
 
     po::positional_options_description popts_desc;
@@ -84,16 +85,25 @@ int main(int argc, char **argv) {
 
     MultilabelEnergy energy_function = SetupEnergy(current);
 
-    /*
-    FusionMove<4>::ProposalCallback pc(FusionProposal);
-    FusionMove<4> fusion(&energy_function, pc, current);
-    Optimize(fusion, energy_function, image, current, iterations);
-    */
-
-    {
+    if (method == std::string("reduction")) {
+        FusionMove<4>::ProposalCallback pc(FusionProposal);
+        FusionMove<4> fusion(&energy_function, pc, current);
+        Optimize(fusion, energy_function, image, current, iterations);
+    } else if (method == std::string("spd-alpha")) {
+        DualGuidedFusionMove dgfm(&energy_function);
+        dgfm.SetAlphaExpansion();
+        Optimize(dgfm, energy_function, image, current, iterations);
+    } else if (method == std::string("spd-alpha-height")) {
+        DualGuidedFusionMove dgfm(&energy_function);
+        dgfm.SetHeightAlphaExpansion();
+        Optimize(dgfm, energy_function, image, current, iterations);
+    } else if (method == std::string("spd-blur-random")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetProposalCallback(FusionProposal);
         Optimize(dgfm, energy_function, image, current, iterations);
+    } else {
+        std::cout << "Unrecognized method: " << method << "!\n";
+        exit(-1);
     }
 
     cv::imwrite(outfilename.c_str(), image); 
