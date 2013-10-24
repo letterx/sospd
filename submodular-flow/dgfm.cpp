@@ -350,6 +350,7 @@ void DualGuidedFusionMove::Solve(int niters) {
             ASSERT(CheckActiveInvariant());
 	    #endif
         UpdatePrimalDual(m_ibfs);
+        ASSERT(CheckLabelInvariant());
 		PostEditDual();
 		#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());
