@@ -319,7 +319,7 @@ void DualGuidedFusionMove::HeightAlphaProposal() {
 }
 
 void DualGuidedFusionMove::AlphaProposal() {
-    Label alpha = m_iter & m_num_labels;
+    Label alpha = m_iter % m_num_labels;
     const size_t n = m_labels.size();
     for (size_t i = 0; i < n; ++i)
         m_fusion_labels[i] = alpha;

@@ -36,8 +36,15 @@ submodular-flow:
 	$(MAKE) -C ./submodular-flow/
 
 .PHONY: experiment
-experiment: $(SF_LIB)
+experiment: denoising stereo
+
+.PHONY:
+denoising: $(SF_LIB)
 	$(MAKE) -C ./experiments/denoising/
+
+.PHONY:
+stereo: $(SF_LIB)
+	$(MAKE) -C ./experiments/stereo/
 
 unit-test: $(TEST_OBJS) $(SF_LIB)
 	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(TEST_OBJS) $(SF_LIB) $(LIBS) -lboost_unit_test_framework 
