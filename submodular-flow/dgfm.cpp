@@ -10,6 +10,7 @@ DualGuidedFusionMove::DualGuidedFusionMove(const MultilabelEnergy* energy)
     m_dual(),
     m_heights(),
     m_expansion_submodular(false),
+    m_lower_bound(true),
     m_iter(0),
     m_pc([&](int, const std::vector<Label>&, std::vector<Label>&) { HeightAlphaProposal(); })
 { }
@@ -140,7 +141,10 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
             // Find g with g(S) >= f(S) and g submodular. Also want to make sure
             // that g(S | T) == g(S) where T is the set of nodes with 
             // current[i] == fusion[i]
-            SubmodularUpperBound(k, energy_table);
+            if (m_lower_bound)
+                SubmodularLowerBound(k, energy_table);
+            else
+                SubmodularUpperBound(k, energy_table);
             Assgn fusion_equals_current = 0;
             for (size_t i = 0; i < k; ++i) {
                 if (current_labels[i] == fusion_labels[i])
@@ -350,7 +354,6 @@ void DualGuidedFusionMove::Solve(int niters) {
             ASSERT(CheckActiveInvariant());
 	    #endif
         UpdatePrimalDual(m_ibfs);
-        ASSERT(CheckLabelInvariant());
 		PostEditDual();
 		#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());

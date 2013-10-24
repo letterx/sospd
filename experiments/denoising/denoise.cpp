@@ -61,6 +61,7 @@ int main(int argc, char **argv) {
     std::string statsfilename;
     int iterations;
     std::string method;
+    bool spd_lower_bound;
 
     po::options_description options_desc("Denoising arguments");
     options_desc.add_options()
@@ -68,6 +69,7 @@ int main(int argc, char **argv) {
         ("iters,i", po::value<int>(&iterations)->default_value(300), "Maximum number of iterations")
         ("image", po::value<std::string>(&basename)->required(), "Name of image (without extension)")
         ("method,m", po::value<std::string>(&method)->default_value(std::string("spd")), "Optimization method")
+        ("lower-bound", po::value<bool>(&spd_lower_bound)->default_value(true), "Use lower bound for SPD3")
     ;
 
     po::positional_options_description popts_desc;
@@ -109,14 +111,17 @@ int main(int argc, char **argv) {
     } else if (method == std::string("spd-alpha")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetAlphaExpansion();
+        dgfm.SetLowerBound(spd_lower_bound);
         Optimize(dgfm, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha-height")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetHeightAlphaExpansion();
+        dgfm.SetLowerBound(spd_lower_bound);
         Optimize(dgfm, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-blur-random")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetProposalCallback(FusionProposal);
+        dgfm.SetLowerBound(spd_lower_bound);
         Optimize(dgfm, energy_function, image, current, iterations, stats);
     } else {
         std::cout << "Unrecognized method: " << method << "!\n";

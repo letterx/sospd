@@ -28,6 +28,7 @@ class DualGuidedFusionMove {
         int GetLabel(NodeId i) const;
 
         void SetExpansionSubmodular(bool b) { m_expansion_submodular = b; }
+        void SetLowerBound(bool b) { m_lower_bound = b; }
         void SetProposalCallback(const ProposalCallback& pc) { m_pc = pc; }
         // Set the proposal method to regular alpha-expansion
         void SetAlphaExpansion() { 
@@ -74,6 +75,7 @@ class DualGuidedFusionMove {
         std::vector<Dual> m_dual;
         std::vector<REAL> m_heights;
         bool m_expansion_submodular;
+        bool m_lower_bound;
         int m_iter;
         ProposalCallback m_pc;
 };
