@@ -53,8 +53,8 @@ class StereoClique : public Clique {
 };
 
 float StereoClique::kappa = 0.001;
-float StereoClique::alpha = 4.0;
-float StereoClique::scale = 1000;
+float StereoClique::alpha = 10.0;
+float StereoClique::scale = 20000;
 
 
 REAL StereoClique::Energy(const Label buf[]) const {
@@ -112,9 +112,9 @@ int main(int argc, char **argv) {
         ("image", po::value<std::string>(&basename)->required(), "Name of image (without extension)")
         ("method,m", po::value<std::string>(&method)->default_value(std::string("spd-alpha")), "Optimization method")
         ("lower-bound", po::value<bool>(&spd_lower_bound)->default_value(true), "Use lower bound for SPD3")
-        ("kappa", po::value<float>(&StereoClique::kappa)->default_value(0.1), "Truncation for stereo prior")
+        ("kappa", po::value<float>(&StereoClique::kappa)->default_value(0.001), "Truncation for stereo prior")
         ("alpha", po::value<float>(&StereoClique::alpha)->default_value(10), "Max gradient for stereo prior")
-        ("lambda", po::value<float>(&StereoClique::scale)->default_value(10000), "Scale for stereo prior")
+        ("lambda", po::value<float>(&StereoClique::scale)->default_value(20000), "Scale for stereo prior")
     ;
 
     po::positional_options_description popts_desc;
@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
     }
 
     image.convertTo(image, CV_8U, .7, 0);
-    ShowImage(image);
+    //ShowImage(image);
     cv::imwrite(outfilename.c_str(), image); 
 
     std::ofstream statsfile(stats_filename);
@@ -231,10 +231,14 @@ void Optimize(Optimizer& opt,
         std::chrono::duration<double> totalTime = iterStopTime - startTime;
         s.total_time = totalTime.count();
 
+        std::vector<Label> next_labeling(width*height);
         for (int i = 0; i < width*height; ++i)
-            current[i] = opt.GetLabel(i);
-        REAL energy  = energy_function.ComputeEnergy(current); 
-        last_energy = energy;
+            next_labeling[i] = opt.GetLabel(i);
+        REAL energy  = energy_function.ComputeEnergy(next_labeling); 
+        if (energy < last_energy) {
+            last_energy = energy;
+            current = next_labeling;
+        }
         s.end_energy = energy;
         stats.push_back(s);
 

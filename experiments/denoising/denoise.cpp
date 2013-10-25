@@ -179,9 +179,14 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& 
         std::chrono::duration<double> totalTime = iterStopTime - startTime;
         s.total_time = totalTime.count();
 
+        std::vector<Label> next_labeling(width*height);
         for (int i = 0; i < width*height; ++i)
-            current[i] = opt.GetLabel(i);
-        REAL energy  = energy_function.ComputeEnergy(current); 
+            next_labeling[i] = opt.GetLabel(i);
+        REAL energy  = energy_function.ComputeEnergy(next_labeling); 
+        if (energy < last_energy) {
+            last_energy = energy;
+            current = next_labeling;
+        }
         last_energy = energy;
         s.end_energy = energy;
         stats.push_back(s);
