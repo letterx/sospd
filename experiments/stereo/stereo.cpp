@@ -59,12 +59,17 @@ float StereoClique::scale = 1000;
 
 REAL StereoClique::Energy(const Label buf[]) const {
     float disparity[3];
+    double energy;
     for (int i = 0; i < 3; ++i)
         disparity[i] = m_proposals[buf[i]].at<float>(m_nodes[i]);
     if (std::abs(disparity[1] - disparity[0]) > alpha
-            || std::abs(disparity[2] - disparity[1]) > alpha)
-        return kappa;
-    return scale*std::min(std::abs(disparity[0] - 2*disparity[1] + disparity[2]), kappa);
+            || std::abs(disparity[2] - disparity[1]) > alpha) {
+        energy = kappa;
+    } else {
+        float curvature = disparity[0] - 2*disparity[1] + disparity[2];
+        energy = std::min(curvature*curvature, kappa);
+    }
+    return energy*scale/kappa;
 }
 
 
@@ -167,7 +172,7 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
-    image.convertTo(image, CV_8U, .5, 0);
+    image.convertTo(image, CV_8U, .7, 0);
     ShowImage(image);
     cv::imwrite(outfilename.c_str(), image); 
 

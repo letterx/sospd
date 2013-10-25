@@ -1,7 +1,7 @@
 #ifndef _DGFM_HPP_
 #define _DGFM_HPP_
 
-#define PROGRESS_DISPLAY
+//#define PROGRESS_DISPLAY
 //#define CHECK_INVARIANTS
 
 #include "energy-common.hpp"
