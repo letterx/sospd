@@ -22,11 +22,10 @@ int main(int argc, char **argv) {
     double sigma = atof(argv[3]);
     cv::Mat noise;
     noise.create(im.rows, im.cols, CV_32FC1);
-    cv::randn(noise, 255, sigma);
+    cv::randn(noise, 0, sigma);
 
     gray.convertTo(out, CV_32FC1);
     out = out + noise;
-    out *= 0.5;
     cv::imwrite(argv[2], out);
 
 
