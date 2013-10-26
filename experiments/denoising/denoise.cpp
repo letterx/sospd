@@ -187,8 +187,7 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& 
             last_energy = energy;
             current = next_labeling;
         }
-        last_energy = energy;
-        s.end_energy = energy;
+        s.end_energy = last_energy;
         stats.push_back(s);
     }
 
