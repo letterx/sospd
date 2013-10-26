@@ -29,6 +29,7 @@
 double sigma = 20.0;
 REAL threshold = 100.0 * DoubleToREAL;
 int thresholdIters = 20;
+std::vector<Label> randomAlphaOrder;
 
 struct IterationStat {
     int iter;
@@ -40,6 +41,7 @@ struct IterationStat {
 
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image);
 void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
+void AlphaProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
 
 template <typename Optimizer>
 void Optimize(Optimizer& opt, 
@@ -101,6 +103,11 @@ int main(int argc, char **argv) {
     height = image.rows;
     std::vector<IterationStat> stats;
 
+    randomAlphaOrder = std::vector<Label>(256);
+    for (int i = 0; i < 256; ++i)
+        randomAlphaOrder[i] = i;
+    std::random_shuffle(randomAlphaOrder.begin(), randomAlphaOrder.end());
+
     std::vector<Label> current(image.data, image.data + width*height);
     MultilabelEnergy energy_function = SetupEnergy(current);
 
@@ -108,9 +115,13 @@ int main(int argc, char **argv) {
         FusionMove<4>::ProposalCallback pc(FusionProposal);
         FusionMove<4> fusion(&energy_function, pc, current);
         Optimize(fusion, energy_function, image, current, iterations, stats);
+    } else if (method == std::string("reduction-alpha")) {
+        FusionMove<4>::ProposalCallback pc(AlphaProposal);
+        FusionMove<4> fusion(&energy_function, pc, current);
+        Optimize(fusion, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
         DualGuidedFusionMove dgfm(&energy_function);
-        dgfm.SetAlphaExpansion();
+        dgfm.SetProposalCallback(AlphaProposal);
         dgfm.SetLowerBound(spd_lower_bound);
         Optimize(dgfm, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha-height")) {
@@ -193,6 +204,12 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& 
 
     for (int i = 0; i < width*height; ++i)
         image.data[i] = current[i];
+}
+
+void AlphaProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {
+    Label alpha = randomAlphaOrder[niter%256];
+    for (Label& l : proposed)
+        l = alpha;
 }
 
 void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {
