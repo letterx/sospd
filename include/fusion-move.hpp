@@ -67,6 +67,7 @@ void FusionMove<MaxDegree>::FusionStep() {
     m_pc(m_iter, m_labels, proposed);
     SetupFusionEnergy(proposed, hoe);
     hoe.ToQuadratic(qr);
+    qr.MergeParallelEdges();
     qr.Solve();
     qr.ComputeWeakPersistencies();
     GetFusedImage(proposed, qr);

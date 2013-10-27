@@ -14,7 +14,7 @@
 #include <math.h>
 #include <iostream>
 
-const double DoubleToREAL = 1000;
+const double DoubleToREAL = 10000;
 
 /*
  * The Field of Experts energy, defined for a 2x2 patch of the image.

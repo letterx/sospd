@@ -49,5 +49,5 @@ void AddFoEGrad(const Clique& clique, const std::vector<Label>& current, std::ve
 }
 
 double FoEUnaryGrad(Label orig, Label current, double sigma) {
-    return ((double)(current - orig)) / (sigma*sigma);
+    return (double(current) - double(orig)) / (sigma*sigma);
 }
