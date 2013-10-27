@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for image in venus teddy cones
+for image in medium-test
 do
     sed "s/REPLACE_FILE/$image/" energy-graph.gp > tmp.gp
     gnuplot tmp.gp
