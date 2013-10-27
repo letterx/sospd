@@ -27,7 +27,7 @@
 #include "dgfm.hpp"
 
 double sigma = 20.0;
-REAL threshold = 100.0 * DoubleToREAL;
+REAL threshold = 100.0 * 60;
 int thresholdIters = 20;
 std::vector<Label> randomAlphaOrder;
 
@@ -42,6 +42,7 @@ struct IterationStat {
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image);
 void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
 void AlphaProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
+void GradientProposal(int niter, const std::vector<Label>& current, const std::vector<Label>& orig, const MultilabelEnergy& energy, double sigma, double eta, std::vector<Label>& proposed);
 
 template <typename Optimizer>
 void Optimize(Optimizer& opt, 
@@ -64,6 +65,7 @@ int main(int argc, char **argv) {
     int iterations;
     std::string method;
     bool spd_lower_bound;
+    double eta = 60;
 
     po::options_description options_desc("Denoising arguments");
     options_desc.add_options()
@@ -72,6 +74,8 @@ int main(int argc, char **argv) {
         ("image", po::value<std::string>(&basename)->required(), "Name of image (without extension)")
         ("method,m", po::value<std::string>(&method)->default_value(std::string("spd")), "Optimization method")
         ("lower-bound", po::value<bool>(&spd_lower_bound)->default_value(true), "Use lower bound for SPD3")
+        ("eta", po::value<double>(&eta)->default_value(60), "Scale for gradient descent steps")
+        ("sigma", po::value<double>(&sigma)->default_value(25.0), "Strength of unary terms")
     ;
 
     po::positional_options_description popts_desc;
@@ -111,12 +115,22 @@ int main(int argc, char **argv) {
     std::vector<Label> current(image.data, image.data + width*height);
     MultilabelEnergy energy_function = SetupEnergy(current);
 
+    std::vector<Label> orig = current;
+    std::function<void(int, const std::vector<Label>&, std::vector<Label>&)> gradCallback = 
+        [&](int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {
+            GradientProposal(niter, current, orig, energy_function, sigma, eta, proposed);
+        };
+
     if (method == std::string("reduction")) {
         FusionMove<4>::ProposalCallback pc(FusionProposal);
         FusionMove<4> fusion(&energy_function, pc, current);
         Optimize(fusion, energy_function, image, current, iterations, stats);
     } else if (method == std::string("reduction-alpha")) {
         FusionMove<4>::ProposalCallback pc(AlphaProposal);
+        FusionMove<4> fusion(&energy_function, pc, current);
+        Optimize(fusion, energy_function, image, current, iterations, stats);
+    } else if (method == std::string("reduction-grad")) {
+        FusionMove<4>::ProposalCallback pc = gradCallback;
         FusionMove<4> fusion(&energy_function, pc, current);
         Optimize(fusion, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
@@ -132,6 +146,11 @@ int main(int argc, char **argv) {
     } else if (method == std::string("spd-blur-random")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetProposalCallback(FusionProposal);
+        dgfm.SetLowerBound(spd_lower_bound);
+        Optimize(dgfm, energy_function, image, current, iterations, stats);
+    } else if (method == std::string("spd-grad")) {
+        DualGuidedFusionMove dgfm(&energy_function);
+        dgfm.SetProposalCallback(gradCallback);
         dgfm.SetLowerBound(spd_lower_bound);
         Optimize(dgfm, energy_function, image, current, iterations, stats);
     } else {
@@ -229,7 +248,7 @@ void FusionProposal(int niter, const std::vector<Label>& current, std::vector<La
             image.data[i] = current[i];
         cv::Mat blur(height, width, CV_32FC1);
         cv::Size ksize(0,0);
-        cv::GaussianBlur(image, blur, ksize, 3.0, 3.0, cv::BORDER_REPLICATE);
+        cv::GaussianBlur(image, blur, ksize, 2.0, 2.0, cv::BORDER_REPLICATE);
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
                 int n = i*width+j;
@@ -249,6 +268,21 @@ void FusionProposal(int niter, const std::vector<Label>& current, std::vector<La
     }
 }
 
+void GradientProposal(int niter, const std::vector<Label>& current, const std::vector<Label>& orig, const MultilabelEnergy& energy, double sigma, double eta, std::vector<Label>& proposed) {
+    std::vector<double> grad(current.size(), 0.0);
+    for (const auto& cp : energy.Cliques())
+        AddFoEGrad(*cp, current, grad);
+    for (size_t i = 0; i < current.size(); ++i)
+        grad[i] += FoEUnaryGrad(orig[i], current[i], sigma);
+    double scale = eta*7/double(7+niter); 
+    for (size_t i = 0; i < current.size(); ++i) {
+        Label new_label = current[i] - Label(round(scale*grad[i]));
+        if (new_label > 255) new_label = 255;
+        if (new_label < 0) new_label = 0;
+        proposed[i] = new_label;
+    }
+}
+    
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image) {
     MultilabelEnergy energy(256);
     energy.AddNode(width*height);

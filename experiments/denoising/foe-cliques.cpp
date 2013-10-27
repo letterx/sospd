@@ -34,3 +34,20 @@ REAL FoEUnaryEnergy(unsigned char orig, unsigned char label, double sigma) {
         return DoubleToREAL * e;
 }
 
+void AddFoEGrad(const Clique& clique, const std::vector<Label>& current, std::vector<double>& grad) {
+    Label values[4];
+    for (int i = 0; i < 4; ++i)
+        values[i] = current[clique.Nodes()[i]];
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            double dot = 0.0;
+            for (int k = 0; k < 4; ++k)
+                dot += expert[j][k] * values[k];
+            grad[clique.Nodes()[i]] += alpha[j] * expert[j][i] * dot / (1 + 0.5 * dot * dot);
+        }
+    }
+}
+
+double FoEUnaryGrad(Label orig, Label current, double sigma) {
+    return ((double)(current - orig)) / (sigma*sigma);
+}

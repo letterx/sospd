@@ -104,6 +104,7 @@ int main(int argc, char **argv) {
     int iterations;
     std::string method;
     bool spd_lower_bound;
+    bool lower_bound_spd;
 
     po::options_description options_desc("Stereo arguments");
     options_desc.add_options()
@@ -115,6 +116,7 @@ int main(int argc, char **argv) {
         ("kappa", po::value<float>(&StereoClique::kappa)->default_value(0.001), "Truncation for stereo prior")
         ("alpha", po::value<float>(&StereoClique::alpha)->default_value(10), "Max gradient for stereo prior")
         ("lambda", po::value<float>(&StereoClique::scale)->default_value(20000), "Scale for stereo prior")
+        ("spd-lower", po::value<bool>(&lower_bound_spd)->default_value(true), "SPD uses lower bound to approximate f")
     ;
 
     po::positional_options_description popts_desc;

@@ -91,6 +91,8 @@ clean:
 	rm -rf submodular-flow/*.d
 	rm -rf submodular-flow/*~
 	cd submodular-flow; $(MAKE) clean
+	cd experiments/denoise; $(MAKE) clean
+	cd experiments/stereo; $(MAKE) clean
 
 .PHONY: distclean
 distclean: clean
@@ -100,6 +102,8 @@ distclean: clean
 	rm -rf recover-crash
 	rm -rf add-noise
 	cd submodular-flow; $(MAKE) distclean
+	cd experiments/denoise; $(MAKE) distclean
+	cd experiments/stereo; $(MAKE) distclean
 
 .PHONY: check
 check: ./unit-test
