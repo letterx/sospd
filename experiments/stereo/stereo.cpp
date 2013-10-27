@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
-    image.convertTo(image, CV_8U, .7, 0);
+    image.convertTo(image, CV_8U, 1.0, 0);
     //ShowImage(image);
     cv::imwrite(outfilename.c_str(), image); 
 

@@ -40,7 +40,7 @@ sos_ibfs_test
 submodular_test
 add-noise
 denoise
-stereo
+experiments/stereo/stereo
 
 
 # Generated test files
