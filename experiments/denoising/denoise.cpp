@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
         ("lower-bound", po::value<bool>(&spd_lower_bound)->default_value(true), "Use lower bound for SPD3")
         ("eta", po::value<double>(&eta)->default_value(60), "Scale for gradient descent steps")
         ("sigma", po::value<double>(&sigma)->default_value(25.0), "Strength of unary terms")
+        ("thresh", po::value<REAL>(&threshold)->default_value(1000), "Threshold to stop optimization")
     ;
 
     po::positional_options_description popts_desc;
@@ -194,6 +195,7 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& 
         s.start_energy = last_energy;
         // check if we've reached convergence
         if (i > thresholdIters 
+                && threshold > 0 
                 && energies[i%thresholdIters] - last_energy < threshold) {
             break;
         }
