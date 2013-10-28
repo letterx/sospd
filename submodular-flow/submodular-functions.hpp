@@ -44,13 +44,37 @@ static inline Assgn NextPerm(Assgn v) {
 
 inline void SubmodularUpperBound(int n, std::vector<REAL>& energyTable) {
     ASSERT(n < 32);
+    int max_assgn = 1 << n;
+    std::vector<REAL> oldEnergy(energyTable);
+    std::vector<REAL> diffEnergy(max_assgn, 0);
+
+    SubmodularLowerBound(n, energyTable);
+
+    for (int i = 0; i < max_assgn; ++i)
+        diffEnergy[i] = oldEnergy[i] - energyTable[i];
+    for (int i = max_assgn - 2; i > 0; --i) {
+        for (int k = 0; k < n; ++k) {
+            REAL tmp = (diffEnergy[i | (1 << k)] + 1) / 2;
+            if (tmp > diffEnergy[i])
+                diffEnergy[i] = tmp;
+        }
+    }
+    for (int i = 0; i < max_assgn; ++i) {
+        energyTable[i] += diffEnergy[i];
+    }
+    
+    if (!CheckSubmodular(n, energyTable)) SubmodularUpperBound(n, energyTable);
+}
+
+inline void OldSubmodularUpperBound(int n, std::vector<REAL>& energyTable) {
+    ASSERT(n < 32);
     REAL max_energy = 0;
     REAL zero_energy = energyTable[0];
     REAL last_energy = energyTable.back();
     for (std::size_t i = 0; i < energyTable.size(); ++i) {
         max_energy = std::max(max_energy, energyTable[i]);
     }
-
+    
     REAL max_diff = SubmodularLowerBound(n, energyTable);
     //ASSERT(CheckSubmodular(n, energyTable));
 
@@ -62,8 +86,9 @@ inline void SubmodularUpperBound(int n, std::vector<REAL>& energyTable) {
 
     // Truncate singelton sets to max_energy, and then find a new lower-bound
     // (guaranteed to still upper-bound original function)
-    for (int k = 0; k < n; ++k)
+    for (int k = 0; k < n; ++k) {
         energyTable[1<<k] = std::min(energyTable[1<<k], max_energy);
+    }
     SubmodularLowerBound(n, energyTable);
 
     //ASSERT(CheckSubmodular(n, energyTable));
@@ -196,9 +221,9 @@ inline bool CheckSubmodular(int n, const std::vector<REAL>& energyTable) {
                 REAL submodularity = energyTable[s] + energyTable[s_ij]
                     - energyTable[s_i] - energyTable[s_j];
                 if (submodularity > 0) {
-                    std::cout << "Nonsubmodular: (" << s << ", " << i << ", " << j << "): ";
-                    std::cout << energyTable[s] << " " << energyTable[s_i] << " "
-                        << energyTable[s_j] << " " << energyTable[s_ij] << "\n";
+                    //std::cout << "Nonsubmodular: (" << s << ", " << i << ", " << j << "): ";
+                    //std::cout << energyTable[s] << " " << energyTable[s_i] << " "
+                    //    << energyTable[s_j] << " " << energyTable[s_ij] << "\n";
                     return false;
                 }
             }
