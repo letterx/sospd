@@ -95,8 +95,8 @@ int main(int argc, char **argv) {
         exit(-1);
     }
     infilename = basename + ".pgm";
-    outfilename = basename + "-" + method + ".pgm";
-    statsfilename = basename + "-" + method + ".stats";
+    outfilename = basename + "-" + method + "-" + std::to_string(spd_lower_bound) + ".pgm";
+    statsfilename = basename + "-" + method + "-" + std::to_string(spd_lower_bound) + ".stats";
 
     cv::Mat image = cv::imread(infilename.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
     if (!image.data) {

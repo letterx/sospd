@@ -139,8 +139,8 @@ int main(int argc, char **argv) {
     }
     unary_filename = basename + ".unary";
     proposal_filename = basename + ".proposals";
-    outfilename = basename + "-" + method + ".pgm";
-    stats_filename = basename + "-" + method + ".stats";
+    outfilename = basename + "-" + method + "-" + std::to_string(spd_lower_bound) + ".pgm";
+    stats_filename = basename + "-" + method + "-" + std::to_string(spd_lower_bound) + ".stats";
 
     std::cout << "Reading proposals...\n";
     std::vector<cv::Mat> proposals = ReadProposals(proposal_filename);
