@@ -371,7 +371,7 @@ void DualGuidedFusionMove::Solve(int niters) {
     if (!labelChanged)
 	    ASSERT(CheckHeightInvariant());
 	#endif
-    LowerBound();
+    //LowerBound();
 }
 
 bool DualGuidedFusionMove::CheckHeightInvariant() {
@@ -497,15 +497,35 @@ double DualGuidedFusionMove::LowerBound() {
             for (buf[1] = 0; buf[1] < m_num_labels; ++buf[1]) {
                 for (buf[2] = 0; buf[2] < m_num_labels; ++buf[2]) {
                     REAL energy = c.Energy(buf);
-                    REAL dualSum = m_dual[clique_index][c.Nodes()[0]][buf[0]]
-                        + m_dual[clique_index][c.Nodes()[1]][buf[1]]
-                        + m_dual[clique_index][c.Nodes()[2]][buf[2]];
-                    max_ratio = std::max(max_ratio, double(dualSum)/double(energy));
+                    REAL dualSum = m_dual[clique_index][0][buf[0]]
+                        + m_dual[clique_index][1][buf[1]]
+                        + m_dual[clique_index][2][buf[2]];
+                    if (energy == 0) {
+                        for (int i = 0; i < 3; ++i) {
+                            if (buf[i] != m_labels[c.Nodes()[i]]) {
+                                m_dual[clique_index][i][buf[i]] -= dualSum - energy;
+                                Height(c.Nodes()[i], buf[i]) -= dualSum - energy;
+                                dualSum = energy;
+                                break;
+                            }
+                        }
+                        ASSERT(dualSum == energy);
+                    } else {
+                        max_ratio = std::max(max_ratio, double(dualSum)/double(energy));
+                    }
                 }
             }
         }
         clique_index++;
     }
+    REAL dual_objective = 0;
+    for (NodeId i = 0; i < m_energy->NumNodes(); ++i) {
+        REAL min_height = std::numeric_limits<REAL>::max();
+        for (Label l = 0; l < m_num_labels; ++l)
+            min_height = std::min(min_height, Height(i, l));
+        dual_objective += min_height;
+    }
     std::cout << "Max Ratio: " << max_ratio << "\n";
-    return 0;
+    std::cout << "Dual objective: " << dual_objective << "\n";
+    return dual_objective / max_ratio;
 }
