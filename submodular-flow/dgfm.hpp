@@ -42,6 +42,7 @@ class DualGuidedFusionMove {
                 HeightAlphaProposal();
             };
         }
+        double LowerBound();
 
     protected:
         REAL ComputeHeight(NodeId, Label);

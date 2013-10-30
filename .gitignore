@@ -41,6 +41,7 @@ submodular_test
 add-noise
 denoise
 experiments/stereo/stereo
+disparity-diff
 
 
 # Generated test files

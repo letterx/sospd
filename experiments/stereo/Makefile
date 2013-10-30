@@ -8,14 +8,17 @@ LD_FLAGS = -L$(BASE_DIR)/lib/
 LIBS = -lsubmodular-flow -lboost_serialization -lopencv_core -lopencv_imgproc -lopencv_highgui -lboost_program_options
 SF_LIB = ../../lib/libsubmodular-flow.a
 
-SRCS = stereo.cpp
+SRCS = stereo.cpp disparity-diff.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all
-all: stereo
+all: stereo disparity-diff
 
-stereo: $(OBJS) $(SF_LIB)
-	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ $(OBJS) $(LIBS)
+stereo: stereo.o $(SF_LIB)
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ stereo.o $(LIBS)
+
+disparity-diff: disparity-diff.o
+	$(CXX) $(CXX_FLAGS) $(LD_FLAGS) -o $@ disparity-diff.o -lopencv_core -lopencv_highgui
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -MMD -o $@ -c $<
