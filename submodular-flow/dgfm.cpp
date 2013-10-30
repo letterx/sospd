@@ -371,6 +371,7 @@ void DualGuidedFusionMove::Solve(int niters) {
     if (!labelChanged)
 	    ASSERT(CheckHeightInvariant());
 	#endif
+    LowerBound();
 }
 
 bool DualGuidedFusionMove::CheckHeightInvariant() {
@@ -482,3 +483,29 @@ bool DualGuidedFusionMove::CheckZeroSumInvariant() {
     return true;
 }
 */
+
+double DualGuidedFusionMove::LowerBound() {
+    std::cout << "Computing Lower Bound\n";
+    double max_ratio = 0;
+    int clique_index = 0;
+    for (const CliquePtr& cp : m_energy->Cliques()) {
+        const Clique& c = *cp;
+        const size_t k = c.Size();
+        ASSERT(k == 3); // Lower bound doesn't work for larger numbers
+        Label buf[3];
+        for (buf[0] = 0; buf[0] < m_num_labels; ++buf[0]) {
+            for (buf[1] = 0; buf[1] < m_num_labels; ++buf[1]) {
+                for (buf[2] = 0; buf[2] < m_num_labels; ++buf[2]) {
+                    REAL energy = c.Energy(buf);
+                    REAL dualSum = m_dual[clique_index][c.Nodes()[0]][buf[0]]
+                        + m_dual[clique_index][c.Nodes()[1]][buf[1]]
+                        + m_dual[clique_index][c.Nodes()[2]][buf[2]];
+                    max_ratio = std::max(max_ratio, double(dualSum)/double(energy));
+                }
+            }
+        }
+        clique_index++;
+    }
+    std::cout << "Max Ratio: " << max_ratio << "\n";
+    return 0;
+}
