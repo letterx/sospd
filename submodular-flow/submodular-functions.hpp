@@ -47,23 +47,39 @@ inline void SubmodularUpperBound(int n, std::vector<REAL>& energyTable) {
     int max_assgn = 1 << n;
     std::vector<REAL> oldEnergy(energyTable);
     std::vector<REAL> diffEnergy(max_assgn, 0);
+    while (!CheckSubmodular(n, energyTable)) {
+        SubmodularLowerBound(n, energyTable);
 
-    SubmodularLowerBound(n, energyTable);
-
-    for (int i = 0; i < max_assgn; ++i)
-        diffEnergy[i] = oldEnergy[i] - energyTable[i];
-    for (int i = max_assgn - 2; i > 0; --i) {
-        for (int k = 0; k < n; ++k) {
-            REAL tmp = (diffEnergy[i | (1 << k)] + 1) / 2;
-            if (tmp > diffEnergy[i])
-                diffEnergy[i] = tmp;
+        for (int i = 0; i < max_assgn; ++i)
+            diffEnergy[i] = oldEnergy[i] - energyTable[i];
+        for (int i = max_assgn - 2; i > 0; --i) {
+            for (int k = 0; k < n; ++k) {
+                if (i & (1 << k)) continue;
+                int ik = i | (1 << k);
+                bool t = false;
+                for (int j = 0; j < n; ++j) {
+                    if (i & (1 << j)) {
+                        REAL tmp = diffEnergy[ik ^ (1 << j)];
+                        if (tmp < diffEnergy[ik] / 2) {
+                            t = true;
+                            break;
+                        }
+                        if (diffEnergy[ik] - tmp > diffEnergy[i])
+                            diffEnergy[i] = diffEnergy[ik] - tmp;
+                    }
+                }
+                if (t) {
+                    REAL tmp = (diffEnergy[i | (1 << k)] + 1) / 2;
+                    if (tmp > diffEnergy[i])
+                        diffEnergy[i] = tmp;
+                }
+            }
         }
+        for (int i = 0; i < max_assgn; ++i) {
+            energyTable[i] += diffEnergy[i];
+        }
+        std::copy(energyTable.begin(), energyTable.end(), oldEnergy.begin());
     }
-    for (int i = 0; i < max_assgn; ++i) {
-        energyTable[i] += diffEnergy[i];
-    }
-    
-    if (!CheckSubmodular(n, energyTable)) SubmodularUpperBound(n, energyTable);
 }
 
 inline void OldSubmodularUpperBound(int n, std::vector<REAL>& energyTable) {
