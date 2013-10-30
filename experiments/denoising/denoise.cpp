@@ -54,6 +54,7 @@ void Optimize(Optimizer& opt,
 
 int width = 0;
 int height = 0;
+double max_time = 0;
 
 int main(int argc, char **argv) {
     namespace po = boost::program_options;
@@ -77,6 +78,7 @@ int main(int argc, char **argv) {
         ("eta", po::value<double>(&eta)->default_value(60), "Scale for gradient descent steps")
         ("sigma", po::value<double>(&sigma)->default_value(25.0), "Strength of unary terms")
         ("thresh", po::value<REAL>(&threshold)->default_value(1000), "Threshold to stop optimization")
+        ("time", po::value<double>(&max_time)->default_value(0), "Maximum time to run")
     ;
 
     po::positional_options_description popts_desc;
@@ -221,6 +223,9 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& 
         }
         s.end_energy = last_energy;
         stats.push_back(s);
+        
+        if (s.total_time > max_time)
+            break;
     }
 
     for (int i = 0; i < width*height; ++i)
