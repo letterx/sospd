@@ -34,12 +34,13 @@ int main(int argc, char **argv) {
             sum_squared_diff += diff*diff;
         }
     }
-    std::cout << "Total pixels:     " << gt.rows * gt.cols << "\n";
-    std::cout << "Same label:       " << same << "\n";
-    std::cout << "Percent same:     " << double(same)/double(gt.rows*gt.cols) << "\n";
-    std::cout << "Plus/minus 1:     " << pm_1 << "\n";
-    std::cout << "Plus/minus 4:     " << pm_4 << "\n";
-    std::cout << "Sum squared diff: " << sum_squared_diff << "\n";
+    std::cout << "Total pixels:      " << gt.rows * gt.cols << "\n";
+    std::cout << "Same label:        " << same << "\n";
+    std::cout << "Percent same:      " << double(same)/double(gt.rows*gt.cols) << "\n";
+    std::cout << "Plus/minus 1:      " << pm_1 << "\n";
+    std::cout << "Plus/minus 4:      " << pm_4 << "\n";
+    std::cout << "Percent in p/m 4:  " << double(pm_4)/double(gt.rows*gt.cols) << "\n";
+    std::cout << "Sum squared diff:  " << sum_squared_diff << "\n";
 
 
 
