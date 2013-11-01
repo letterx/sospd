@@ -23,8 +23,10 @@
 #include <boost/foreach.hpp>
 #include <functional>
 #include "higher-order-energy.hpp"
+#include "HOCR.h"
 #include "clique.hpp"
 #include "QPBO.h"
+#include "generic-higher-order.hpp"
 
 template <int MaxDegree>
 class FusionMove {
@@ -34,16 +36,18 @@ class FusionMove {
         typedef std::vector<Label> LabelVec;
         typedef std::function<void(int, const LabelVec&, LabelVec&)> ProposalCallback;
         FusionMove(const MultilabelEnergy* energy, const ProposalCallback& pc)
-            : m_energy(energy), m_pc(pc), m_labels(energy->NumNodes(), 0), m_iter(0) { }
+            : m_energy(energy), m_pc(pc), m_labels(energy->NumNodes(), 0), m_iter(0), m_hocr(false) { }
         FusionMove(const MultilabelEnergy* energy, const ProposalCallback& pc, const LabelVec& current)
-            : m_energy(energy), m_pc(pc), m_labels(current), m_iter(0) { }
+            : m_energy(energy), m_pc(pc), m_labels(current), m_iter(0), m_hocr(false) { }
 
         void Solve(int niters);
         Label GetLabel(NodeId i) const { return m_labels[i]; }
+        void SetHOCR(bool b) { m_hocr = b; }
 
     protected:
+        template <typename HO>
         void SetupFusionEnergy(const LabelVec& proposed,
-                HigherOrderEnergy<REAL, MaxDegree>& hoe) const;
+                HO& hoe) const;
         void GetFusedImage(const LabelVec& proposed, QPBO<REAL>& qr);
         void FusionStep();
     
@@ -51,6 +55,7 @@ class FusionMove {
         ProposalCallback m_pc;
         LabelVec m_labels;
         int m_iter;
+        bool m_hocr;
 };
 
 template <int MaxDegree>
@@ -61,16 +66,34 @@ void FusionMove<MaxDegree>::Solve(int niters) {
 
 template <int MaxDegree>
 void FusionMove<MaxDegree>::FusionStep() {
-    HigherOrderEnergy<REAL, MaxDegree> hoe;
-    QPBO<REAL> qr(m_labels.size(), 0);
-    LabelVec proposed(m_labels.size());
-    m_pc(m_iter, m_labels, proposed);
-    SetupFusionEnergy(proposed, hoe);
-    hoe.ToQuadratic(qr);
-    qr.MergeParallelEdges();
-    qr.Solve();
-    qr.ComputeWeakPersistencies();
-    GetFusedImage(proposed, qr);
+    if (m_hocr) {
+        PBF<REAL, MaxDegree> pbf;
+        LabelVec proposed(m_labels.size());
+        m_pc(m_iter, m_labels, proposed);
+        SetupFusionEnergy(proposed, pbf);
+        PBF<REAL, 2> qr;
+        pbf.toQuadratic(qr);
+        pbf.clear();
+        int numvars = qr.maxID();
+        QPBO<REAL> qpbo(numvars, numvars*4);
+        convert(qpbo, qr);
+        qr.clear();
+        qpbo.MergeParallelEdges();
+        qpbo.Solve();
+        qpbo.ComputeWeakPersistencies();
+        GetFusedImage(proposed, qpbo);
+    } else {
+        HigherOrderEnergy<REAL, MaxDegree> hoe;
+        QPBO<REAL> qr(m_labels.size(), 0);
+        LabelVec proposed(m_labels.size());
+        m_pc(m_iter, m_labels, proposed);
+        SetupFusionEnergy(proposed, hoe);
+        hoe.ToQuadratic(qr);
+        qr.MergeParallelEdges();
+        qr.Solve();
+        qr.ComputeWeakPersistencies();
+        GetFusedImage(proposed, qr);
+    }
     m_iter++;
 }
 
@@ -85,9 +108,9 @@ void FusionMove<MaxDegree>::GetFusedImage(const LabelVec& proposed, QPBO<REAL>& 
 }
 
 template <int MaxDegree>
-void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed,
-        HigherOrderEnergy<REAL, MaxDegree>& hoe) const {
-    hoe.AddVars(m_energy->NumNodes());
+template <typename HO>
+void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe) const {
+    AddVars(hoe,m_energy->NumNodes());
     for (NodeId i = 0; i < m_energy->NumNodes(); ++i)
         hoe.AddUnaryTerm(i, m_energy->Unary(i, m_labels[i]), m_energy->Unary(i, proposed[i]));
 
@@ -114,7 +137,7 @@ void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed,
             energy_table[assignment] = c.Energy(cliqueLabels);
         }
         std::vector<NodeId> nodes(c.Nodes(), c.Nodes() + c.Size());
-        hoe.AddClique(nodes, energy_table);
+        AddClique(hoe, int(c.Size()), energy_table.data(), nodes.data());
     }
 }
 

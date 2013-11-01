@@ -1,7 +1,7 @@
 CXX ?= g++
 DEFS = 
 BASE_DIR = ../../
-INCLUDES = -I$(BASE_DIR)include -I$(BASE_DIR)/submodular-flow/ -I$(BASE_DIR)/higher-order-energy/include -I$(BASE_DIR)/higher-order-energy/qpbo
+INCLUDES = -I$(BASE_DIR)include -I$(BASE_DIR)/submodular-flow/ -I$(BASE_DIR)/higher-order-energy/include -I$(BASE_DIR)/higher-order-energy/qpbo -I$(BASE_DIR)/hocr
 OPT ?= -O3
 CXX_FLAGS = $(OPT) -Wall -std=c++11 $(INCLUDES)
 LD_FLAGS = -L$(BASE_DIR)/lib/

@@ -128,6 +128,11 @@ int main(int argc, char **argv) {
         FusionMove<4>::ProposalCallback pc(FusionProposal);
         FusionMove<4> fusion(&energy_function, pc, current);
         Optimize(fusion, energy_function, image, current, iterations, stats);
+    } else if (method == std::string("hocr")) {
+        FusionMove<4>::ProposalCallback pc(FusionProposal);
+        FusionMove<4> fusion(&energy_function, pc, current);
+        fusion.SetHOCR(true);
+        Optimize(fusion, energy_function, image, current, iterations, stats);
     } else if (method == std::string("reduction-alpha")) {
         FusionMove<4>::ProposalCallback pc(AlphaProposal);
         FusionMove<4> fusion(&energy_function, pc, current);
@@ -135,6 +140,11 @@ int main(int argc, char **argv) {
     } else if (method == std::string("reduction-grad")) {
         FusionMove<4>::ProposalCallback pc = gradCallback;
         FusionMove<4> fusion(&energy_function, pc, current);
+        Optimize(fusion, energy_function, image, current, iterations, stats);
+    } else if (method == std::string("hocr-grad")) {
+        FusionMove<4>::ProposalCallback pc = gradCallback;
+        FusionMove<4> fusion(&energy_function, pc, current);
+        fusion.SetHOCR(true);
         Optimize(fusion, energy_function, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
         DualGuidedFusionMove dgfm(&energy_function);
@@ -224,7 +234,7 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& 
         s.end_energy = last_energy;
         stats.push_back(s);
         
-        if (s.total_time > max_time)
+        if (s.total_time > max_time && max_time > 0)
             break;
     }
 

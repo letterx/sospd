@@ -159,6 +159,11 @@ int main(int argc, char **argv) {
         FusionMove<4>::ProposalCallback pc(FusionProposal);
         FusionMove<4> fusion(&energy_function, pc, current);
         Optimize(fusion, energy_function, proposals, image, current, iterations, stats);
+    } else if (method == std::string("hocr")) {
+        FusionMove<4>::ProposalCallback pc(FusionProposal);
+        FusionMove<4> fusion(&energy_function, pc, current);
+        fusion.SetHOCR(true);
+        Optimize(fusion, energy_function, proposals, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
         DualGuidedFusionMove dgfm(&energy_function);
         dgfm.SetAlphaExpansion();
