@@ -77,6 +77,7 @@ void FusionMove<MaxDegree>::FusionStep() {
         int numvars = qr.maxID();
         QPBO<REAL> qpbo(numvars, numvars*4);
         convert(qpbo, qr);
+        qpbo.AddNode(m_labels.size());
         qr.clear();
         qpbo.MergeParallelEdges();
         qpbo.Solve();
