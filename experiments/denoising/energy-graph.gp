@@ -4,9 +4,9 @@ set xlabel "Time (seconds)"
 set ylabel "Energy"
 set xrange [0:60]
 
-plot "REPLACE_FILE-reduction.stats" using 3:5 title "FGBZ" with linespoints, \
-    "REPLACE_FILE-reduction-grad.stats" using 3:5 title "FGBZ Grad" with linespoints, \
-    "REPLACE_FILE-spd-alpha.stats" using 3:5 title "SPD3 Alpha" with linespoints, \
-    "REPLACE_FILE-spd-alpha-height.stats" using 3:5 title "SPD3 Best Alpha" with linespoints, \
-    "REPLACE_FILE-spd-blur-random.stats" using 3:5 title "SPD3 Blur Random" with linespoints, \
-    "REPLACE_FILE-spd-grad.stats" using 3:5 title "SPD3 Grad" with linespoints
+plot \
+    "./results-with-ub/REPLACE_FILE-reduction-grad-1.stats" using 3:5 title "FGBZ-Gradient" with linespoints, \
+    "./results-with-ub/REPLACE_FILE-hocr-grad-1.stats" using 3:5 title "HOCR-Gradient" with linespoints, \
+    "./results-with-ub/REPLACE_FILE-spd-alpha-0.stats" using 3:5 title "SoSPD-Alpha" with linespoints, \
+    "./results-with-ub/REPLACE_FILE-spd-grad-0.stats" using 3:5 title "SoSPD-Gradient" with linespoints
+
