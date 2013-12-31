@@ -85,13 +85,3 @@ add_executable(higher-order-experiment higher-order-experiment.cpp)
 
 target_link_libraries(higher-order-experiment sos-opt ${libs})
 
-
-###
-### Target: add-noise
-###
-
-add_executable(add-noise add-noise.cpp)
-
-find_package(OpenCV REQUIRED)
-
-target_link_libraries(add-noise sos-opt ${OpenCV_LIBS} ${libs})
