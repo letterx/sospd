@@ -20,11 +20,21 @@ set(SOS_OPT_VERSION "${SOS_OPT_VERSION_MAJOR}.${SOS_OPT_VERSION_MINOR}.${SOS_OPT
 ### Sources, headers, directories and libs
 ###
 include_directories(${SOS_OPT_SOURCE_DIR}/include)
+include_directories(${SOS_OPT_SOURCE_DIR}/src)
+include_directories(${SOS_OPT_SOURCE_DIR}/higher-order-energy/include)
+include_directories(${SOS_OPT_SOURCE_DIR}/higher-order-energy/qpbo)
+
+set(lib-sources
+    "src/submodular-ibfs.cpp"
+    "src/gen-random.cpp"
+    "src/alpha-expansion.cpp"
+    "src/dgfm.cpp"
+)
 
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 
 ###
@@ -40,7 +50,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS_DEBUG "-g")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os")
 	#
-    set(GCC_WARNING_FLAGS "-Wall -Wextra -Werror -pedantic -Wold-style-cast -Woverloaded-virtual -Wno-unused-parameter")
+    set(GCC_WARNING_FLAGS "-Wall -Wextra -pedantic -Wold-style-cast -Woverloaded-virtual -Wno-unused-parameter")
+    #set(GCC_WARNING_FLAGS "${GCC_WARNING_FLAGS} -Werror")
 	#
     set(CMAKE_CXX_FLAGS "--std=c++11 ${GCC_WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
 	#
