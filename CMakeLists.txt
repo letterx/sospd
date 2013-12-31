@@ -15,6 +15,8 @@ set(SOS_OPT_VERSION_MINOR "0")
 set(SOS_OPT_VERSION_PATCH "0")
 set(SOS_OPT_VERSION "${SOS_OPT_VERSION_MAJOR}.${SOS_OPT_VERSION_MINOR}.${SOS_OPT_VERSION_PATCH}")
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
 
 ###
 ### Sources, headers, directories and libs
@@ -23,18 +25,22 @@ include_directories(${SOS_OPT_SOURCE_DIR}/include)
 include_directories(${SOS_OPT_SOURCE_DIR}/src)
 include_directories(${SOS_OPT_SOURCE_DIR}/higher-order-energy/include)
 include_directories(${SOS_OPT_SOURCE_DIR}/higher-order-energy/qpbo)
+include_directories(${SOS_OPT_SOURCE_DIR}/hocr)
 
 set(lib-sources
     "src/submodular-ibfs.cpp"
+    "src/submodular-flow.cpp"
     "src/gen-random.cpp"
     "src/alpha-expansion.cpp"
     "src/dgfm.cpp"
+    "higher-order-energy/qpbo/QPBO.cpp"
 )
 
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(libs
+    "boost_serialization")
 
 
 ###
@@ -58,11 +64,21 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 ###
-### Subdirectories
-###
-
-###
-### libsos-opt
+### Target: libsos-opt
 ###
 
 add_library(sos-opt STATIC ${lib-sources})
+
+###
+### Subdirectories
+###
+
+add_subdirectory("experiments")
+
+###
+### Target: higher-order-experiment
+###
+
+add_executable(higher-order-experiment higher-order-experiment.cpp)
+
+target_link_libraries(higher-order-experiment sos-opt ${libs})
