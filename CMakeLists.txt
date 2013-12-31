@@ -24,10 +24,7 @@ include_directories(${SOS_OPT_SOURCE_DIR}/include)
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(libs 
-)
-
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 
 ###
@@ -53,5 +50,8 @@ endif()
 ### Subdirectories
 ###
 
-add_subdirectory("src")
-add_subdirectory("test")
+###
+### libsos-opt
+###
+
+add_library(sos-opt STATIC ${lib-sources})
