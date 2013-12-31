@@ -69,11 +69,13 @@ endif()
 
 add_library(sos-opt STATIC ${lib-sources})
 
+
 ###
 ### Subdirectories
 ###
 
-add_subdirectory("experiments")
+add_subdirectory(experiments)
+add_subdirectory(test)
 
 ###
 ### Target: higher-order-experiment
