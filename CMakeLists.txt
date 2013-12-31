@@ -1,0 +1,57 @@
+###
+### CMake settings
+###
+cmake_minimum_required(VERSION 2.6)
+cmake_policy(SET CMP0012 NEW)
+
+
+###
+### Project settings
+###
+project(SOS_OPT)
+
+set(SOS_OPT_VERSION_MAJOR "1")
+set(SOS_OPT_VERSION_MINOR "0")
+set(SOS_OPT_VERSION_PATCH "0")
+set(SOS_OPT_VERSION "${SOS_OPT_VERSION_MAJOR}.${SOS_OPT_VERSION_MINOR}.${SOS_OPT_VERSION_PATCH}")
+
+
+###
+### Sources, headers, directories and libs
+###
+include_directories(${SOS_OPT_SOURCE_DIR}/include)
+
+find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
+set(libs 
+)
+
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+
+###
+### Build configuration
+### 
+set(CMAKE_BUILD_TYPE Debug)
+
+# GCC settings
+if(CMAKE_COMPILER_IS_GNUCXX)
+	#
+	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
+	set(CMAKE_CXX_FLAGS_DEBUG "-g")
+	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os")
+	#
+    set(GCC_WARNING_FLAGS "-Wall -Wextra -Werror -pedantic -Wold-style-cast -Woverloaded-virtual -Wno-unused-parameter")
+	#
+    set(CMAKE_CXX_FLAGS "--std=c++11 ${GCC_WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
+	#
+endif()
+
+###
+### Subdirectories
+###
+
+add_subdirectory("src")
+add_subdirectory("test")
