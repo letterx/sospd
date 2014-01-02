@@ -23,16 +23,24 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 ###
 include_directories(${SOS_OPT_SOURCE_DIR}/include)
 include_directories(${SOS_OPT_SOURCE_DIR}/src)
-include_directories(${SOS_OPT_SOURCE_DIR}/higher-order-energy/qpbo)
 include_directories(${SOS_OPT_SOURCE_DIR}/hocr)
+include_directories(thirdparty/QPBO)
 
 set(lib-sources
     "src/submodular-ibfs.cpp"
     "src/submodular-flow.cpp"
     "src/gen-random.cpp"
     "src/dgfm.cpp"
-    "higher-order-energy/qpbo/QPBO.cpp"
 )
+
+set(qpbo-sources
+    "thirdparty/QPBO/QPBO.cpp"
+    "thirdparty/QPBO/QPBO_extra.cpp"
+    "thirdparty/QPBO/QPBO_maxflow.cpp"
+    "thirdparty/QPBO/QPBO_postprocessing.cpp"
+)
+
+set(lib-sources ${lib-sources} ${qpbo-sources})
 
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
@@ -58,6 +66,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     #set(GCC_WARNING_FLAGS "${GCC_WARNING_FLAGS} -Werror")
 	#
     set(CMAKE_CXX_FLAGS "--std=c++11 ${GCC_WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set_source_files_properties(${qpbo-sources} PROPERTIES COMPILE_FLAGS "-w")
 	#
 endif()
 
@@ -72,6 +81,7 @@ add_library(sos-opt STATIC ${lib-sources})
 ### Subdirectories
 ###
 
+add_subdirectory(thirdparty)
 add_subdirectory(experiments)
 add_subdirectory(test)
 

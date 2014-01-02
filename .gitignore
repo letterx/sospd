@@ -1,49 +1,17 @@
 build
-# Compiled Object files
-*.slo
-*.lo
-*.o
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
+thirdparty/QPBO
 
 # Trash files
 *~
 *.swp
 *.swo
 *.P
-ibfs-crash*
 
-# gprof files
+# Profiler files
 gmon*.out
 gprof*.out
 cachegrind*
 callgrind*
-
-# Compiled Binaries
-unit-test
-higher-order-experiment
-svm_sos_classify
-svm_sos_learn
-process_stats
-feature_train
-init_stats
-recover-crash
-denoise_test
-ibfs_test
-sos_ibfs_test
-submodular_test
-add-noise
-denoise
-experiments/stereo/stereo
-disparity-diff
-
 
 # Generated test files
 *.model
