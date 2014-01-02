@@ -23,7 +23,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 ###
 include_directories(${SOS_OPT_SOURCE_DIR}/include)
 include_directories(${SOS_OPT_SOURCE_DIR}/src)
-include_directories(${SOS_OPT_SOURCE_DIR}/higher-order-energy/include)
 include_directories(${SOS_OPT_SOURCE_DIR}/higher-order-energy/qpbo)
 include_directories(${SOS_OPT_SOURCE_DIR}/hocr)
 
@@ -31,7 +30,6 @@ set(lib-sources
     "src/submodular-ibfs.cpp"
     "src/submodular-flow.cpp"
     "src/gen-random.cpp"
-    "src/alpha-expansion.cpp"
     "src/dgfm.cpp"
     "higher-order-energy/qpbo/QPBO.cpp"
 )
