@@ -35,7 +35,7 @@ double classify_example(MODEL *model, DOC *ex)
 
   if((model->kernel_parm.kernel_type == LINEAR) && (model->lin_weights))
     return(classify_example_linear(model,ex));
-	   
+           
   dist=0;
   for(i=1;i<model->sv_num;i++) {  
     dist+=kernel(&model->kernel_parm,model->supvec[i],ex)*model->alpha[i];
@@ -71,7 +71,7 @@ double kernel(KERNEL_PARM *kernel_parm, DOC *a, DOC *b)
   if(kernel_parm->kernel_type == GRAM) {  /* use value from explicitly */
     if((a->kernelid>=0) && (b->kernelid>=0)) /* stored gram matrix */
       return(kernel_parm->gram_matrix->element[MAX(a->kernelid,b->kernelid)]
-	                                      [MIN(a->kernelid,b->kernelid)]);
+                                              [MIN(a->kernelid,b->kernelid)]);
     else 
       return(0); /* in case it is called for unknown vector */
   }
@@ -82,7 +82,7 @@ double kernel(KERNEL_PARM *kernel_parm, DOC *a, DOC *b)
   for(fa=a->fvec;fa;fa=fa->next) { 
     for(fb=b->fvec;fb;fb=fb->next) {
       if(fa->kernel_id == fb->kernel_id)
-	sum+=fa->factor*fb->factor*single_kernel(kernel_parm,fa,fb);
+        sum+=fa->factor*fb->factor*single_kernel(kernel_parm,fa,fb);
     }
   }
   return(sum);
@@ -251,15 +251,15 @@ double sprod_ss(SVECTOR *a, SVECTOR *b)
     bj=b->words;
     while (ai->wnum && bj->wnum) {
       if(ai->wnum > bj->wnum) {
-	bj++;
+        bj++;
       }
       else if (ai->wnum < bj->wnum) {
-	ai++;
+        ai++;
       }
       else {
-	sum+=(ai->weight) * (bj->weight);
-	ai++;
-	bj++;
+        sum+=(ai->weight) * (bj->weight);
+        ai++;
+        bj++;
       }
     }
     return((double)sum);
@@ -271,10 +271,10 @@ SVECTOR* multadd_ss(SVECTOR *a, SVECTOR *b, double fa, double fb)
 }
 
 SVECTOR* multadd_ss_r(SVECTOR *a,SVECTOR *b,double fa, double fb,
-		      double min_non_zero) 
+                      double min_non_zero) 
      /* compute fa*a+fb*b of two sparse vectors */
      /* Note: SVECTOR lists are not followed, but only the first
-	SVECTOR is used */
+        SVECTOR is used */
 {
     SVECTOR *vec;
     register WORD *sum,*sumi;
@@ -287,17 +287,17 @@ SVECTOR* multadd_ss_r(SVECTOR *a,SVECTOR *b,double fa, double fb,
     veclength=0;
     while (ai->wnum && bj->wnum) {
       if(ai->wnum > bj->wnum) {
-	veclength++;
-	bj++;
+        veclength++;
+        bj++;
       }
       else if (ai->wnum < bj->wnum) {
-	veclength++;
-	ai++;
+        veclength++;
+        ai++;
       }
       else {
-	veclength++;
-	ai++;
-	bj++;
+        veclength++;
+        ai++;
+        bj++;
       }
     }
     while (bj->wnum) {
@@ -316,26 +316,26 @@ SVECTOR* multadd_ss_r(SVECTOR *a,SVECTOR *b,double fa, double fb,
     bj=b->words;
     while (ai->wnum && bj->wnum) {
       if(ai->wnum > bj->wnum) {
-	(*sumi)=(*bj);
-	sumi->weight*=fb;
-	sumi++;
-	bj++;
+        (*sumi)=(*bj);
+        sumi->weight*=fb;
+        sumi++;
+        bj++;
       }
       else if (ai->wnum < bj->wnum) {
-	(*sumi)=(*ai);
-	sumi->weight*=fa;
-	sumi++;
-	ai++;
+        (*sumi)=(*ai);
+        sumi->weight*=fa;
+        sumi++;
+        ai++;
       }
       else {
-	weight=fa*(double)ai->weight+fb*(double)bj->weight;
-	if((weight<-min_non_zero) || (weight>min_non_zero)) {
-	  sumi->wnum=ai->wnum;
-	  sumi->weight=weight;
-	  sumi++;
-	}
-	ai++;
-	bj++;
+        weight=fa*(double)ai->weight+fb*(double)bj->weight;
+        if((weight<-min_non_zero) || (weight>min_non_zero)) {
+          sumi->wnum=ai->wnum;
+          sumi->weight=weight;
+          sumi++;
+        }
+        ai++;
+        bj++;
       }
     }
     while (bj->wnum) {
@@ -365,7 +365,7 @@ SVECTOR* multadd_ss_r(SVECTOR *a,SVECTOR *b,double fa, double fb,
 SVECTOR* sub_ss(SVECTOR *a, SVECTOR *b) 
      /* compute the difference a-b of two sparse vectors */
      /* Note: SVECTOR lists are not followed, but only the first
-	SVECTOR is used */
+        SVECTOR is used */
 {
   return(multadd_ss_r(a,b,1.0,-1.0,0));
 }
@@ -373,7 +373,7 @@ SVECTOR* sub_ss(SVECTOR *a, SVECTOR *b)
 SVECTOR* sub_ss_r(SVECTOR *a, SVECTOR *b, double min_non_zero) 
      /* compute the difference a-b of two sparse vectors and rounds to zero */
      /* Note: SVECTOR lists are not followed, but only the first
-	SVECTOR is used */
+        SVECTOR is used */
 {
   return(multadd_ss_r(a,b,1.0,-1.0,min_non_zero));
 }
@@ -381,7 +381,7 @@ SVECTOR* sub_ss_r(SVECTOR *a, SVECTOR *b, double min_non_zero)
 SVECTOR* add_ss(SVECTOR *a, SVECTOR *b) 
      /* compute the sum a+b of two sparse vectors */
      /* Note: SVECTOR lists are not followed, but only the first
-	SVECTOR is used */
+        SVECTOR is used */
 {
   return(multadd_ss_r(a,b,1.0,1.0,0));
 }
@@ -389,7 +389,7 @@ SVECTOR* add_ss(SVECTOR *a, SVECTOR *b)
 SVECTOR* add_ss_r(SVECTOR *a, SVECTOR *b, double min_non_zero) 
      /* compute the sum a+b of two sparse vectors and rounds to zero */
      /* Note: SVECTOR lists are not followed, but only the first
-	SVECTOR is used */
+        SVECTOR is used */
 {
   return(multadd_ss_r(a,b,1.0,1.0,min_non_zero));
 }
@@ -401,7 +401,7 @@ SVECTOR* add_list_ss(SVECTOR *a)
 
 SVECTOR* add_dual_list_ss_r(SVECTOR *a, SVECTOR *b, double min_non_zero) 
      /* computes the linear combination of the two SVECTOR lists weighted
-	by the factor of each SVECTOR */
+        by the factor of each SVECTOR */
 {
   SVECTOR *f,*sum;
 
@@ -414,7 +414,7 @@ SVECTOR* add_dual_list_ss_r(SVECTOR *a, SVECTOR *b, double min_non_zero)
 
 SVECTOR* add_list_ss_r(SVECTOR *a, double min_non_zero) 
      /* computes the linear combination of the SVECTOR list weighted
-	by the factor of each SVECTOR */
+        by the factor of each SVECTOR */
 {
   SVECTOR *oldsum,*sum,*f;
   WORD    empty[2];
@@ -447,15 +447,15 @@ int compareup_word(const void *a, const void *b)
 
 SVECTOR* add_list_sort_ss(SVECTOR *a) 
      /* computes the linear combination of the SVECTOR list weighted
-	by the factor of each SVECTOR. This should be a lot faster
-	than add_list_ss for long lists. */
+        by the factor of each SVECTOR. This should be a lot faster
+        than add_list_ss for long lists. */
 {
   return(add_list_sort_ss_r(a,0));
 }
 
 SVECTOR* add_dual_list_sort_ss_r(SVECTOR *a, SVECTOR *b, double min_non_zero) 
      /* computes the linear combination of the two SVECTOR lists weighted
-	by the factor of each SVECTOR */
+        by the factor of each SVECTOR */
 {
   SVECTOR *f,*sum;
 
@@ -468,7 +468,7 @@ SVECTOR* add_dual_list_sort_ss_r(SVECTOR *a, SVECTOR *b, double min_non_zero)
 
 SVECTOR* add_list_sort_ss_r(SVECTOR *a, double min_non_zero) 
      /* Like add_list_sort_ss(SVECTOR *a), but rounds values smaller
-	than min_non_zero to zero. */
+        than min_non_zero to zero. */
 {
   SVECTOR *sum,*f;
   WORD    empty[2],*ai,*concat,*concati,*concat_read,*concat_write;
@@ -482,8 +482,8 @@ SVECTOR* add_list_sort_ss_r(SVECTOR *a, double min_non_zero)
 
       ai=f->words;
       while (ai->wnum) {
-	length++;
-	ai++;
+        length++;
+        ai++;
       }
     }
 
@@ -493,10 +493,10 @@ SVECTOR* add_list_sort_ss_r(SVECTOR *a, double min_non_zero)
     for(f=a;f;f=f->next) {
       ai=f->words;
       while (ai->wnum) {
-	(*concati)=(*ai);
-	concati->weight*=f->factor;
-	concati++;
-	ai++;
+        (*concati)=(*ai);
+        concati->weight*=f->factor;
+        concati++;
+        ai++;
       }
     }
     qsort(concat,length,sizeof(WORD),compareup_word);
@@ -510,17 +510,17 @@ SVECTOR* add_list_sort_ss_r(SVECTOR *a, double min_non_zero)
     weight=concat_write->weight;
     for(i=i;(i<length-1);i++) {
       if(concat_write->wnum == concat_read->wnum) {
-	weight+=(double)concat_read->weight;
-	concat_read++;
+        weight+=(double)concat_read->weight;
+        concat_read++;
       }
       else {
-	if((weight > min_non_zero) || (weight < -min_non_zero)) {
-	  concat_write->weight=weight;
-	  concat_write++;
-	}
-	(*concat_write)=(*concat_read);
-	weight=concat_write->weight;
-	concat_read++;
+        if((weight > min_non_zero) || (weight < -min_non_zero)) {
+          concat_write->weight=weight;
+          concat_write++;
+        }
+        (*concat_write)=(*concat_read);
+        weight=concat_write->weight;
+        concat_read++;
       }
     }
     if((length>0) && ((weight > min_non_zero) || (weight < -min_non_zero))) {
@@ -551,7 +551,7 @@ SVECTOR* add_list_ns(SVECTOR *a)
  
 SVECTOR* add_dual_list_ns_r(SVECTOR *a, SVECTOR *b, double min_non_zero) 
      /* computes the linear combination of the two SVECTOR lists weighted
-	by the factor of each SVECTOR */
+        by the factor of each SVECTOR */
 {
   SVECTOR *f,*sum;
 
@@ -564,9 +564,9 @@ SVECTOR* add_dual_list_ns_r(SVECTOR *a, SVECTOR *b, double min_non_zero)
 
 SVECTOR* add_list_ns_r(SVECTOR *a, double min_non_zero) 
      /* computes the linear combination of the SVECTOR list weighted
-	by the factor of each SVECTOR. assumes that the number of
-	features is small compared to the number of elements in the
-	list */
+        by the factor of each SVECTOR. assumes that the number of
+        features is small compared to the number of elements in the
+        list */
 {
     SVECTOR *vec,*f;
     register WORD *ai;
@@ -578,9 +578,9 @@ SVECTOR* add_list_ns_r(SVECTOR *a, double min_non_zero)
     for(f=a;f;f=f->next) {
       ai=f->words;
       while (ai->wnum) {
-	if(totwords<ai->wnum) 
-	  totwords=ai->wnum;
-	ai++;
+        if(totwords<ai->wnum) 
+          totwords=ai->wnum;
+        ai++;
       }
     }
     sum=create_nvector(totwords);
@@ -650,11 +650,11 @@ SVECTOR* smult_s(SVECTOR *a, double factor)
     sumi=sum;
     ai=a->words;
     while (ai->wnum) {
-	(*sumi)=(*ai);
-	sumi->weight*=factor;
-	if(sumi->weight != 0)
-	  sumi++;
-	ai++;
+        (*sumi)=(*ai);
+        sumi->weight*=factor;
+        if(sumi->weight != 0)
+          sumi++;
+        ai++;
     }
     sumi->wnum=0;
 
@@ -688,10 +688,10 @@ SVECTOR* shift_s(SVECTOR *a, long shift)
     sumi=sum;
     ai=a->words;
     while (ai->wnum) {
-	(*sumi)=(*ai);
-	sumi->wnum+=shift;
-	ai++;
-	sumi++;
+        (*sumi)=(*ai);
+        sumi->wnum+=shift;
+        ai++;
+        sumi++;
     }
     sumi->wnum=0;
 
@@ -712,20 +712,20 @@ int featvec_eq(SVECTOR *a, SVECTOR *b)
     bj=b->words;
     while (ai->wnum && bj->wnum) {
       if(ai->wnum > bj->wnum) {
-	if((bj->weight) != 0)
-	  return(0);
-	bj++;
+        if((bj->weight) != 0)
+          return(0);
+        bj++;
       }
       else if (ai->wnum < bj->wnum) {
-	if((ai->weight) != 0)
-	  return(0);
-	ai++;
+        if((ai->weight) != 0)
+          return(0);
+        ai++;
       }
       else {
-	if((ai->weight) != (bj->weight)) 
-	  return(0);
-	ai++;
-	bj++;
+        if((ai->weight) != (bj->weight)) 
+          return(0);
+        ai++;
+        bj++;
       }
     }
     return(1);
@@ -744,7 +744,7 @@ double model_length_s(MODEL *model)
     supveci=model->supvec[i];
     for(j=1;j<model->sv_num;j++) {
       sum+=alphai*model->alpha[j]
-	   *kernel(kernel_parm,supveci,model->supvec[j]);
+           *kernel(kernel_parm,supveci,model->supvec[j]);
     }
   }
   return(sqrt(sum));
@@ -822,7 +822,7 @@ void add_weight_vector_to_linear_model(MODEL *model)
 
 
 DOC *create_example(long docnum, long queryid, long slackid, 
-		    double costfactor, SVECTOR *fvec)
+                    double costfactor, SVECTOR *fvec)
 {
   DOC *example;
   example = (DOC *)my_malloc(sizeof(DOC));
@@ -840,7 +840,7 @@ void free_example(DOC *example, long deep)
   if(example) {
     if(deep) {
       if(example->fvec)
-	free_svector(example->fvec);
+        free_svector(example->fvec);
     }
     free(example);
   }
@@ -875,10 +875,10 @@ long *random_order(long n)
 }
 
 void print_percent_progress(long *progress, long maximum, 
-			    long percentperdot, char *symbol)
+                            long percentperdot, char *symbol)
      /* every time this function gets called, progress is
-	incremented. It prints symbol every percentperdot calls,
-	assuming that maximum is the max number of calls */
+        incremented. It prints symbol every percentperdot calls,
+        assuming that maximum is the max number of calls */
 {
   if((percentperdot*(*progress-1)/maximum) 
      != (percentperdot*(*progress)/maximum)) {
@@ -1013,10 +1013,10 @@ MATRIX *cholesky_matrix(MATRIX *A)
   for (i=0;i<n;i++) {
     for (j=i;j<n;j++) {
       for (sum=L->element[i][j],k=i-1;k>=0;k--) 
-	sum -= L->element[i][k]*L->element[j][k];
+        sum -= L->element[i][k]*L->element[j][k];
       if (i == j) {
-	if (sum <= 0.0) printf("Cholesky: Matrix not positive definite");
-	L->element[i][i]=sqrt(sum);
+        if (sum <= 0.0) printf("Cholesky: Matrix not positive definite");
+        L->element[i][i]=sqrt(sum);
       } 
       else L->element[j][i]=sum/L->element[i][i];
     }
@@ -1046,16 +1046,16 @@ double *find_indep_subset_of_matrix(MATRIX *A, double epsilon)
   for (i=0;i<n;i++) {
     for (j=i;j<n;j++) {
       for (sum=L->element[i][j],k=i-1;k>=0;k--) 
-	sum -= L->element[i][k]*L->element[j][k];
+        sum -= L->element[i][k]*L->element[j][k];
       if (i == j) {
-	if (sum <= epsilon) sum=0;
-	L->element[i][i]=sqrt(sum);
+        if (sum <= epsilon) sum=0;
+        L->element[i][i]=sqrt(sum);
       } 
       else 
-	if(L->element[i][i] == 0)
-	  L->element[j][i]=0;
-	else
-	  L->element[j][i]=sum/L->element[i][i];
+        if(L->element[i][i] == 0)
+          L->element[j][i]=0;
+        else
+          L->element[j][i]=sum/L->element[i][i];
     }
   }
   /* Gather non-zero diagonal elements */
@@ -1193,7 +1193,7 @@ MATRIX *prod_matrix_matrix(MATRIX *A, MATRIX *B)
     for (j=0;j<B->m;j++) {
       sum=0.0;
       for (k=0;k<A->m;k++) {
-	sum+=A->element[i][k]*B->element[k][j];
+        sum+=A->element[i][k]*B->element[k][j];
       }
       C->element[i][j]=sum;
     }
@@ -1246,15 +1246,15 @@ void write_model(char *modelfile, MODEL *model)
   { perror (modelfile); exit (1); }
   fprintf(modelfl,"SVM-light Version %s\n",VERSION);
   fprintf(modelfl,"%ld # kernel type\n",
-	  model->kernel_parm.kernel_type);
+          model->kernel_parm.kernel_type);
   fprintf(modelfl,"%ld # kernel parameter -d \n",
-	  model->kernel_parm.poly_degree);
+          model->kernel_parm.poly_degree);
   fprintf(modelfl,"%.8g # kernel parameter -g \n",
-	  model->kernel_parm.rbf_gamma);
+          model->kernel_parm.rbf_gamma);
   fprintf(modelfl,"%.8g # kernel parameter -s \n",
-	  model->kernel_parm.coef_lin);
+          model->kernel_parm.coef_lin);
   fprintf(modelfl,"%.8g # kernel parameter -r \n",
-	  model->kernel_parm.coef_const);
+          model->kernel_parm.coef_const);
   fprintf(modelfl,"%s# kernel parameter -u \n",model->kernel_parm.custom);
   fprintf(modelfl,"%ld # highest feature index \n",model->totwords);
   fprintf(modelfl,"%ld # number of training documents \n",model->totdoc);
@@ -1271,14 +1271,14 @@ void write_model(char *modelfile, MODEL *model)
     for(v=model->supvec[i]->fvec;v;v=v->next) {
       fprintf(modelfl,"%.32g ",model->alpha[i]*v->factor);
       for (j=0; (v->words[j]).wnum; j++) {
-	fprintf(modelfl,"%ld:%.8g ",
-		(long)(v->words[j]).wnum,
-		(double)(v->words[j]).weight);
+        fprintf(modelfl,"%ld:%.8g ",
+                (long)(v->words[j]).wnum,
+                (double)(v->words[j]).weight);
       }
       if(v->userdefined)
-	fprintf(modelfl,"#%s\n",v->userdefined);
+        fprintf(modelfl,"#%s\n",v->userdefined);
       else
-	fprintf(modelfl,"#\n");
+        fprintf(modelfl,"#\n");
     /* NOTE: this could be made more efficient by summing the
        alpha's of identical vectors before writing them to the
        file. */
@@ -1344,15 +1344,15 @@ MODEL *read_model(char *modelfile)
   for(i=1;i<model->sv_num;i++) {
     fgets(line,(int)ll,modelfl);
     if(!parse_document(line,words,&(model->alpha[i]),&queryid,&slackid,
-		       &costfactor,&wpos,max_words,&comment)) {
+                       &costfactor,&wpos,max_words,&comment)) {
       printf("\nParsing error while reading model file in SV %ld!\n%s",
-	     i,line);
+             i,line);
       exit(1);
     }
     model->supvec[i] = create_example(-1,
-				      0,0,
-				      0.0,
-				      create_svector(words,comment,1.0));
+                                      0,0,
+                                      0.0,
+                                      create_svector(words,comment,1.0));
   }
   fclose(modelfl);
   free(line);
@@ -1378,9 +1378,9 @@ MODEL *copy_model(MODEL *model)
   for(i=1;i<model->sv_num;i++) {
     newmodel->alpha[i]=model->alpha[i];
     newmodel->supvec[i]=create_example(model->supvec[i]->docnum,
-				       model->supvec[i]->queryid,0,
-				       model->supvec[i]->costfactor,
-				       copy_svector(model->supvec[i]->fvec));
+                                       model->supvec[i]->queryid,0,
+                                       model->supvec[i]->costfactor,
+                                       copy_svector(model->supvec[i]->fvec));
   }
   if(model->lin_weights) {
     newmodel->lin_weights = (double *)my_malloc(sizeof(double)*(model->totwords+1));
@@ -1392,7 +1392,7 @@ MODEL *copy_model(MODEL *model)
 
 MODEL *compact_linear_model(MODEL *model)
      /* Makes a copy of model where the support vectors are replaced
-	with a single linear weight vector. */
+        with a single linear weight vector. */
      /* NOTE: It adds the linear weight vector also to newmodel->lin_weights */
      /* WARNING: This is correct only for linear models! */
 {
@@ -1407,9 +1407,9 @@ MODEL *compact_linear_model(MODEL *model)
   newmodel->supvec[0] = NULL;
   newmodel->alpha[0] = 0.0;
   newmodel->supvec[1] = create_example(-1,0,0,0,
-				       create_svector_n(newmodel->lin_weights,
-							newmodel->totwords,
-							NULL,1.0));
+                                       create_svector_n(newmodel->lin_weights,
+                                                        newmodel->totwords,
+                                                        NULL,1.0));
   newmodel->alpha[1] = 1.0;
   newmodel->sv_num=2;
 
@@ -1423,7 +1423,7 @@ void free_model(MODEL *model, int deep)
   if(model->supvec) {
     if(deep) {
       for(i=1;i<model->sv_num;i++) {
-	free_example(model->supvec[i],1);
+        free_example(model->supvec[i],1);
       }
     }
     free(model->supvec);
@@ -1436,7 +1436,7 @@ void free_model(MODEL *model, int deep)
 
 
 void read_documents(char *docfile, DOC ***docs, double **label, 
-		    long int *totwords, long int *totdoc)
+                    long int *totwords, long int *totdoc)
 {
   char *line,*comment;
   WORD *words;
@@ -1472,7 +1472,7 @@ void read_documents(char *docfile, DOC ***docs, double **label,
   while((!feof(docfl)) && fgets(line,(int)ll,docfl)) {
     if(line[0] == '#') continue;  /* line contains comments */
     if(!parse_document(line,words,&doc_label,&queryid,&slackid,&costfactor,
-		       &wpos,max_words_doc,&comment)) {
+                       &wpos,max_words_doc,&comment)) {
       printf("\nParsing error in line %ld!\n%s",dnum,line);
       exit(1);
     }
@@ -1489,12 +1489,12 @@ void read_documents(char *docfile, DOC ***docs, double **label,
       exit(1);
     }
     (*docs)[dnum] = create_example(dnum,queryid,slackid,costfactor,
-				   create_svector(words,comment,1.0));
+                                   create_svector(words,comment,1.0));
     /* printf("\nNorm=%f\n",((*docs)[dnum]->fvec)->twonorm_sq);  */
     dnum++;  
     if(verbosity>=1) {
       if((dnum % 100) == 0) {
-	printf("%ld..",dnum); fflush(stdout);
+        printf("%ld..",dnum); fflush(stdout);
       }
     }
   } 
@@ -1509,9 +1509,9 @@ void read_documents(char *docfile, DOC ***docs, double **label,
 }
 
 int parse_document(char *line, WORD *words, double *label,
-		   long *queryid, long *slackid, double *costfactor,
-		   long int *numwords, long int max_words_doc,
-		   char **comment)
+                   long *queryid, long *slackid, double *costfactor,
+                   long int *numwords, long int max_words_doc,
+                   char **comment)
 {
   register long wpos,pos;
   long wnum;
@@ -1544,9 +1544,9 @@ int parse_document(char *line, WORD *words, double *label,
   pos=0;
   while((featurepair[pos] != ':') && featurepair[pos]) pos++;
   if(featurepair[pos] == ':') {
-	perror ("Line must start with label or 0!!!\n"); 
-	printf("LINE: %s\n",line);
-	exit (1); 
+        perror ("Line must start with label or 0!!!\n"); 
+        printf("LINE: %s\n",line);
+        exit (1); 
   }
   /* read the target value */
   if(sscanf(line,"%lf",label) == EOF) return(0);
@@ -1554,8 +1554,8 @@ int parse_document(char *line, WORD *words, double *label,
   while(space_or_null((int)line[pos])) pos++;
   while((!space_or_null((int)line[pos])) && line[pos]) pos++;
   while((pos+=read_word(line+pos,featurepair)) &&
-	(featurepair[0]) && 
-	(wpos<max_words_doc)) {
+        (featurepair[0]) && 
+        (wpos<max_words_doc)) {
     /* printf("%s\n",featurepair); */
     if(sscanf(featurepair,"qid:%ld%s",&wnum,junk)==1) {
       /* it is the query id */
@@ -1564,11 +1564,11 @@ int parse_document(char *line, WORD *words, double *label,
     else if(sscanf(featurepair,"sid:%ld%s",&wnum,junk)==1) {
       /* it is the slack id */
       if(wnum > 0) 
-	(*slackid)=(long)wnum;
+        (*slackid)=(long)wnum;
       else {
-	perror ("Slack-id must be greater or equal to 1!!!\n"); 
-	printf("LINE: %s\n",line);
-	exit (1); 
+        perror ("Slack-id must be greater or equal to 1!!!\n"); 
+        printf("LINE: %s\n",line);
+        exit (1); 
       }
     }
     else if(sscanf(featurepair,"cost:%lf%s",&weight,junk)==1) {
@@ -1578,14 +1578,14 @@ int parse_document(char *line, WORD *words, double *label,
     else if(sscanf(featurepair,"%ld:%lf%s",&wnum,&weight,junk)==2) {
       /* it is a regular feature */
       if(wnum<=0) { 
-	perror ("Feature numbers must be larger or equal to 1!!!\n"); 
-	printf("LINE: %s\n",line);
-	exit (1); 
+        perror ("Feature numbers must be larger or equal to 1!!!\n"); 
+        printf("LINE: %s\n",line);
+        exit (1); 
       }
       if((wpos>0) && ((words[wpos-1]).wnum >= wnum)) { 
-	perror ("Features must be in increasing order!!!\n"); 
-	printf("LINE: %s\n",line);
-	exit (1); 
+        perror ("Features must be in increasing order!!!\n"); 
+        printf("LINE: %s\n",line);
+        exit (1); 
       }
       (words[wpos]).wnum=wnum;
       (words[wpos]).weight=(FVAL)weight; 
@@ -1746,10 +1746,10 @@ void nol_ll(char *file, long int *nol, long int *wol, long int *ll)
     if(c == '\n') {
       (*nol)++;
       if(current_length>(*ll)) {
-	(*ll)=current_length;
+        (*ll)=current_length;
       }
       if(current_wol>(*wol)) {
-	(*wol)=current_wol;
+        (*wol)=current_wol;
       }
       current_length=0;
       current_wol=0;

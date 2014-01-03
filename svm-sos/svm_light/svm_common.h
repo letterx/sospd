@@ -38,7 +38,7 @@
 # define FNUM_MAX 2147483647 /* maximum value that FNUM type can take */
 # define FVAL    float       /* the type used for storing feature values */
 # define MAXFEATNUM 99999999 /* maximum feature number (must be in
-			  	valid range of FNUM type and long int!) */
+                                  valid range of FNUM type and long int!) */
 
 # define LINEAR  0           /* linear kernel type */
 # define POLY    1           /* polynomial kernel type */
@@ -55,88 +55,88 @@
 # define MAXSHRINK     50000    /* maximum number of shrinking rounds */
 
 typedef struct word {
-  FNUM    wnum;	               /* word number */
+  FNUM    wnum;                       /* word number */
   FVAL    weight;              /* word weight */
 } WORD;
 
 typedef struct svector {
   WORD    *words;              /* The features/values in the vector by
-				  increasing feature-number. Feature
-				  numbers that are skipped are
-				  interpreted as having value zero. */
+                                  increasing feature-number. Feature
+                                  numbers that are skipped are
+                                  interpreted as having value zero. */
   double  twonorm_sq;          /* The squared euclidian length of the
                                   vector. Used to speed up the RBF kernel. */
   char    *userdefined;        /* You can put additional information
-				  here. This can be useful, if you are
-				  implementing your own kernel that
-				  does not work with feature/values
-				  representations (for example a
-				  string kernel). By default,
-				  svm-light will put here the string
-				  after the # sign from each line of
-				  the input file. */
+                                  here. This can be useful, if you are
+                                  implementing your own kernel that
+                                  does not work with feature/values
+                                  representations (for example a
+                                  string kernel). By default,
+                                  svm-light will put here the string
+                                  after the # sign from each line of
+                                  the input file. */
   long    kernel_id;           /* Feature vectors with different
-				  kernel_id's are orthogonal (ie. the
-				  feature number do not match). This
-				  is used for computing component
-				  kernels for linear constraints which
-				  are a sum of several different
-				  weight vectors. (currently not
-				  implemented). */
+                                  kernel_id's are orthogonal (ie. the
+                                  feature number do not match). This
+                                  is used for computing component
+                                  kernels for linear constraints which
+                                  are a sum of several different
+                                  weight vectors. (currently not
+                                  implemented). */
   struct svector *next;        /* Let's you set up a list of SVECTOR's
-				  for linear constraints which are a
-				  sum of multiple feature
-				  vectors. List is terminated by
-				  NULL. */
+                                  for linear constraints which are a
+                                  sum of multiple feature
+                                  vectors. List is terminated by
+                                  NULL. */
   double  factor;              /* Factor by which this feature vector
-				  is multiplied in the sum. */
+                                  is multiplied in the sum. */
 } SVECTOR;
 
 typedef struct doc {
   long    docnum;              /* Document ID. This has to be the position of 
                                   the document in the training set array. */
   long    queryid;             /* for learning rankings, constraints are 
-				  generated for documents with the same 
-				  queryID. */
+                                  generated for documents with the same 
+                                  queryID. */
   double  costfactor;          /* Scales the cost of misclassifying this
-				  document by this factor. The effect of this
-				  value is, that the upper bound on the alpha
-				  for this example is scaled by this factor.
-				  The factors are set by the feature 
-				  'cost:<val>' in the training data. */
+                                  document by this factor. The effect of this
+                                  value is, that the upper bound on the alpha
+                                  for this example is scaled by this factor.
+                                  The factors are set by the feature 
+                                  'cost:<val>' in the training data. */
   long    slackid;             /* Index of the slack variable
-				  corresponding to this
-				  constraint. All constraints with the
-				  same slackid share the same slack
-				  variable. This can only be used for
-				  svm_learn_optimization. */
+                                  corresponding to this
+                                  constraint. All constraints with the
+                                  same slackid share the same slack
+                                  variable. This can only be used for
+                                  svm_learn_optimization. */
   long    kernelid;            /* Position in gram matrix where kernel
-				  value can be found when using an
-				  explicit gram matrix
-				  (i.e. kernel_type=GRAM). */
+                                  value can be found when using an
+                                  explicit gram matrix
+                                  (i.e. kernel_type=GRAM). */
   SVECTOR *fvec;               /* Feature vector of the example. The
-				  feature vector can actually be a
-				  list of feature vectors. For
-				  example, the list will have two
-				  elements, if this DOC is a
-				  preference constraint. The one
-				  vector that is supposed to be ranked
-				  higher, will have a factor of +1,
-				  the lower ranked one should have a
-				  factor of -1. */
+                                  feature vector can actually be a
+                                  list of feature vectors. For
+                                  example, the list will have two
+                                  elements, if this DOC is a
+                                  preference constraint. The one
+                                  vector that is supposed to be ranked
+                                  higher, will have a factor of +1,
+                                  the lower ranked one should have a
+                                  factor of -1. */
 } DOC;
 
 typedef struct learn_parm {
   long   type;                 /* selects between regression and
-				  classification */
+                                  classification */
   double svm_c;                /* upper bound C on alphas */
   double eps;                  /* regression epsilon (eps=1.0 for
-				  classification */
+                                  classification */
   double svm_costratio;        /* factor to multiply C for positive examples */
   double transduction_posratio;/* fraction of unlabeled examples to be */
                                /* classified as positives */
   long   biased_hyperplane;    /* if nonzero, use hyperplane w*x+b=0 
-				  otherwise w*x=0 */
+                                  otherwise w*x=0 */
   long   sharedslack;          /* if nonzero, it will use the shared
                                   slack variable mode in
                                   svm_learn_optimization. It requires
@@ -144,41 +144,41 @@ typedef struct learn_parm {
                                   training example */
   long   svm_maxqpsize;        /* size q of working set */
   long   svm_newvarsinqp;      /* new variables to enter the working set 
-				  in each iteration */
+                                  in each iteration */
   long   kernel_cache_size;    /* size of kernel cache in megabytes */
   double epsilon_crit;         /* tolerable error for distances used 
-				  in stopping criterion */
+                                  in stopping criterion */
   double epsilon_shrink;       /* how much a multiplier should be above 
-				  zero for shrinking */
+                                  zero for shrinking */
   long   svm_iter_to_shrink;   /* iterations h after which an example can
-				  be removed by shrinking */
+                                  be removed by shrinking */
   long   maxiter;              /* number of iterations after which the
-				  optimizer terminates, if there was
-				  no progress in maxdiff */
+                                  optimizer terminates, if there was
+                                  no progress in maxdiff */
   long   remove_inconsistent;  /* exclude examples with alpha at C and 
-				  retrain */
+                                  retrain */
   long   skip_final_opt_check; /* do not check KT-Conditions at the end of
-				  optimization for examples removed by 
-				  shrinking. WARNING: This might lead to 
-				  sub-optimal solutions! */
+                                  optimization for examples removed by 
+                                  shrinking. WARNING: This might lead to 
+                                  sub-optimal solutions! */
   long   compute_loo;          /* if nonzero, computes leave-one-out
-				  estimates */
+                                  estimates */
   double rho;                  /* parameter in xi/alpha-estimates and for
-				  pruning leave-one-out range [1..2] */
+                                  pruning leave-one-out range [1..2] */
   long   xa_depth;             /* parameter in xi/alpha-estimates upper
-				  bounding the number of SV the current
-				  alpha_t is distributed over */
+                                  bounding the number of SV the current
+                                  alpha_t is distributed over */
   char predfile[200];          /* file for predicitions on unlabeled examples
-				  in transduction */
+                                  in transduction */
   char alphafile[200];         /* file to store optimal alphas in. use  
-				  empty string if alphas should not be 
-				  output */
+                                  empty string if alphas should not be 
+                                  output */
 
   /* you probably do not want to touch the following */
   double epsilon_const;        /* tolerable error on eq-constraint */
   double epsilon_a;            /* tolerable error on alphas at bounds */
   double opt_precision;        /* precision of solver, set to e.g. 1e-21 
-				  if you get convergence problems */
+                                  if you get convergence problems */
 
   /* the following are only for internal use */
   long   svm_c_steps;          /* do so many steps for finding optimal C */
@@ -197,19 +197,19 @@ typedef struct matrix {
 
 typedef struct kernel_parm {
   long    kernel_type;   /* 0=linear, 1=poly, 2=rbf, 3=sigmoid,
-			    4=custom, 5=matrix */
+                            4=custom, 5=matrix */
   long    poly_degree;
   double  rbf_gamma;
   double  coef_lin;
   double  coef_const;
   char    custom[50];    /* for user supplied kernel */
   MATRIX  *gram_matrix;  /* here one can directly supply the kernel
-			    matrix. The matrix is accessed if
-			    kernel_type=5 is selected. */
+                            matrix. The matrix is accessed if
+                            kernel_type=5 is selected. */
 } KERNEL_PARM;
 
 typedef struct model {
-  long    sv_num;	
+  long    sv_num;        
   long    at_upper_bound;
   double  b;
   DOC     **supvec;
@@ -223,9 +223,9 @@ typedef struct model {
   double  loo_error,loo_recall,loo_precision; /* leave-one-out estimates */
   double  xa_error,xa_recall,xa_precision;    /* xi/alpha estimates */
   double  *lin_weights;                       /* weights for linear case using
-						 folding */
+                                                 folding */
   double  maxdiff;                            /* precision, up to which this 
-						 model is accurate */
+                                                 model is accurate */
 } MODEL;
 
 /* The following specifies a quadratic problem of the following form
@@ -238,7 +238,7 @@ typedef struct quadratic_program {
   long   opt_n;            /* number of variables */
   long   opt_m;            /* number of linear equality constraints */
   double *opt_ce,*opt_ce0; /* linear equality constraints 
-			      opt_ce[i]*x - opt_ceo[i]=0 */
+                              opt_ce[i]*x - opt_ceo[i]=0 */
   double *opt_g;           /* hessian of objective */
   double *opt_g0;          /* linear part of objective */
   double *opt_xinit;       /* initial value for variables */
@@ -305,7 +305,7 @@ SVECTOR*  add_ss(SVECTOR *, SVECTOR *);
 SVECTOR*  add_ss_r(SVECTOR *, SVECTOR *, double min_non_zero); 
 SVECTOR*  multadd_ss(SVECTOR *a, SVECTOR *b, double fa, double fb);
 SVECTOR*  multadd_ss_r(SVECTOR *a,SVECTOR *b,double fa, double fb,
-		       double min_non_zero);
+                       double min_non_zero);
 SVECTOR*  add_list_ns(SVECTOR *a);
 SVECTOR*  add_dual_list_ns_r(SVECTOR *, SVECTOR *, double min_non_zero); 
 SVECTOR*  add_list_ns_r(SVECTOR *a, double min_non_zero);
@@ -332,7 +332,7 @@ DOC    *create_example(long, long, long, double, SVECTOR *);
 void   free_example(DOC *, long);
 long   *random_order(long n);
 void   print_percent_progress(long *progress, long maximum, 
-			      long percentperdot, char *symbol);
+                              long percentperdot, char *symbol);
 MATRIX *create_matrix(int n, int m);
 MATRIX *realloc_matrix(MATRIX *matrix, int n, int m);
 double *create_nvector(int n);

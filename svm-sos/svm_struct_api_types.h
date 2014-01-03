@@ -78,29 +78,29 @@ typedef struct structmodel {
 
 typedef struct struct_learn_parm {
   double epsilon;              /* precision for which to solve
-				  quadratic program */
+                                  quadratic program */
   double newconstretrain;      /* number of new constraints to
-				  accumulate before recomputing the QP
-				  solution (used in w=1 algorithm) */
+                                  accumulate before recomputing the QP
+                                  solution (used in w=1 algorithm) */
   int    ccache_size;          /* maximum number of constraints to
-				  cache for each example (used in w=4
-				  algorithm) */
+                                  cache for each example (used in w=4
+                                  algorithm) */
   double batch_size;           /* size of the mini batches in percent
-				  of training set size (used in w=4
-				  algorithm) */
+                                  of training set size (used in w=4
+                                  algorithm) */
   double C;                    /* trade-off between margin and loss */
   char*  custom_argv[50];      /* storage for the --* command line options */
   int    custom_argc;          /* number of --* command line options */
   int    slack_norm;           /* norm to use in objective function
                                   for slack variables; 1 -> L1-norm, 
-				  2 -> L2-norm */
+                                  2 -> L2-norm */
   int    loss_type;            /* selected loss type from -r
-				  command line option. Select between
-				  slack rescaling (1) and margin
-				  rescaling (2) */
+                                  command line option. Select between
+                                  slack rescaling (1) and margin
+                                  rescaling (2) */
   int    loss_function;        /* select between different loss
-				  functions via -l command line
-				  option */
+                                  functions via -l command line
+                                  option */
   /* further parameters that are passed to init_struct_model() */
   char data_file[256];
   char model_file[256];

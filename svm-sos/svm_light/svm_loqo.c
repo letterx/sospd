@@ -63,7 +63,7 @@ LEARN_PARM *learn_parm;
     for(i=0;i<qp->opt_n;i++) {
       printf("%f: ",qp->opt_g0[i]);
       for(j=0;j<qp->opt_n;j++) {
-	printf("%f ",qp->opt_g[i*qp->opt_n+j]);
+        printf("%f ",qp->opt_g[i*qp->opt_n+j]);
       }
       printf(": a%ld=%.10f < %f",i,qp->opt_xinit[i],qp->opt_up[i]);
       printf(": y=%f\n",qp->opt_ce[i]);
@@ -71,7 +71,7 @@ LEARN_PARM *learn_parm;
     for(j=0;j<qp->opt_m;j++) {
       printf("EQ-%ld: %f*a0",j,qp->opt_ce[j]);
       for(i=1;i<qp->opt_n;i++) {
-	printf(" + %f*a%ld",qp->opt_ce[i],i);
+        printf(" + %f*a%ld",qp->opt_ce[i],i);
       }
       printf(" = %f\n\n",-qp->opt_ce0[0]);
     }
@@ -95,25 +95,25 @@ LEARN_PARM *learn_parm;
     sigdig=-log10(opt_precision);
 
     result=pr_loqo((int)qp->opt_n,(int)qp->opt_m,
-		   (double *)qp->opt_g0,(double *)qp->opt_g,
-		   (double *)qp->opt_ce,(double *)qp->opt_ce0,
-		   (double *)qp->opt_low,(double *)qp->opt_up,
-		   (double *)primal,(double *)dual, 
-		   (int)(verbosity-2),
-		   (double)sigdig,(int)iter, 
-		   (double)margin,(double)(qp->opt_up[0])/4.0,(int)0);
+                   (double *)qp->opt_g0,(double *)qp->opt_g,
+                   (double *)qp->opt_ce,(double *)qp->opt_ce0,
+                   (double *)qp->opt_low,(double *)qp->opt_up,
+                   (double *)primal,(double *)dual, 
+                   (int)(verbosity-2),
+                   (double)sigdig,(int)iter, 
+                   (double)margin,(double)(qp->opt_up[0])/4.0,(int)0);
 
     if(isnan(dual[0])) {     /* check for choldc problem */
       if(verbosity>=2) {
-	printf("NOTICE: Restarting PR_LOQO with more conservative parameters.\n");
+        printf("NOTICE: Restarting PR_LOQO with more conservative parameters.\n");
       }
       if(init_margin<0.80) { /* become more conservative in general */
-	init_margin=(4.0*margin+1.0)/5.0;
+        init_margin=(4.0*margin+1.0)/5.0;
       }
       margin=(margin+1.0)/2.0;
       (opt_precision)*=10.0;   /* reduce precision */
       if(verbosity>=2) {
-	printf("NOTICE: Reducing precision of PR_LOQO.\n");
+        printf("NOTICE: Reducing precision of PR_LOQO.\n");
       }
     }
     else if(result!=OPTIMAL_SOLUTION) {
@@ -121,7 +121,7 @@ LEARN_PARM *learn_parm;
       init_iter+=10;
       (opt_precision)*=10.0;   /* reduce precision */
       if(verbosity>=2) {
-	printf("NOTICE: Reducing precision of PR_LOQO due to (%ld).\n",result);
+        printf("NOTICE: Reducing precision of PR_LOQO due to (%ld).\n",result);
       }      
     }
   }
@@ -196,7 +196,7 @@ LEARN_PARM *learn_parm;
     if(verbosity>=1) {
       printf("\nWARNING: Relaxing epsilon on KT-Conditions.\n");
     }
-  }	  
+  }          
 
   (*threshold)=model_b;
 

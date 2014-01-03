@@ -23,7 +23,7 @@ char modelfile[200];
 char predictionsfile[200];
 
 void read_input_parameters(int, char **, char *, char *, char *, long *, 
-			   long *);
+                           long *);
 void print_help(void);
 
 
@@ -43,7 +43,7 @@ int main (int argc, char* argv[])
   MODEL *model; 
 
   read_input_parameters(argc,argv,docfile,modelfile,predictionsfile,
-			&verbosity,&pred_format);
+                        &verbosity,&pred_format);
 
   nol_ll(docfile,&max_docs,&max_words_doc,&lld); /* scan size of input file */
   max_words_doc+=2;
@@ -71,12 +71,12 @@ int main (int argc, char* argv[])
   while((!feof(docfl)) && fgets(line,(int)lld,docfl)) {
     if(line[0] == '#') continue;  /* line contains comments */
     parse_document(line,words,&doc_label,&queryid,&slackid,&costfactor,&wnum,
-		   max_words_doc,&comment);
+                   max_words_doc,&comment);
     totdoc++;
     if(model->kernel_parm.kernel_type == LINEAR) {/* For linear kernel,     */
       for(j=0;(words[j]).wnum != 0;j++) {     /* check if feature numbers   */
-	if((words[j]).wnum>model->totwords)   /* are not larger than in     */
-	  (words[j]).wnum=0;                  /* model. Remove feature if   */
+        if((words[j]).wnum>model->totwords)   /* are not larger than in     */
+          (words[j]).wnum=0;                  /* model. Remove feature if   */
       }                                       /* necessary.                 */
     }
     doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
@@ -94,14 +94,14 @@ int main (int argc, char* argv[])
 
     if(dist>0) {
       if(pred_format==0) { /* old weired output format */
-	fprintf(predfl,"%.8g:+1 %.8g:-1\n",dist,-dist);
+        fprintf(predfl,"%.8g:+1 %.8g:-1\n",dist,-dist);
       }
       if(doc_label>0) correct++; else incorrect++;
       if(doc_label>0) res_a++; else res_b++;
     }
     else {
       if(pred_format==0) { /* old weired output format */
-	fprintf(predfl,"%.8g:-1 %.8g:+1\n",-dist,dist);
+        fprintf(predfl,"%.8g:-1 %.8g:+1\n",-dist,dist);
       }
       if(doc_label<0) correct++; else incorrect++;
       if(doc_label>0) res_c++; else res_d++;
@@ -113,7 +113,7 @@ int main (int argc, char* argv[])
       { no_accuracy=1; } /* test data is not binary labeled */
     if(verbosity>=2) {
       if(totdoc % 100 == 0) {
-	printf("%ld..",totdoc); fflush(stdout);
+        printf("%ld..",totdoc); fflush(stdout);
       }
     }
   }  
@@ -131,7 +131,7 @@ int main (int argc, char* argv[])
 /*        Because classification of a single vector takes less than    */
 /*        0.01 secs, the timer was underflowing.                       */
     printf("Runtime (without IO) in cpu-seconds: %.2f\n",
-	   (float)(runtime/100.0));
+           (float)(runtime/100.0));
     
   }
   if((!no_accuracy) && (verbosity>=1)) {
@@ -143,8 +143,8 @@ int main (int argc, char* argv[])
 }
 
 void read_input_parameters(int argc, char **argv, char *docfile, 
-			   char *modelfile, char *predictionsfile, 
-			   long int *verbosity, long int *pred_format)
+                           char *modelfile, char *predictionsfile, 
+                           long int *verbosity, long int *pred_format)
 {
   long i;
   
@@ -161,8 +161,8 @@ void read_input_parameters(int argc, char **argv, char *docfile,
       case 'v': i++; (*verbosity)=atol(argv[i]); break;
       case 'f': i++; (*pred_format)=atol(argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",argv[i]);
-	       print_help();
-	       exit(0);
+               print_help();
+               exit(0);
       }
   }
   if((i+1)>=argc) {

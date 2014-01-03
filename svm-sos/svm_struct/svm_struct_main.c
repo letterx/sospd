@@ -40,8 +40,8 @@ char trainfile[200];           /* file with training examples */
 char modelfile[200];           /* file for resulting classifier */
 
 void   read_input_parameters(int, char **, char *, char *,long *, long *,
-			     STRUCT_LEARN_PARM *, LEARN_PARM *, KERNEL_PARM *,
-			     int *);
+                             STRUCT_LEARN_PARM *, LEARN_PARM *, KERNEL_PARM *,
+                             int *);
 void   wait_any_key();
 void   print_help();
 
@@ -58,8 +58,8 @@ int main (int argc, char* argv[])
   svm_struct_learn_api_init(argc,argv);
 
   read_input_parameters(argc,argv,trainfile,modelfile,&verbosity,
-			&struct_verbosity,&struct_parm,&learn_parm,
-			&kernel_parm,&alg_type);
+                        &struct_verbosity,&struct_parm,&learn_parm,
+                        &kernel_parm,&alg_type);
 
   if(struct_verbosity>=1) {
     printf("Reading training examples..."); fflush(stdout);
@@ -108,11 +108,11 @@ int main (int argc, char* argv[])
 /*---------------------------------------------------------------------------*/
 
 void read_input_parameters(int argc,char *argv[],char *trainfile,
-			   char *modelfile,
-			   long *verbosity,long *struct_verbosity, 
-			   STRUCT_LEARN_PARM *struct_parm,
-			   LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm,
-			   int *alg_type)
+                           char *modelfile,
+                           long *verbosity,long *struct_verbosity, 
+                           STRUCT_LEARN_PARM *struct_parm,
+                           LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm,
+                           int *alg_type)
 {
   long i;
   char type[100];
@@ -193,8 +193,8 @@ void read_input_parameters(int argc,char *argv[],char *trainfile,
       case 'v': i++; (*struct_verbosity)=atol(argv[i]); break;
       case 'y': i++; (*verbosity)=atol(argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",argv[i]);
-	       print_help();
-	       exit(0);
+               print_help();
+               exit(0);
       }
   }
   if(i>=argc) {

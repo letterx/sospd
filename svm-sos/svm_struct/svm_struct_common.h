@@ -42,7 +42,7 @@ typedef struct sample { /* a sample is a set of examples */
 } SAMPLE;
 
 typedef struct constset { /* a set of linear inequality constrains of
-			     for lhs[i]*w >= rhs[i] */
+                             for lhs[i]*w >= rhs[i] */
   int     m;            /* m is the total number of constrains */
   DOC     **lhs;
   double  *rhs;

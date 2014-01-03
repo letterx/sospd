@@ -32,7 +32,7 @@ char modelfile[200];
 char predictionsfile[200];
 
 void read_input_parameters(int, char **, char *, char *, char *, 
-			   STRUCT_LEARN_PARM *, long*, long *);
+                           STRUCT_LEARN_PARM *, long*, long *);
 void print_help(void);
 
 
@@ -52,7 +52,7 @@ int main (int argc, char* argv[])
   svm_struct_classify_api_init(argc,argv);
 
   read_input_parameters(argc,argv,testfile,modelfile,predictionsfile,&sparm,
-			&verbosity,&struct_verbosity);
+                        &verbosity,&struct_verbosity);
 
   if(struct_verbosity>=1) {
     printf("Reading model..."); fflush(stdout);
@@ -101,7 +101,7 @@ int main (int argc, char* argv[])
       { no_accuracy=1; } /* test data is not labeled */
     if(struct_verbosity>=2) {
       if((i+1) % 100 == 0) {
-	printf("%ld..",i+1); fflush(stdout);
+        printf("%ld..",i+1); fflush(stdout);
       }
     }
     free_label(y);
@@ -112,7 +112,7 @@ int main (int argc, char* argv[])
   if(struct_verbosity>=1) {
     printf("done\n");
     printf("Runtime (without IO) in cpu-seconds: %.2f\n",
-	   (float)(runtime/100.0));    
+           (float)(runtime/100.0));    
   }
   if((!no_accuracy) && (struct_verbosity>=1)) {
     printf("Average loss on test set: %.4f\n",(float)avgloss);
@@ -128,9 +128,9 @@ int main (int argc, char* argv[])
 }
 
 void read_input_parameters(int argc,char *argv[],char *testfile,
-			   char *modelfile,char *predictionsfile,
-			   STRUCT_LEARN_PARM *struct_parm,
-			   long *verbosity,long *struct_verbosity)
+                           char *modelfile,char *predictionsfile,
+                           STRUCT_LEARN_PARM *struct_parm,
+                           long *verbosity,long *struct_verbosity)
 {
   long i;
   
@@ -152,8 +152,8 @@ void read_input_parameters(int argc,char *argv[],char *testfile,
       case 'v': i++; (*struct_verbosity)=atol(argv[i]); break;
       case 'y': i++; (*verbosity)=atol(argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",argv[i]);
-	       print_help();
-	       exit(0);
+               print_help();
+               exit(0);
       }
   }
   if((i+1)>=argc) {

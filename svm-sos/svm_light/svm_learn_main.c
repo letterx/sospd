@@ -35,7 +35,7 @@ char modelfile[200];         /* file for resulting classifier */
 char restartfile[200];       /* file with initial alphas */
 
 void   read_input_parameters(int, char **, char *, char *, char *, long *, 
-			     LEARN_PARM *, KERNEL_PARM *);
+                             LEARN_PARM *, KERNEL_PARM *);
 void   wait_any_key();
 void   print_help();
 
@@ -53,7 +53,7 @@ int main (int argc, char* argv[])
   MODEL *model=(MODEL *)my_malloc(sizeof(MODEL));
 
   read_input_parameters(argc,argv,docfile,modelfile,restartfile,&verbosity,
-			&learn_parm,&kernel_parm);
+                        &learn_parm,&kernel_parm);
   read_documents(docfile,&docs,&target,&totwords,&totdoc);
   if(restartfile[0]) alpha_in=read_alphas(restartfile,totdoc);
 
@@ -68,19 +68,19 @@ int main (int argc, char* argv[])
 
   if(learn_parm.type == CLASSIFICATION) {
     svm_learn_classification(docs,target,totdoc,totwords,&learn_parm,
-			     &kernel_parm,kernel_cache,model,alpha_in);
+                             &kernel_parm,kernel_cache,model,alpha_in);
   }
   else if(learn_parm.type == REGRESSION) {
     svm_learn_regression(docs,target,totdoc,totwords,&learn_parm,
-			 &kernel_parm,&kernel_cache,model);
+                         &kernel_parm,&kernel_cache,model);
   }
   else if(learn_parm.type == RANKING) {
     svm_learn_ranking(docs,target,totdoc,totwords,&learn_parm,
-		      &kernel_parm,&kernel_cache,model);
+                      &kernel_parm,&kernel_cache,model);
   }
   else if(learn_parm.type == OPTIMIZATION) {
     svm_learn_optimization(docs,target,totdoc,totwords,&learn_parm,
-			   &kernel_parm,kernel_cache,model,alpha_in);
+                           &kernel_parm,kernel_cache,model,alpha_in);
   }
 
   if(kernel_cache) {
@@ -107,8 +107,8 @@ int main (int argc, char* argv[])
 /*---------------------------------------------------------------------------*/
 
 void read_input_parameters(int argc,char *argv[],char *docfile,char *modelfile,
-			   char *restartfile,long *verbosity,
-			   LEARN_PARM *learn_parm,KERNEL_PARM *kernel_parm)
+                           char *restartfile,long *verbosity,
+                           LEARN_PARM *learn_parm,KERNEL_PARM *kernel_parm)
 {
   long i;
   char type[100];
@@ -152,8 +152,8 @@ void read_input_parameters(int argc,char *argv[],char *docfile,char *modelfile,
       case 'a': i++; strcpy(learn_parm->alphafile,argv[i]); break;
       case 'y': i++; strcpy(restartfile,argv[i]); break;
       default: printf("\nUnrecognized option %s!\n\n",argv[i]);
-	       print_help();
-	       exit(0);
+               print_help();
+               exit(0);
       }
   }
   if(i>=argc) {
