@@ -33,11 +33,11 @@ class Optimizer;
  */
 class SVM_Cpp_Base {
     public:
-        SVM_Cpp_Base() : m_test_stats() { }
+        SVM_Cpp_Base() : m_testStats() { }
         virtual ~SVM_Cpp_Base() { }
 
-        typedef std::vector<std::unique_ptr<PatternData>> PatternVec;
-        typedef std::vector<std::unique_ptr<LabelData>> LabelVec;
+        typedef std::vector<PatternData*> PatternVec;
+        typedef std::vector<LabelData*> LabelVec;
         typedef std::vector<std::unique_ptr<FeatureGroup>> FeatureVec;
 
         /* Must be defined by the user.
@@ -66,14 +66,14 @@ class SVM_Cpp_Base {
          * Classify a given pattern, according to the current parameter 
          * vector w.
          */
-        virtual LabelData classify(const PatternData& p, 
+        virtual LabelData* classify(const PatternData& p, 
                 const double* w) const = 0;
 
         /* 
          * Given a pattern p and correct label l, find the most violated
          * constraint according to the current parameter vector w.
          */
-        virtual LabelData findMostViolatedConstraint(const PatternData& p, 
+        virtual LabelData* findMostViolatedConstraint(const PatternData& p, 
                 const LabelData& l, const double* w) const = 0;
 
         /* 
@@ -84,6 +84,7 @@ class SVM_Cpp_Base {
         virtual bool finalizeIteration() const = 0;
         virtual void evalPrediction(const PatternData& p, 
                 const LabelData& y, const LabelData& ypred) const = 0;
+        virtual const Parameters& params() const = 0;
 
         long numFeatures() const;
         void trainFeatures(const std::string& train_file, 

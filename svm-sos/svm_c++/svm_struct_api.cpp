@@ -26,6 +26,18 @@ extern "C" {
 #include "svm_c++.hpp"
 #include "svm_struct_options.hpp"
 
+static PATTERN MakePattern(PatternData* d) {
+    PATTERN p;
+    p.data = d;
+    return p;
+}
+
+static LABEL MakeLabel(LabelData* d) {
+    LABEL l;
+    l.data = d;
+    return l;
+}
+
 void        svm_struct_learn_api_init(int argc, char* argv[])
 {
   /* Called in learning part before anything else is done to allow
@@ -36,8 +48,6 @@ void        svm_struct_learn_api_exit()
 {
   /* Called in learning part at the very end to allow any clean-up
      that might be necessary. */
-    g_application->svm_struct_learn_api_exit();
-    delete g_application;
 }
 
 void        svm_struct_classify_api_init(int argc, char* argv[])
@@ -50,62 +60,252 @@ void        svm_struct_classify_api_exit()
 {
   /* Called in prediction part at the very end to allow any clean-up
      that might be necessary. */
-    g_application->svm_struct_classify_api_exit();
-    delete g_application;
 }
 
 SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->read_struct_examples(file, sparm);
+    /* Reads struct examples and returns them in sample. The number of
+       examples must be written into sample.n */
+    SAMPLE   sample;    /* sample */
+    EXAMPLE  *examples;
+    size_t n = 0;       /* number of examples */
+
+    g_application->m_testStats.ResetTimer();
+
+    std::vector<PatternData*> patterns;
+    std::vector<LabelData*> labels;
+
+    strcpy(sparm->data_file, file);
+
+    g_application->readExamples(file, patterns, labels);
+    n = patterns.size();
+
+    examples=static_cast<EXAMPLE *>(my_malloc(sizeof(EXAMPLE)*n));
+    for (size_t i = 0; i < n; ++i) {
+        examples[i].x = MakePattern(patterns[i]);
+        examples[i].y = MakeLabel(labels[i]);
+    }
+
+    std::cout << " (" << n << " examples)... ";
+
+    g_application->m_testStats.m_num_examples = n;
+
+    sample.n=n;
+    sample.examples=examples;
+    return(sample);
 }
 
 void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm, 
 			      STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm, 
 			      KERNEL_PARM *kparm)
 {
-    g_application->init_struct_model(sample, sm, sparm, lparm, kparm);
+    /* Initialize structmodel sm. The weight vector w does not need to be
+       initialized, but you need to provide the maximum size of the
+       feature space in sizePsi. This is the maximum number of different
+       weights that can be learned. Later, the weight vector w will
+       contain the learned weights for the model. */
+      g_application->initFeatures(g_application->params());
+      sm->sizePsi = g_application->numFeatures(); 
 }
 
 CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm, 
 				    STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->init_struct_constraints(sample, sm, sparm);
+    /* Initializes the optimization problem. Typically, you do not need
+       to change this function, since you want to start with an empty
+       set of constraints. However, if for example you have constraints
+       that certain weights need to be positive, you might put that in
+       here. The constraints are represented as lhs[i]*w >= rhs[i]. lhs
+       is an array of feature vectors, rhs is an array of doubles. m is
+       the number of constraints. The function returns the initial
+       set of constraints. */
+    CONSTSET c;
+
+    typedef FeatureGroup::Constr Constr;
+    Constr constrs;
+    size_t feature_base = 1; 
+    for (const auto& fgp : g_application->features()) {
+        Constr new_constrs = fgp->CollectConstrs(feature_base, sparm->constraint_scale);
+        constrs.insert(constrs.end(), new_constrs.begin(), new_constrs.end());
+        feature_base += fgp->NumFeatures();
+    }
+    c.m = constrs.size();
+    if (c.m == 0) {
+        c.lhs = NULL;
+        c.rhs = NULL;
+        return c;
+    }
+    c.lhs = static_cast<DOC**>(my_malloc(sizeof(DOC*)*(constrs.size())));
+    c.rhs = static_cast<double*>(my_malloc(sizeof(double)*(constrs.size())));
+    size_t i = 0;
+    for (auto constr : constrs) {
+        auto lhs = constr.first;
+        auto rhs = constr.second;
+        std::vector<WORD> words;
+        WORD w;
+        for (auto p : lhs) {
+            w.wnum = p.first;
+            w.weight = p.second;
+            words.push_back(w);
+        }
+        w.wnum = 0;
+        words.push_back(w);
+        c.lhs[i] = create_example(i, 0, sample.n+2+i, 1.0, create_svector(words.data(), NULL, 1.0));
+        c.rhs[i] = rhs;
+        i++;
+    }
+    return(c);
 }
 
 LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm, 
 				    STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->classify_struct_example(x, sm, sparm);
+    /* Finds the label yhat for pattern x that scores the highest
+       according to the linear evaluation function in sm, especially the
+       weights sm.w. The returned label is taken as the prediction of sm
+       for the pattern x. The weights correspond to the features defined
+       by psi() and range from index 1 to index sm->sizePsi. If the
+       function cannot find a label, it shall return an empty label as
+       recognized by the function empty_label(y). */
+    LABEL y;
+
+    g_application->m_testStats.ResetTimer();
+
+    y.data = g_application->classify(*x.data, sm->w);
+
+    g_application->m_testStats.StopTimer();
+
+    return y;
 }
 
 LABEL       find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, 
 						     STRUCTMODEL *sm, 
 						     STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->find_most_violated_constraint_slackrescaling(x, y, sm, sparm);
+  /* Finds the label ybar for pattern x that that is responsible for
+     the most violated constraint for the slack rescaling
+     formulation. For linear slack variables, this is that label ybar
+     that maximizes
+
+            argmax_{ybar} loss(y,ybar)*(1-psi(x,y)+psi(x,ybar)) 
+
+     Note that ybar may be equal to y (i.e. the max is 0), which is
+     different from the algorithms described in
+     [Tschantaridis/05]. Note that this argmax has to take into
+     account the scoring function in sm, especially the weights sm.w,
+     as well as the loss function, and whether linear or quadratic
+     slacks are used. The weights in sm.w correspond to the features
+     defined by psi() and range from index 1 to index
+     sm->sizePsi. Most simple is the case of the zero/one loss
+     function. For the zero/one loss, this function should return the
+     highest scoring label ybar (which may be equal to the correct
+     label y), or the second highest scoring label ybar, if
+     Psi(x,ybar)>Psi(x,y)-1. If the function cannot find a label, it
+     shall return an empty label as recognized by the function
+     empty_label(y). */
+    LABEL ybar;
+
+    /* insert your code for computing the label ybar here */
+
+    assert(false /* Unimplemented! */);
+
+    return(ybar);
 }
 
 LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, 
 						     STRUCTMODEL *sm, 
 						     STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->find_most_violated_constraint_marginrescaling(x, y, sm, sparm);
+  /* Finds the label ybar for pattern x that that is responsible for
+     the most violated constraint for the margin rescaling
+     formulation. For linear slack variables, this is that label ybar
+     that maximizes
+
+            argmax_{ybar} loss(y,ybar)+psi(x,ybar)
+
+     Note that ybar may be equal to y (i.e. the max is 0), which is
+     different from the algorithms described in
+     [Tschantaridis/05]. Note that this argmax has to take into
+     account the scoring function in sm, especially the weights sm.w,
+     as well as the loss function, and whether linear or quadratic
+     slacks are used. The weights in sm.w correspond to the features
+     defined by psi() and range from index 1 to index
+     sm->sizePsi. Most simple is the case of the zero/one loss
+     function. For the zero/one loss, this function should return the
+     highest scoring label ybar (which may be equal to the correct
+     label y), or the second highest scoring label ybar, if
+     Psi(x,ybar)>Psi(x,y)-1. If the function cannot find a label, it
+     shall return an empty label as recognized by the function
+     empty_label(y). */
+    LABEL ybar;
+
+    g_application->m_testStats.m_num_inferences++;
+    /* insert your code for computing the label ybar here */
+    ybar.data = g_application->findMostViolatedConstraint(*x.data, *y.data, sm->w);
+
+    return(ybar);
 }
 
 int         empty_label(LABEL y)
 {
-    return g_application->empty_label(y);
+  /* Returns true, if y is an empty label. An empty label might be
+     returned by find_most_violated_constraint_???(x, y, sm) if there
+     is no incorrect label that can be found for x, or if it is unable
+     to label x at all */
+  return(0);
 }
 
 SVECTOR     *psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
 		 STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->psi(x, y, sm, sparm);
+  /* Returns a feature vector describing the match between pattern x
+     and label y. The feature vector is returned as a list of
+     SVECTOR's. Each SVECTOR is in a sparse representation of pairs
+     <featurenumber:featurevalue>, where the last pair has
+     featurenumber 0 as a terminator. Featurenumbers start with 1 and
+     end with sizePsi. Featuresnumbers that are not specified default
+     to value 0. As mentioned before, psi() actually returns a list of
+     SVECTOR's. Each SVECTOR has a field 'factor' and 'next'. 'next'
+     specifies the next element in the list, terminated by a NULL
+     pointer. The list can be though of as a linear combination of
+     vectors, where each vector is weighted by its 'factor'. This
+     linear combination of feature vectors is multiplied with the
+     learned (kernelized) weight vector to score label y for pattern
+     x. Without kernels, there will be one weight in sm.w for each
+     feature. Note that psi has to match
+     find_most_violated_constraint_???(x, y, sm) and vice versa. In
+     particular, find_most_violated_constraint_???(x, y, sm) finds
+     that ybar!=y that maximizes psi(x,ybar,sm)*sm.w (where * is the
+     inner vector product) and the appropriate function of the
+     loss + margin/slack rescaling method. See that paper for details. */
+    SVECTOR *fvec=NULL;
+
+    std::vector<WORD> words;
+    FNUM fnum = 1;
+    WORD w;
+    for (const auto& fgp : g_application->features()) {
+        std::vector<FVAL> values = fgp->Psi(*x.data, *y.data);
+        assert(values.size() == fgp->NumFeatures());
+        for (FVAL v : values) {
+            w.wnum = fnum++;
+            w.weight = v;
+            words.push_back(w);
+        }
+    }
+    w.wnum = 0;
+    words.push_back(w);
+
+    fvec = create_svector(words.data(), nullptr, 1.0);
+
+    return(fvec);
 }
 
 double      loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->loss(y, ybar, sparm);
+    /* Put your code for different loss functions here. But then
+       find_most_violated_constraint_???(x, y, sm) has to return the
+       highest scoring label with the largest loss. */
+    return g_application->loss(*y.data, *ybar.data)*sparm->loss_scale;
 }
 
 int         finalize_iteration(double ceps, int cached_constraint,
@@ -113,58 +313,57 @@ int         finalize_iteration(double ceps, int cached_constraint,
 			       CONSTSET cset, double *alpha, 
 			       STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->finalize_iteration(ceps, cached_constraint, sample, sm, cset, alpha, sparm);
+  /* This function is called just before the end of each cutting plane iteration. ceps is the amount by which the most violated constraint found in the current iteration was violated. cached_constraint is true if the added constraint was constructed from the cache. If the return value is FALSE, then the algorithm is allowed to terminate. If it is TRUE, the algorithm will keep iterating even if the desired precision sparm->epsilon is already reached. */
+    g_application->m_testStats.m_train_iters++;
+    return g_application->finalizeIteration();
 }
 
 void        final_train_stats(double maxdiff, double epsilon, 
                    double modellength, double slacksum) {
-    g_application->final_train_stats(maxdiff, epsilon, modellength, slacksum);
+    g_application->m_testStats.StopTimer();
+    g_application->m_testStats.m_train_time = g_application->m_testStats.LastTime().count();
+    g_application->m_testStats.m_maxdiff = maxdiff;
+    g_application->m_testStats.m_epsilon = epsilon;
+    g_application->m_testStats.m_modellength = modellength;
+    g_application->m_testStats.m_slacksum = slacksum;
 }
 
 void        print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm,
 					CONSTSET cset, double *alpha, 
 					STRUCT_LEARN_PARM *sparm)
 {
-    g_application->print_struct_learning_stats(sample, sm, cset, alpha, sparm);
+    //g_application->print_struct_learning_stats(sample, sm, cset, alpha, sparm);
 }
 
 void        print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm,
 				       STRUCT_LEARN_PARM *sparm, 
 				       STRUCT_TEST_STATS *teststats)
 {
-    g_application->print_struct_testing_stats(sample, sm, sparm, teststats);
+    //g_application->print_struct_testing_stats(sample, sm, sparm, teststats);
 }
 
 void        eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, 
 			    STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, 
 			    STRUCT_TEST_STATS *teststats)
 {
-    g_application->eval_prediction(exnum, ex, ypred, sm, sparm, teststats);
+    //g_application->eval_prediction(exnum, ex, ypred, sm, sparm, teststats);
 }
 
 void        write_struct_model(char *file, STRUCTMODEL *sm, 
 			       STRUCT_LEARN_PARM *sparm)
 {
-    g_application->write_struct_model(file, sm, sparm);
+    //g_application->write_struct_model(file, sm, sparm);
 }
 
 STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 {
-    return g_application->read_struct_model(file, sparm);
+    //return g_application->read_struct_model(file, sparm);
+    return {};
 }
 
 void        write_label(FILE* fp, LABEL y)
 {
-    g_application->write_label(fp, y);
 } 
-
-void        free_pattern(PATTERN x) {
-    delete x.data;
-}
-
-void        free_label(LABEL y) {
-    delete y.data;
-}
 
 void        free_struct_model(STRUCTMODEL sm) 
 {
@@ -195,7 +394,7 @@ void        print_struct_help()
 void         parse_struct_parameters(STRUCT_LEARN_PARM *sparm)
 {
   /* Parses the command line parameters that start with -- */
-    g_application = ParseStructLearnParameters(sparm);
+    ParseStructLearnParameters(sparm);
 }
 
 void        print_struct_help_classify()
@@ -209,6 +408,6 @@ void         parse_struct_parameters_classify(STRUCT_LEARN_PARM *sparm)
 {
   /* Parses the command line parameters that start with -- for the
      classification module */
-    g_application = ParseStructClassifyParameters(sparm);
+    ParseStructClassifyParameters(sparm);
 }
 
