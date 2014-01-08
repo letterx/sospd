@@ -84,6 +84,7 @@ add_library(sos-opt STATIC ${lib-sources})
 add_subdirectory(thirdparty)
 add_subdirectory(experiments)
 add_subdirectory(test)
+add_subdirectory(svm-sos)
 
 ###
 ### Target: higher-order-experiment
