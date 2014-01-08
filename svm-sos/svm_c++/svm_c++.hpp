@@ -63,18 +63,17 @@ class SVM_Cpp_Base {
         virtual const FeatureVec& features() const = 0;
 
         /*
-         * Classify a given pattern, and return the result as a new
-         * LabelData
+         * Classify a given pattern, according to the current parameter 
+         * vector w.
          */
-        virtual LabelData* classify(const PatternData& p, 
+        virtual LabelData classify(const PatternData& p, 
                 const double* w) const = 0;
 
         /* 
          * Given a pattern p and correct label l, find the most violated
-         * constraint according to the current parameter vector w,
-         * and return it as a new LabelData.
+         * constraint according to the current parameter vector w.
          */
-        virtual LabelData* findMostViolatedConstraint(const PatternData& p, 
+        virtual LabelData findMostViolatedConstraint(const PatternData& p, 
                 const LabelData& l, const double* w) const = 0;
 
         /* 
