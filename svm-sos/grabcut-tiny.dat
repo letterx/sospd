@@ -1,8 +1,0 @@
-# The images directory
-../../grabcut-tiny/images/
-# The trimap directory
-../../grabcut-tiny/images-labels/
-# The ground-truth directory
-../../grabcut-tiny/images-gt/
-# The files
-106024.ppm
