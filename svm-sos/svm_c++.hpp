@@ -6,104 +6,108 @@ extern "C" {
 #include "svm_struct/svm_struct_common.h"
 }
 #include <string>
+#include <vector>
+#include <memory>
 #include "stats.hpp"
+#include "feature.hpp"
 
-class PatternData {
+/* Forward declarations of PatternData and LabelData
+ * These will be specified by the user, per-application
+ */
+class PatternData;
+class LabelData;
+class Parameters;
+class Optimizer;
+
+/* SVM_Cpp_Base: abstract base class providing interface for the svm_c++ api
+ *
+ * SVM_Struct requires several functions to be defined by the user. This 
+ * abstract base class contains the pure-virtual members that must be provided
+ * by the user, as well as some impure virtual members where there is a 
+ * sensible default. 
+ *
+ * To use the svm_c++ library, provide a subclass implementing the required
+ * functionality, as well as providing definitions of the structs PatternData
+ * and LabelData above. User must also implement newUserApplication() to return
+ * an instance of their subclass.
+ */
+class SVM_Cpp_Base {
     public:
-    PatternData() = default;
-    PatternData(const std::string& name) : m_name(name) { }
-    virtual ~PatternData() { }
+        SVM_Cpp_Base() : m_test_stats() { }
+        virtual ~SVM_Cpp_Base() { }
 
-    const std::string& Name() const { return m_name; }
+        typedef std::vector<std::unique_ptr<PatternData>> PatternVec;
+        typedef std::vector<std::unique_ptr<LabelData>> LabelVec;
+        typedef std::vector<std::unique_ptr<FeatureGroup>> FeatureVec;
 
-    protected:
-    std::string m_name;
-};
+        /* Must be defined by the user.
+         * This function should allocate the user-defined subclass.
+         */
+        static std::unique_ptr<SVM_Cpp_Base> newUserApplication();
 
-class LabelData {
-    public:
-        LabelData() = default;
-        explicit LabelData(const std::string& name) : m_name(name) { }
-        virtual ~LabelData() { }
+        /* 
+         * Reads examples from a file at fname, allocating patterns and labels
+         * outputting them in the provided vectors.
+         */
+        virtual void readExamples(const std::string& fname,
+                PatternVec& patterns, LabelVec& labels) = 0;
 
-        const std::string& Name() const { return m_name; }
+        /*
+         * Perform any necessary initialization for the features
+         */
+        virtual void initFeatures(const Parameters& params) = 0;
 
-    protected:
-        std::string m_name;
-};
+        /*
+         * Return the features used by the application
+         */
+        virtual const FeatureVec& features() const = 0;
 
-class SVM_App_Base {
-    public:
-        SVM_App_Base() { }
-        virtual ~SVM_App_Base() { }
+        /*
+         * Classify a given pattern, and return the result as a new
+         * LabelData
+         */
+        virtual LabelData* classify(const PatternData& p, 
+                const double* w) const = 0;
 
-        virtual void train_features(const std::string& train_file, const std::string& eval_file, const std::string& output_dir) = 0;
+        /* 
+         * Given a pattern p and correct label l, find the most violated
+         * constraint according to the current parameter vector w,
+         * and return it as a new LabelData.
+         */
+        virtual LabelData* findMostViolatedConstraint(const PatternData& p, 
+                const LabelData& l, const double* w) const = 0;
 
-        // Forwarding functions for api
-        virtual void svm_struct_learn_api_exit() = 0;
-        virtual void svm_struct_classify_api_exit() = 0;
-        virtual SAMPLE read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual void init_struct_model(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm, KERNEL_PARM *kparm) = 0;
-        virtual CONSTSET init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual LABEL classify_struct_example(PATTERN x, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual LABEL find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual LABEL find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual int empty_label(LABEL y) = 0;
-        virtual SVECTOR* psi(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual double loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual int finalize_iteration(double ceps, int cached_constraint, SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual void final_train_stats(double maxdiff, double epsilon, double modellength, double slacksum) = 0;
-        virtual void print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual void print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats) = 0;
-        virtual void eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats) = 0;
-        virtual void write_struct_model(char *file, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm) = 0;
-        virtual void write_label(FILE* fp, LABEL y) = 0;
-};
+        /* 
+         * Calculate the loss between two labels.
+         */
+        virtual double loss(const LabelData& l1, const LabelData& l2) const = 0;
 
-template <class T>
-struct AppTraits { };
+        virtual bool finalizeIteration() const = 0;
+        virtual void evalPrediction(const PatternData& p, 
+                const LabelData& y, const LabelData& ypred) const = 0;
 
-template <class Derived>
-class SVM_App : public SVM_App_Base {
-    public:
-        typedef typename AppTraits<Derived>::PatternData DPatternData;
-        typedef typename AppTraits<Derived>::LabelData DLabelData;
+        long numFeatures() const;
+        void trainFeatures(const std::string& train_file, 
+                const std::string& eval_file, 
+                const std::string& output_dir);
 
-        SVM_App(Derived* d) : m_derived(d) { }
-        virtual ~SVM_App() { }
+        TestStats m_testStats;
 
-        TestStats m_test_stats;
     private:
-        Derived* m_derived;
-        static DPatternData* Downcast(PatternData* p) { return static_cast<DPatternData*>(p); }
-        static DLabelData* Downcast(LabelData* p) { return static_cast<DLabelData*>(p); }
-
-        virtual void train_features(const std::string& train_file, const std::string& eval_file, const std::string& output_dir) override;
-
-        // Forwarding functions for api
-        virtual void svm_struct_learn_api_exit() override;
-        virtual void svm_struct_classify_api_exit() override;
-        virtual SAMPLE read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm) override;
-        virtual void init_struct_model(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm, KERNEL_PARM *kparm) override;
-        virtual CONSTSET init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) override;
-        virtual LABEL classify_struct_example(PATTERN x, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) override;
-        virtual LABEL find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) override;
-        virtual LABEL find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) override;
-        virtual int empty_label(LABEL y) override;
-        virtual SVECTOR* psi(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) override;
-        virtual double loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm) override;
-        virtual int finalize_iteration(double ceps, int cached_constraint, SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm) override;
-        virtual void final_train_stats(double maxdiff, double epsilon, double modellength, double slacksum) override;
-        virtual void print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm, CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm) override;
-        virtual void print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats) override;
-        virtual void eval_prediction(long exnum, EXAMPLE ex, LABEL ypred, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, STRUCT_TEST_STATS *teststats) override;
-        virtual void write_struct_model(char *file, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) override;
-        virtual STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm) override;
-        virtual void write_label(FILE* fp, LABEL y) override;
+        /*
+         * If the user-defined subclass has any data members that need saving,
+         * it must also implement serialize, and export itself to the
+         * serialization library with BOOST_CLASS_EXPORT_GUID, so that we can
+         * serialize it from a pointer-to-base-class.
+         */
+        friend class boost::serialization::access;
+        template <typename Archive>
+        void serialize(Archive& ar, unsigned int version) {
+            ar & m_testStats;
+        }
 };
 
-extern SVM_App_Base* g_application;
+extern std::unique_ptr<SVM_Cpp_Base> g_application;
 
 #endif
 

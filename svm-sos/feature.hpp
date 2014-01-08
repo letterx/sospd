@@ -7,16 +7,19 @@ extern "C" {
 }
 #include <vector>
 #include <string>
-#include <boost/serialization/access.hpp>
+//#include <boost/serialization/access.hpp>
+// Forward declaration to allow serialization
+namespace boost { namespace serialization { class access; } }
 
-template <typename PatternData, typename LabelData, typename CRF>
+class Optimizer;
+
 class FeatureGroup {
     public:
         typedef std::vector<std::pair<std::vector<std::pair<size_t, double>>, double>> Constr;
 
         virtual size_t NumFeatures() const = 0;
         virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const = 0;
-        virtual void AddToCRF(CRF& c, const PatternData& p, double* w) const = 0;
+        virtual void AddToOptimizer(Optimizer& c, const PatternData& p, double* w) const = 0;
         virtual Constr CollectConstrs(size_t base, double constraint_scale) const { return Constr(); }
         virtual double Violation(size_t base, double* w) const { return 0.0; }
 
