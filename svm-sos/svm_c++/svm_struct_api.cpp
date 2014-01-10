@@ -25,6 +25,10 @@ extern "C" {
 }
 #include "svm_c++.hpp"
 #include "svm_struct_options.hpp"
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include "serialize_unique_ptr.hpp"
 
 static PATTERN MakePattern(PatternData* d) {
     PATTERN p;
@@ -332,7 +336,13 @@ void        print_struct_learning_stats(SAMPLE sample, STRUCTMODEL *sm,
 					CONSTSET cset, double *alpha, 
 					STRUCT_LEARN_PARM *sparm)
 {
-    //g_application->print_struct_learning_stats(sample, sm, cset, alpha, sparm);
+    /* This function is called after making all test predictions in
+     svm_struct_classify and allows computing and printing any kind of
+     evaluation (e.g. precision/recall) you might want. You can use
+     the function eval_prediction to accumulate the necessary
+     statistics for each prediction. */
+    if (g_application->m_statsFile != std::string())
+        g_application->m_testStats.Write(g_application->m_statsFile);
 }
 
 void        print_struct_testing_stats(SAMPLE sample, STRUCTMODEL *sm,
@@ -347,18 +357,148 @@ void        eval_prediction(long exnum, EXAMPLE ex, LABEL ypred,
 			    STRUCT_TEST_STATS *teststats)
 {
     //g_application->eval_prediction(exnum, ex, ypred, sm, sparm, teststats);
+    /* This function allows you to accumlate statistic for how well the
+       predicition matches the labeled example. It is called from
+       svm_struct_classify. See also the function
+       print_struct_testing_stats. */
+    if(exnum == 0) { /* this is the first time the function is
+              called. So initialize the teststats */
+    }
+
+    double loss = g_application->loss(*ex.y.data, *ypred.data)*100.0;
+    g_application->m_testStats.Add(TestStats::ImageStats{loss, g_application->m_testStats.LastTime()});
+
+    g_application->evalPrediction(*ex.x.data, *ex.y.data, *ypred.data);
 }
 
 void        write_struct_model(char *file, STRUCTMODEL *sm, 
 			       STRUCT_LEARN_PARM *sparm)
 {
-    //g_application->write_struct_model(file, sm, sparm);
+  /* Writes structural model sm to file file. */
+    MODEL *model = sm->svm_model;
+    SVECTOR *v;
+    long j,i,sv_num;
+
+    g_application->m_testStats.m_model_file = std::string(file);
+
+    std::ofstream ofs(file, std::ios_base::trunc | std::ios_base::out);
+    boost::archive::text_oarchive ar(ofs);
+
+    std::string version = std::string(INST_VERSION);
+    ar & version;
+    ar & sparm->loss_function;
+    ar & sparm->constraint_scale;
+    ar & sparm->feature_scale;
+    ar & sparm->loss_scale;
+    ar & model->kernel_parm.kernel_type;
+    ar & model->kernel_parm.poly_degree;
+    ar & model->kernel_parm.rbf_gamma;
+    ar & model->kernel_parm.coef_lin;
+    ar & model->kernel_parm.coef_const;
+    ar & model->kernel_parm.custom;
+    ar & model->totwords;
+    ar & model->totdoc;
+
+    ar & g_application;
+//    unsigned int param_version = m_derived->Params().Version();
+//    ar & param_version;
+//    m_derived->SerializeParams(ar, param_version);
+//    ar & m_testStats;
+
+    sv_num=1;
+    for(i=1;i<model->sv_num;i++) {
+    for(v=model->supvec[i]->fvec;v;v=v->next) 
+      sv_num++;
+    }
+    ar & sv_num;
+    ar & model->b;
+
+    for(i=1;i<model->sv_num;i++) {
+    for(v=model->supvec[i]->fvec;v;v=v->next) {
+        double factor = (model->alpha[i]*v->factor);
+        ar & factor;
+        ar & v->kernel_id;
+        size_t num_words = 0;
+        for (j=0; (v->words[j]).wnum; j++) num_words++;
+        ar & num_words;
+        for (j=0; (v->words[j]).wnum; j++) {
+            ar & (v->words[j]).wnum;
+            ar & (v->words[j]).weight;
+        }
+        assert(!v->userdefined);
+    /* NOTE: this could be made more efficient by summing the
+       alpha's of identical vectors before writing them to the
+       file. */
+    }
+    }
+    ofs.close();
 }
 
 STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 {
-    //return g_application->read_struct_model(file, sparm);
-    return {};
+  /* Reads structural model sm from file file. This function is used
+     only in the prediction module, not in the learning module. */
+    STRUCTMODEL sm;
+    std::ifstream ifs(file);
+    boost::archive::text_iarchive ar(ifs);
+    
+    strcpy(sparm->model_file, file);
+
+    sm.svm_model = static_cast<MODEL*>(my_malloc(sizeof(MODEL)));
+    MODEL* model = sm.svm_model;
+
+    std::string inst_version;
+    ar & inst_version;
+    assert(inst_version == std::string(INST_VERSION));
+    ar & sparm->loss_function;
+    ar & sparm->constraint_scale;
+    ar & sparm->feature_scale;
+    ar & sparm->loss_scale;
+    ar & model->kernel_parm.kernel_type;
+    ar & model->kernel_parm.poly_degree;
+    ar & model->kernel_parm.rbf_gamma;
+    ar & model->kernel_parm.coef_lin;
+    ar & model->kernel_parm.coef_const;
+    ar & model->kernel_parm.custom;
+    ar & model->totwords;
+    ar & model->totdoc;
+
+    ar & g_application;
+//    unsigned int version;
+//    ar & version;
+//    m_derived->SerializeParams(ar, version);
+//    m_derived->InitFeatures(m_derived->Params());
+//    ar & m_testStats;
+
+    ar & model->sv_num;
+    ar & model->b;
+
+    model->supvec = static_cast<DOC**>(my_malloc(sizeof(DOC *)*model->sv_num));
+    model->alpha = static_cast<double*>(my_malloc(sizeof(double)*model->sv_num));
+    model->index=NULL;
+    model->lin_weights=NULL;
+
+
+    for(int i = 1; i < model->sv_num; i++) {
+        long kernel_id;
+        size_t num_words;
+        ar & model->alpha[i];
+        ar & kernel_id;
+        ar & num_words;
+        std::vector<WORD> words;
+        WORD w;
+        for (size_t j = 0; j < num_words; j++) {
+            ar & w.wnum;
+            ar & w.weight;
+            words.push_back(w);
+        }
+        w.wnum = 0;
+        words.push_back(w);
+        model->supvec[i] = create_example(-1, 0, 0, 0.0, create_svector(words.data(), nullptr, 1.0));
+        model->supvec[i]->fvec->kernel_id = kernel_id;
+    }
+    ifs.close();
+    return sm;
 }
 
 void        write_label(FILE* fp, LABEL y)

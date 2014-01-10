@@ -19,13 +19,12 @@ class TestStats {
         TestStats();
 
         struct ImageStats {
-            std::string name;
             double loss;
             double classify_time;
 
             ImageStats() = default;
-            ImageStats(const std::string& _name, double _loss, Duration _classify_time) 
-                : name(_name), loss(_loss), classify_time(_classify_time.count()) { }
+            ImageStats(double _loss, Duration _classify_time) 
+                : loss(_loss), classify_time(_classify_time.count()) { }
 
             private:
             friend class boost::serialization::access;
@@ -69,7 +68,6 @@ class TestStats {
 
 template <typename Archive>
 void TestStats::ImageStats::serialize(Archive& ar, const unsigned int version) {
-    ar & name;
     ar & loss;
     ar & classify_time;
 }

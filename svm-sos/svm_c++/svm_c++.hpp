@@ -92,6 +92,7 @@ class SVM_Cpp_Base {
                 const std::string& output_dir);
 
         TestStats m_testStats;
+        std::string m_statsFile;
 
     private:
         /*
