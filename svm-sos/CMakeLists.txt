@@ -1,1 +1,9 @@
+set(sos_svm_libs
+    sos-opt
+    boost_serialization
+    boost_program_options
+    opencv_core
+    opencv_highgui
+    )
 add_subdirectory(svm_c++)
+add_subdirectory(interactive_seg)
