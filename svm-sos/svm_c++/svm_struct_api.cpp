@@ -17,8 +17,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <stdio.h>
-#include <string.h>
 extern "C" {
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"

@@ -1,10 +1,4 @@
 #include "feature.hpp"
-#include <cmath>
-#include <queue>
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/export.hpp>
-#include "svm_c++.hpp"
-#include "image_manip.hpp"
 
 
 std::vector<boost::shared_ptr<FeatureGroup>> GetFeaturesFromParam(STRUCT_LEARN_PARM* sparm) {
