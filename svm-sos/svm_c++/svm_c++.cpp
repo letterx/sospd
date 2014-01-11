@@ -1,12 +1,9 @@
-#include <stdio.h>
-#include <string.h>
-#include <iostream>
-#include <fstream>
-extern "C" {
-#include "svm_struct/svm_struct_common.h"
-#include "svm_struct_api.h"
-}
 #include "svm_c++.hpp"
+#include <string>
+#include <memory>
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
 
 std::unique_ptr<SVM_Cpp_Base> g_application{};
 
@@ -35,4 +32,44 @@ long SVM_Cpp_Base::numFeatures() const {
     for (const auto& fgp : features())
         n += fgp->NumFeatures();
     return n;
+}
+
+boost::program_options::options_description
+SVM_Cpp_Base::getBaseLearnParams() {
+    po::options_description desc("General learning options");
+    desc.add_options()
+        ("constraint-scale", po::value<double>(), "Scaling constant for enforcing constraints")
+        ("feature-scale", po::value<double>(), "Scaling constant for features Psi")
+        ("loss-scale", po::value<double>(), "Scaling constant for loss function Delta")
+    ;
+    return desc;
+}
+
+void SVM_Cpp_Base::parseBaseLearnParams(int argc, char** argv) {
+
+}
+
+void SVM_Cpp_Base::printLearnHelp() {
+    po::options_description desc;
+    desc.add(getBaseLearnParams())
+        .add(getLearnParams());
+    std::cout << desc << "\n";
+}
+
+boost::program_options::options_description
+SVM_Cpp_Base::getBaseClassifyParams() {
+    po::options_description desc("General classify options");
+    desc.add_options();
+    return desc;
+}
+
+void SVM_Cpp_Base::parseBaseClassifyParams(int argc, char** argv) {
+
+}
+
+void SVM_Cpp_Base::printClassifyHelp() {
+    po::options_description desc;
+    desc.add(getBaseClassifyParams())
+        .add(getClassifyParams());
+    std::cout << desc << "\n";
 }

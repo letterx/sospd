@@ -8,6 +8,7 @@
 #include "semantic_seg_app.hpp"
 #include "binary_seg_app.hpp"
 
+#include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
 static po::options_description GetStructLearnParameters() {

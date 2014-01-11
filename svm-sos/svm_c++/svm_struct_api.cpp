@@ -528,26 +528,26 @@ void        print_struct_help()
 {
   /* Prints a help text that is appended to the common help text of
      svm_struct_learn. */
-    PrintStructLearnHelp();
+    g_application->printLearnHelp();
 }
 
 void         parse_struct_parameters(STRUCT_LEARN_PARM *sparm)
 {
   /* Parses the command line parameters that start with -- */
-    ParseStructLearnParameters(sparm);
+    g_application->parseBaseLearnParams(sparm->custom_argc, sparm->custom_argv);
 }
 
 void        print_struct_help_classify()
 {
   /* Prints a help text that is appended to the common help text of
      svm_struct_classify. */
-    PrintStructClassifyHelp();
+    g_application->printClassifyHelp();
 }
 
 void         parse_struct_parameters_classify(STRUCT_LEARN_PARM *sparm)
 {
   /* Parses the command line parameters that start with -- for the
      classification module */
-    ParseStructClassifyParameters(sparm);
+    g_application->parseBaseClassifyParams(sparm->custom_argc, sparm->custom_argv);
 }
 

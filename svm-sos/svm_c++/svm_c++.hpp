@@ -19,6 +19,11 @@ class LabelData;
 class Parameters;
 class Optimizer;
 
+/*
+ * Other forward declarations
+ */
+namespace boost { namespace program_options { class options_description; } }
+
 /* SVM_Cpp_Base: abstract base class providing interface for the svm_c++ api
  *
  * SVM_Struct requires several functions to be defined by the user. This 
@@ -90,6 +95,26 @@ class SVM_Cpp_Base {
         void trainFeatures(const std::string& train_file, 
                 const std::string& eval_file, 
                 const std::string& output_dir);
+
+        /*
+         * Program options 
+         */
+        boost::program_options::options_description
+            getBaseLearnParams();
+        void parseBaseLearnParams(int argc, char** argv);
+        void printLearnHelp();
+        boost::program_options::options_description
+            getBaseClassifyParams();
+        void parseBaseClassifyParams(int argc, char** argv);
+        void printClassifyHelp();
+
+        virtual boost::program_options::options_description
+            getLearnParams() = 0;
+        virtual void parseLearnParams(const std::vector<std::string>& args) = 0;
+        virtual boost::program_options::options_description
+            getClassifyParams() = 0;
+        virtual void parseClassifyParams(const std::vector<std::string>& args) = 0;
+
 
         TestStats m_testStats;
         std::string m_statsFile;
