@@ -9,9 +9,9 @@ extern "C" {
 #include <vector>
 #include <memory>
 #include "stats.hpp"
-#include "feature.hpp"
 
-/* Forward declarations of PatternData and LabelData
+/* 
+ * Forward declarations of PatternData and LabelData
  * These will be specified by the user, per-application
  */
 class PatternData;
@@ -22,8 +22,10 @@ class Optimizer;
  * Other forward declarations
  */
 namespace boost { namespace program_options { class options_description; } }
+class FeatureGroup;
 
-/* SVM_Cpp_Base: abstract base class providing interface for the svm_c++ api
+/* 
+ * SVM_Cpp_Base: abstract base class providing interface for the svm_c++ api
  *
  * SVM_Struct requires several functions to be defined by the user. This 
  * abstract base class contains the pure-virtual members that must be provided
@@ -40,14 +42,37 @@ class SVM_Cpp_Base {
         SVM_Cpp_Base() : m_testStats() { }
         virtual ~SVM_Cpp_Base() { }
 
-        typedef std::vector<PatternData*> PatternVec;
-        typedef std::vector<LabelData*> LabelVec;
-        typedef std::vector<std::unique_ptr<FeatureGroup>> FeatureVec;
-
-        /* Must be defined by the user.
-         * This function should allocate the user-defined subclass.
+        /* 
+         * This function allocates the user-defined subclass.
+         * MUST be defined by the user.
          */
         static std::unique_ptr<SVM_Cpp_Base> newUserApplication();
+
+        /*
+         * These 2 structs allow us to use std::unique_ptr with these types.
+         *
+         * Because we have forward declared PatternData and LabelData,
+         * we don't have access to their destructors, so can't delete them.
+         * Definitions of operator() must be provided by the user. In most 
+         * cases, simply calling the macro SVM_CPP_DEFINE_DEFAULT_DELETERS
+         * at any point after where PatternData and LabelData are complete
+         * will suffice.
+         */
+        struct PatternDeleter {
+            void operator()(PatternData*) const;
+        };
+        struct LabelDeleter {
+            void operator()(LabelData*) const;
+        };
+#define SVM_CPP_DEFINE_DEFAULT_DELETERS \
+        void SVM_Cpp_Base::PatternDeleter::operator()(PatternData* p) { delete p; } \
+        void SVM_Cpp_Base::LabelDeleter::operator()(LabelData* p) { delete p; }
+
+        typedef std::unique_ptr<PatternData, PatternDeleter> PatternPtr;
+        typedef std::unique_ptr<LabelData, LabelDeleter> LabelPtr;
+        typedef std::vector<PatternPtr> PatternVec;
+        typedef std::vector<LabelPtr> LabelVec;
+        typedef std::vector<std::unique_ptr<FeatureGroup>> FeatureVec;
 
         /* 
          * Reads examples from a file at fname, allocating patterns and labels
@@ -70,14 +95,14 @@ class SVM_Cpp_Base {
          * Classify a given pattern, according to the current parameter 
          * vector w.
          */
-        virtual LabelData* classify(const PatternData& p, 
+        virtual LabelPtr classify(const PatternData& p, 
                 const double* w) const = 0;
 
         /* 
          * Given a pattern p and correct label l, find the most violated
          * constraint according to the current parameter vector w.
          */
-        virtual LabelData* findMostViolatedConstraint(const PatternData& p, 
+        virtual LabelPtr findMostViolatedConstraint(const PatternData& p, 
                 const LabelData& l, const double* w) const = 0;
 
         /* 
@@ -134,4 +159,3 @@ class SVM_Cpp_Base {
 extern std::unique_ptr<SVM_Cpp_Base> g_application;
 
 #endif
-

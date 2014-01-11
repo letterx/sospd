@@ -1,4 +1,5 @@
 #include "svm_c++.hpp"
+#include "feature.hpp"
 #include <string>
 #include <memory>
 #include <boost/program_options.hpp>

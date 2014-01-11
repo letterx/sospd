@@ -24,7 +24,7 @@ extern "C" {
 #include "svm_struct_api.h"
 }
 #include "svm_c++.hpp"
-#include "svm_struct_options.hpp"
+#include "feature.hpp"
 #include <fstream>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -76,8 +76,8 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
 
     g_application->m_testStats.ResetTimer();
 
-    std::vector<PatternData*> patterns;
-    std::vector<LabelData*> labels;
+    SVM_Cpp_Base::PatternVec patterns;
+    SVM_Cpp_Base::LabelVec labels;
 
     strcpy(sparm->data_file, file);
 
@@ -86,8 +86,8 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
 
     examples=static_cast<EXAMPLE *>(my_malloc(sizeof(EXAMPLE)*n));
     for (size_t i = 0; i < n; ++i) {
-        examples[i].x = MakePattern(patterns[i]);
-        examples[i].y = MakeLabel(labels[i]);
+        examples[i].x = MakePattern(patterns[i].release());
+        examples[i].y = MakeLabel(labels[i].release());
     }
 
     std::cout << " (" << n << " examples)... ";
@@ -175,7 +175,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
 
     g_application->m_testStats.ResetTimer();
 
-    y.data = g_application->classify(*x.data, sm->w);
+    y.data = g_application->classify(*x.data, sm->w).release();
 
     g_application->m_testStats.StopTimer();
 
@@ -245,7 +245,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
 
     g_application->m_testStats.m_num_inferences++;
     /* insert your code for computing the label ybar here */
-    ybar.data = g_application->findMostViolatedConstraint(*x.data, *y.data, sm->w);
+    ybar.data = g_application->findMostViolatedConstraint(*x.data, *y.data, sm->w).release();
 
     return(ybar);
 }
@@ -504,6 +504,16 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 void        write_label(FILE* fp, LABEL y)
 {
 } 
+
+void free_pattern(PATTERN x) {
+    SVM_Cpp_Base::PatternDeleter d{};
+    d(x.data);
+}
+
+void free_label(LABEL y) {
+    SVM_Cpp_Base::LabelDeleter d{};
+    d(y.data);
+}
 
 void        free_struct_model(STRUCTMODEL sm) 
 {
