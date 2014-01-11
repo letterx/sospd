@@ -16,7 +16,6 @@ extern "C" {
  */
 class PatternData;
 class LabelData;
-class Parameters;
 class Optimizer;
 
 /*
@@ -60,7 +59,7 @@ class SVM_Cpp_Base {
         /*
          * Perform any necessary initialization for the features
          */
-        virtual void initFeatures(const Parameters& params) = 0;
+        virtual void initFeatures() = 0;
 
         /*
          * Return the features used by the application
@@ -89,7 +88,6 @@ class SVM_Cpp_Base {
         virtual bool finalizeIteration() const = 0;
         virtual void evalPrediction(const PatternData& p, 
                 const LabelData& y, const LabelData& ypred) const = 0;
-        virtual const Parameters& params() const = 0;
 
         long numFeatures() const;
         void trainFeatures(const std::string& train_file, 

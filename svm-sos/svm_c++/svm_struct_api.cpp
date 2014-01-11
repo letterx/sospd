@@ -108,7 +108,7 @@ void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
        feature space in sizePsi. This is the maximum number of different
        weights that can be learned. Later, the weight vector w will
        contain the learned weights for the model. */
-      g_application->initFeatures(g_application->params());
+      g_application->initFeatures();
       sm->sizePsi = g_application->numFeatures(); 
 }
 
