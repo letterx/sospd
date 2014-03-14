@@ -11,44 +11,27 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/program_options.hpp>
 
-class IS_PatternData : public PatternData {
+class public PatternData {
     public:
-        IS_PatternData(const std::string& name, const cv::Mat& im, const cv::Mat& tri);
+        PatternData(const std::string& name, const cv::Mat& im, const cv::Mat& tri);
         cv::Mat m_image;
         cv::Mat m_tri;
-        /*
-        double m_beta;
-        cv::Mat m_fgdUnaries;
-        cv::Mat m_bgdUnaries;
-        cv::Mat m_downW;
-        cv::Mat m_rightW;
-        cv::Mat m_fgdDist;
-        cv::Mat m_bgdDist;
-        cv::Mat m_dist_feature;
-        */
+        std::string m_name;
 };
 
-class IS_LabelData : public LabelData{
+class LabelData {
     public:
-        IS_LabelData() = default;
-        IS_LabelData(const std::string& name) : LabelData(name) { }
-        IS_LabelData(const std::string& name, const cv::Mat& gt);
+        LabelData() = default;
+        LabelData(const std::string& name) : m_name(name) { }
+        LabelData(const std::string& name, const cv::Mat& gt);
 
-        bool operator==(const IS_LabelData& l) const;
+        bool operator==(const LabelData& l) const;
 
         cv::Mat m_gt;
+        std::string m_name;
 };
 
-class InteractiveSegApp;
-
-template <>
-struct AppTraits<InteractiveSegApp> {
-    typedef IS_PatternData PatternData;
-    typedef IS_LabelData LabelData;
-    typedef FeatureGroup<IS_PatternData, IS_LabelData, CRF> FG;
-};
-
-class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
+class InteractiveSegApp {
     public:
         struct Parameters {
             // The following are saved/loaded in model serialization
@@ -87,17 +70,17 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
             ar & m_params.contrast_submodular_feature;
         }
 
-        typedef FeatureGroup<IS_PatternData, IS_LabelData, CRF> FG;
+        typedef FeatureGroup<PatternData, LabelData, CRF> FG;
 
         InteractiveSegApp(const Parameters& params);
         void InitFeatures(const Parameters& p);
-        void ReadExamples(const std::string& file, std::vector<IS_PatternData*>& patterns, std::vector<IS_LabelData*>& labels);
+        void ReadExamples(const std::string& file, std::vector<PatternData*>& patterns, std::vector<LabelData*>& labels);
         long NumFeatures() const;
         const std::vector<boost::shared_ptr<FG>>& Features() const { return m_features; }
-        IS_LabelData* Classify(const IS_PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
-        IS_LabelData* FindMostViolatedConstraint(const IS_PatternData& x, const IS_LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
-        double Loss(const IS_LabelData& y, const IS_LabelData& ybar, double loss_scale) const;
-        void EvalPrediction(const IS_PatternData& x, const IS_LabelData& y, const IS_LabelData& ypred) const;
+        LabelData* Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
+        LabelData* FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
+        double Loss(const LabelData& y, const LabelData& ybar, double loss_scale) const;
+        void EvalPrediction(const PatternData& x, const LabelData& y, const LabelData& ypred) const;
         bool FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         const Parameters& Params() const { return m_params; }
 
@@ -106,9 +89,9 @@ class InteractiveSegApp : public SVM_App<InteractiveSegApp> {
         static Parameters ParseLearnOptions(const std::vector<std::string>& args);
         static Parameters ParseClassifyOptions(const std::vector<std::string>& args);
     private:
-        void InitializeCRF(CRF& crf, const IS_PatternData& x) const;
-        void AddLossToCRF(CRF& crf, const IS_PatternData& x, const IS_LabelData& y, double scale) const;
-        IS_LabelData* ExtractLabel(const CRF& crf, const IS_PatternData& x) const;
+        void InitializeCRF(CRF& crf, const PatternData& x) const;
+        void AddLossToCRF(CRF& crf, const PatternData& x, const LabelData& y, double scale) const;
+        LabelData* ExtractLabel(const CRF& crf, const PatternData& x) const;
         static boost::program_options::options_description GetCommonOptions();
 
         Parameters m_params;
