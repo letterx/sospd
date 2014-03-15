@@ -5,5 +5,6 @@ set(sos_svm_libs
     opencv_core
     opencv_highgui
     )
+include_directories(${CMAKE_SOURCE_DIR}/svm-sos/svm_c++/)
 add_subdirectory(svm_c++)
 add_subdirectory(interactive_seg)

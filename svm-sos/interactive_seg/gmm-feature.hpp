@@ -2,7 +2,7 @@
 #define _GMM_FEATURE_HPP_
 
 #include "feature.hpp"
-#include "interactive_seg_app.hpp"
+#include "interactive_seg.hpp"
 #include "gmm.hpp"
 #include <map>
 #include <fstream>
@@ -10,7 +10,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-class GMMFeature : public AppTraits<InteractiveSegApp>::FG {
+class GMMFeature : public FeatureGroup {
     public:
     double m_scale;
     int grabcut_iters;
@@ -18,7 +18,7 @@ class GMMFeature : public AppTraits<InteractiveSegApp>::FG {
     explicit GMMFeature(double scale, int iters) : m_scale(0.1*scale), grabcut_iters(iters) { }
 
     virtual size_t NumFeatures() const { return 3; }
-    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const {
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
         const cv::Mat& bgdUnaries = m_bgdUnaries[p.Name()];
         const cv::Mat& fgdUnaries = m_fgdUnaries[p.Name()];
 
@@ -44,7 +44,7 @@ class GMMFeature : public AppTraits<InteractiveSegApp>::FG {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const {
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
         const cv::Mat& bgdUnaries = m_bgdUnaries[p.Name()];
         const cv::Mat& fgdUnaries = m_fgdUnaries[p.Name()];
 
@@ -60,12 +60,12 @@ class GMMFeature : public AppTraits<InteractiveSegApp>::FG {
             }
         }
     }
-    virtual void Evaluate(const std::vector<IS_PatternData*>& patterns) {
+    virtual void Evaluate(const PatternVec& patterns) override {
         std::cout << "Evaluating GMM Features...";
         std::cout.flush();
         static constexpr double prob_epsilon = 0.00001;
-        for (const IS_PatternData* xp : patterns) {
-            const IS_PatternData& x = *xp;
+        for (const auto& xp : patterns) {
+            const PatternData& x = *xp;
             cv::Mat& bgdUnaries = m_bgdUnaries[x.Name()];
             cv::Mat& fgdUnaries = m_fgdUnaries[x.Name()];
             cv::Mat bgdModel, fgdModel;

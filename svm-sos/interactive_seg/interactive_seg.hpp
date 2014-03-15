@@ -11,15 +11,17 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/program_options.hpp>
 
-class public PatternData {
+struct PatternData {
     public:
         PatternData(const std::string& name, const cv::Mat& im, const cv::Mat& tri);
         cv::Mat m_image;
         cv::Mat m_tri;
         std::string m_name;
+
+        const std::string& Name() const { return m_name; }
 };
 
-class LabelData {
+struct LabelData {
     public:
         LabelData() = default;
         LabelData(const std::string& name) : m_name(name) { }
@@ -30,6 +32,8 @@ class LabelData {
         cv::Mat m_gt;
         std::string m_name;
 };
+
+struct Optimizer : public CRF { };
 
 class InteractiveSegApp {
     public:
@@ -70,13 +74,11 @@ class InteractiveSegApp {
             ar & m_params.contrast_submodular_feature;
         }
 
-        typedef FeatureGroup<PatternData, LabelData, CRF> FG;
-
         InteractiveSegApp(const Parameters& params);
         void InitFeatures(const Parameters& p);
         void ReadExamples(const std::string& file, std::vector<PatternData*>& patterns, std::vector<LabelData*>& labels);
         long NumFeatures() const;
-        const std::vector<boost::shared_ptr<FG>>& Features() const { return m_features; }
+        const std::vector<boost::shared_ptr<FeatureGroup>>& Features() const { return m_features; }
         LabelData* Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         LabelData* FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
         double Loss(const LabelData& y, const LabelData& ybar, double loss_scale) const;
@@ -95,7 +97,7 @@ class InteractiveSegApp {
         static boost::program_options::options_description GetCommonOptions();
 
         Parameters m_params;
-        std::vector<boost::shared_ptr<FG>> m_features;
+        std::vector<boost::shared_ptr<FeatureGroup>> m_features;
 };
 
 inline double LabelDiff(unsigned char l1, unsigned char l2) {

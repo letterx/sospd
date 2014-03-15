@@ -2,11 +2,11 @@
 #define _PAIRWISE_FEATURE_HPP_
 
 #include "feature.hpp"
-#include "interactive_seg_app.hpp"
+#include "interactive_seg.hpp"
 #include <map>
 
 
-class PairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
+class PairwiseFeature : public FeatureGroup {
     public:
     typedef FeatureGroup::Constr Constr;
     double m_scale;
@@ -15,7 +15,7 @@ class PairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
     explicit PairwiseFeature(double scale) : m_scale(scale) { }
 
     virtual size_t NumFeatures() const { return 1; }
-    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const {
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
         std::vector<FVAL> psi = {0.0};
         auto constPairwise = [&](const unsigned char& l1, const unsigned char& l2) {
             psi[0] += m_scale*LabelDiff(l1, l2);
@@ -27,7 +27,7 @@ class PairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const {
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
         auto constPairwise = [&](long l1, long l2) {
             crf.AddPairwiseTerm(l1, l2, 0, doubleToREAL(m_scale*w[0]), doubleToREAL(m_scale*w[0]), 0);
         };
@@ -52,7 +52,7 @@ class PairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
 
 BOOST_CLASS_EXPORT_GUID(PairwiseFeature, "PairwiseFeature")
 
-class ContrastPairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
+class ContrastPairwiseFeature : public FeatureGroup {
     public:
     typedef FeatureGroup::Constr Constr;
     double m_scale;
@@ -61,7 +61,7 @@ class ContrastPairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
     explicit ContrastPairwiseFeature(double scale) : m_scale(scale) { }
 
     virtual size_t NumFeatures() const { return 1; }
-    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const {
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
         const cv::Mat& downW = m_downW[p.Name()];
         const cv::Mat& rightW = m_rightW[p.Name()];
         std::vector<FVAL> psi = {0.0};
@@ -77,7 +77,7 @@ class ContrastPairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const {
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
         cv::Mat gradWeight;
         const cv::Mat& downW = m_downW[p.Name()];
         const cv::Mat& rightW = m_rightW[p.Name()];
@@ -100,11 +100,11 @@ class ContrastPairwiseFeature : public AppTraits<InteractiveSegApp>::FG {
         ret.push_back(c);
         return ret;
     }
-    virtual void Evaluate(const std::vector<IS_PatternData*>& patterns) {
+    virtual void Evaluate(const PatternVec& patterns) {
         std::cout << "Evaluating Pairwise Features...";
         std::cout.flush();
-        for (const IS_PatternData* xp : patterns) {
-            const IS_PatternData& x = *xp;
+        for (const auto& xp : patterns) {
+            const PatternData& x = *xp;
             cv::Mat& downW = m_downW[x.Name()];
             cv::Mat& rightW = m_rightW[x.Name()];
             double beta = calcBeta(x.m_image);

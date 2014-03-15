@@ -22,10 +22,17 @@
 #include <sstream>
 #include <boost/foreach.hpp>
 #include <functional>
+#include <vector>
 #include "higher-order-energy.hpp"
 #include "HOCR.h"
 #include "clique.hpp"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wall"
+#pragma clang diagnostic ignored "-Wdeprecated-writable-strings"
+#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
+#pragma clang diagnostic ignored "-Wnested-anon-types"
 #include "QPBO.h"
+#pragma clang diagnostic pop
 #include "generic-higher-order.hpp"
 
 template <int MaxDegree>
@@ -126,7 +133,7 @@ void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe)
         
         // For each boolean assignment, get the clique energy at the 
         // corresponding labeling
-        Label cliqueLabels[size];
+        std::vector<Label> cliqueLabels(size);
         for (uint32_t assignment = 0; assignment < numAssignments; ++assignment) {
             for (NodeId i = 0; i < size; ++i) {
                 if (assignment & (1 << i)) { 
@@ -135,7 +142,7 @@ void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe)
                     cliqueLabels[i] = m_labels[c.Nodes()[i]];
                 }
             }
-            energy_table[assignment] = c.Energy(cliqueLabels);
+            energy_table[assignment] = c.Energy(cliqueLabels.data());
         }
         std::vector<NodeId> nodes(c.Nodes(), c.Nodes() + c.Size());
         AddClique(hoe, int(c.Size()), energy_table.data(), nodes.data());

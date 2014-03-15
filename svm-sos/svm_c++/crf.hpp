@@ -4,7 +4,12 @@
 #include "submodular-flow.hpp"
 #include "higher-order-energy.hpp"
 #include "submodular-ibfs.hpp"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-writable-strings"
+#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
+#pragma clang diagnostic ignored "-Wnested-anon-types"
 #include "QPBO.h"
+#pragma clang diagnostic pop
 
 inline REAL doubleToREAL(double d) { return (REAL)(d * 500000.0); }
 
@@ -49,7 +54,7 @@ class HigherOrderWrapper {
             ho.AddUnaryTerm(i, E0, E1);
         }
         NodeId AddNode(int n) { qr.AddNode(n); return ho.AddNode(n); }
-        int GetLabel(NodeId i) const { return qr.GetLabel(i); }
+        int GetLabel(NodeId i) const { return const_cast<QR&>(qr).GetLabel(i); }
         void Solve() {
             //std::cout << "Solving with HigherOrderEnergy\n";
             ho.ToQuadratic(qr);

@@ -13,7 +13,7 @@ extern "C" {
 // Forward declaration to allow serialization
 namespace boost { namespace serialization { class access; } }
 
-class Optimizer;
+struct Optimizer;
 
 class FeatureGroup {
     public:

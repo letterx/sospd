@@ -12,7 +12,7 @@ class SubmodularFlow {
         typedef size_t NodeId;
         //typedef size_t CliqueId;
         typedef int CliqueId;
-        struct Clique;
+        class Clique;
         typedef std::shared_ptr<EnergyTableClique> CliquePtr;
         typedef std::vector<CliquePtr> CliqueVec;
         struct arc {

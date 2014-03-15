@@ -1,14 +1,14 @@
 #ifndef _SUBMODULAR_FEATURE_HPP_
 #define _SUBMODULAR_FEATURE_HPP_
 
-#include "interactive_seg_app.hpp"
+#include "interactive_seg.hpp"
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 
-class SubmodularFeature : public InteractiveSegApp::FG {
+class SubmodularFeature : public FeatureGroup {
     public: 
-    typedef InteractiveSegApp::FG::Constr Constr;
+    typedef FeatureGroup::Constr Constr;
     typedef std::function<void(const std::vector<unsigned char>&)> PatchFn;
     typedef uint32_t Assgn;
 
@@ -19,7 +19,7 @@ class SubmodularFeature : public InteractiveSegApp::FG {
     explicit SubmodularFeature(double scale) : m_scale(scale) { }
 
     virtual size_t NumFeatures() const override { return (1 << clique_size) - 2; }
-    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const override {
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const override {
         Assgn all_zeros = 0;
         Assgn all_ones = (1 << clique_size) - 1;
         std::vector<FVAL> psi(NumFeatures(), 0);
@@ -39,7 +39,7 @@ class SubmodularFeature : public InteractiveSegApp::FG {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
         std::vector<REAL> costTable(NumFeatures()+2, 0);
         for (size_t i = 0; i < NumFeatures(); ++i) {
             costTable[i+1] = doubleToREAL(m_scale*w[i]);

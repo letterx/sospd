@@ -2,10 +2,10 @@
 #define _DISTANCE_FEATURE_HPP_
 
 #include "feature.hpp"
-#include "interactive_seg_app.hpp"
+#include "interactive_seg.hpp"
 #include <queue>
 
-class DistanceFeature : public AppTraits<InteractiveSegApp>::FG {
+class DistanceFeature : public FeatureGroup {
     public:
     double m_scale;
     DistanceFeature() : m_scale(1.0) { }
@@ -14,7 +14,7 @@ class DistanceFeature : public AppTraits<InteractiveSegApp>::FG {
     static constexpr int numBins = 10;
 
     virtual size_t NumFeatures() const { return numBins*numBins*2; }
-    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const {
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const {
         const cv::Mat& dist_feature = m_dist_feature[p.Name()];
         std::vector<FVAL> psi(NumFeatures(), 0);
         cv::Point pt;
@@ -30,7 +30,7 @@ class DistanceFeature : public AppTraits<InteractiveSegApp>::FG {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const {
+    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
         const cv::Mat& dist_feature = m_dist_feature[p.Name()];
         cv::Point pt;
         for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
@@ -43,11 +43,11 @@ class DistanceFeature : public AppTraits<InteractiveSegApp>::FG {
             }
         }
     }
-    virtual void Evaluate(const std::vector<IS_PatternData*>& patterns) {
+    virtual void Evaluate(const PatternVec& patterns) {
         std::cout << "Evaluating Distance Feature...";
         std::cout.flush();
-        for (const IS_PatternData* xp : patterns) {
-            const IS_PatternData& x = *xp;
+        for (const auto& xp : patterns) {
+            const PatternData& x = *xp;
             cv::Mat& dist_feature = m_dist_feature[x.Name()];
             cv::Mat fgd_dist, bgd_dist;
             fgd_dist.create(x.m_image.rows, x.m_image.cols, CV_64FC1);

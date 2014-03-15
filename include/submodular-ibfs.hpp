@@ -14,7 +14,7 @@ class SubmodularIBFS {
     public:
         typedef int NodeId;
         typedef int CliqueId;
-        struct Clique;
+        class Clique;
         typedef boost::shared_ptr<IBFSEnergyTableClique> CliquePtr;
         typedef std::vector<CliquePtr> CliqueVec;
         typedef std::list<NodeId> NodeQueue;

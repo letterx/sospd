@@ -12,6 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <vector>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -210,7 +211,7 @@ void Optimize(Optimizer& opt,
         std::vector<IterationStat>& stats) {
     // energies keeps track of last [thresholdIters] energy values to know
     // when we reach convergence
-    REAL energies[thresholdIters];
+    std::vector<REAL> energies(thresholdIters);
 
     REAL last_energy = energy_function.ComputeEnergy(current);
     std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();

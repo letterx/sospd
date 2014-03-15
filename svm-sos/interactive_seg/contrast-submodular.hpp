@@ -1,16 +1,17 @@
 #ifndef _CONTRAST_SUBMODULAR_FEATURE_HPP_
 #define _CONTRAST_SUBMODULAR_FEATURE_HPP_
 
-#include "interactive_seg_app.hpp"
+#include "interactive_seg.hpp"
 #include "feature.hpp"
 #include <opencv2/core/core.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
+#include <random>
 
-class ContrastSubmodularFeature : public InteractiveSegApp::FG {
+class ContrastSubmodularFeature : public FeatureGroup {
     public: 
-    typedef InteractiveSegApp::FG::Constr Constr;
+    typedef FeatureGroup::Constr Constr;
     typedef std::function<void(const std::vector<unsigned char>&)> PatchFn;
     typedef uint32_t Assgn;
 
@@ -24,7 +25,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
     explicit ContrastSubmodularFeature(double scale) : m_scale(scale) { }
 
     virtual size_t NumFeatures() const override { return per_cluster*num_clusters; }
-    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const override {
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
         std::vector<FVAL> psi(NumFeatures(), 0);
         cv::Point base, pt;
@@ -49,7 +50,7 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
         std::vector<std::vector<REAL>> costTables(num_clusters, std::vector<REAL>(per_cluster, 0));
         for (size_t i = 0; i < num_clusters; ++i) {
@@ -135,12 +136,12 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         //std::cout << "Min violation: " << min_violation << "\n";
         return total_violation;
     }
-    virtual void Train(const std::vector<IS_PatternData*>& patterns, const std::vector<IS_LabelData*>& labels) {
+    virtual void Train(const PatternVec& patterns, const LabelVec& labels) {
         cv::Mat samples;
         std::cout << "Training submodular filters -- "; 
         std::cout.flush();
         samples.create(0, num_filters, CV_32FC1);
-        for (const IS_PatternData* xp : patterns) {
+        for (const auto& xp : patterns) {
             cv::Mat im = xp->m_image;
             cv::Mat response;
             GetResponse(im, response);
@@ -154,10 +155,10 @@ class ContrastSubmodularFeature : public InteractiveSegApp::FG {
         cv::kmeans(samples, num_clusters, best_labels, cv::TermCriteria(CV_TERMCRIT_EPS, 10, 0.01), 3, cv::KMEANS_RANDOM_CENTERS, m_centers);
         std::cout << "Done!\n";
     }
-    virtual void Evaluate(const std::vector<IS_PatternData*>& patterns) override {
+    virtual void Evaluate(const PatternVec& patterns) override {
         std::cout << "Evaluating Contrast Submodular Features...";
         std::cout.flush();
-        for (const IS_PatternData* xp : patterns) {
+        for (const auto& xp : patterns) {
             cv::Mat im = xp->m_image;
             cv::Mat response;
             cv::Mat& features = m_patch_feature[xp->Name()];

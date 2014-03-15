@@ -14,9 +14,9 @@ extern "C" {
  * Forward declarations of PatternData and LabelData
  * These will be specified by the user, per-application
  */
-class PatternData;
-class LabelData;
-class Optimizer;
+struct PatternData;
+struct LabelData;
+struct Optimizer;
 
 /*
  * Other forward declarations

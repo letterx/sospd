@@ -194,7 +194,7 @@ template <typename Optimizer>
 void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current, int iterations, std::vector<IterationStat>& stats) {
     // energies keeps track of last [thresholdIters] energy values to know
     // when we reach convergence
-    REAL energies[thresholdIters];
+    std::vector<REAL> energies(thresholdIters);
 
     REAL last_energy = energy_function.ComputeEnergy(current);
     std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
@@ -293,7 +293,7 @@ void GradientProposal(int niter, const std::vector<Label>& current, const std::v
         grad[i] += FoEUnaryGrad(orig[i], current[i], sigma);
     double scale = eta*7/double(7+niter); 
     for (size_t i = 0; i < current.size(); ++i) {
-        Label new_label = current[i] - Label(round(scale*grad[i]));
+        int new_label = current[i] - Label(round(scale*grad[i]));
         if (new_label > 255) new_label = 255;
         if (new_label < 0) new_label = 0;
         proposed[i] = new_label;

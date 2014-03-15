@@ -104,7 +104,7 @@ void SubmodularFlow::PushRelabelInit()
     m_arc_list.clear(); layers.clear();
 
     // init data structures
-    for (int i = 0; i < m_num_nodes + 2; ++i) {
+    for (int i = 0; i < int(m_num_nodes) + 2; ++i) {
         layer_list_ptr.push_back(list_iterator());
         dis.push_back(0);
         excess.push_back(0);
@@ -116,7 +116,7 @@ void SubmodularFlow::PushRelabelInit()
     dis[s] = m_num_nodes + 2; // n = m_num_nodes + 2
 
     // Adding extra layers
-    for (int i = 0; i < (m_num_nodes + 2); ++i) {
+    for (int i = 0; i < int(m_num_nodes + 2); ++i) {
         Layer layer;
         layers.push_back(layer);
     }
@@ -181,7 +181,7 @@ void SubmodularFlow::PushRelabelInit()
             }
         }
     }
-    for (int i = 0; i < m_num_nodes + 2; ++i) {
+    for (int i = 0; i < int(m_num_nodes + 2); ++i) {
         current_arc.push_back(m_arc_list[i].begin());
     }
 }
@@ -197,7 +197,7 @@ void SubmodularFlow::PushRelabelStep()
         NodeId i = *u_iter;
         remove_from_active_list(i);
         Discharge(i);
-        if (work_since_last_update * 1 > 100*(m_num_nodes + 2) + num_edges) {
+        if (work_since_last_update * 1 > 100*int(m_num_nodes + 2) + num_edges) {
             SubmodularFlow::GlobalRelabel();
             work_since_last_update = 0;
         }
@@ -362,7 +362,7 @@ void SubmodularFlow::GlobalRelabel() {
                 std::swap(arc.i, arc.j);
                 std::swap(arc.i_idx, arc.j_idx);
                 if (NonzeroCap(arc) && arc.i != s && arc.i != t
-                        && dis[arc.i] == m_num_nodes + 3) {
+                        && dis[arc.i] == int(m_num_nodes + 3)) {
                     next.push(arc.i);
                     dis[arc.i] = level;
                     if (excess[arc.i] > 0)

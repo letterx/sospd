@@ -1,7 +1,7 @@
 #ifndef _COLOR_PATCH_FEATURE_HPP_
 #define _COLOR_PATCH_FEATURE_HPP_
 
-#include "interactive_seg_app.hpp"
+#include "interactive_seg.hpp"
 #include "feature.hpp"
 #include <opencv2/core/core.hpp>
 #include <boost/serialization/access.hpp>
@@ -9,7 +9,7 @@
 #include <boost/serialization/export.hpp>
 #include <unordered_set>
 
-class ColorPatchFeature : public InteractiveSegApp::FG {
+class ColorPatchFeature : public FeatureGroup {
     public: 
     static constexpr int num_clusters = 50;
     static constexpr int per_cluster = 4;
@@ -21,7 +21,7 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
     explicit ColorPatchFeature(double scale) : m_scale(scale) { }
 
     virtual size_t NumFeatures() const override { return num_clusters*2*per_cluster; }
-    virtual std::vector<FVAL> Psi(const IS_PatternData& p, const IS_LabelData& l) const override {
+    virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
         std::vector<FVAL> psi(NumFeatures(), 0);
         cv::Point pt;
@@ -38,7 +38,7 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const IS_PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
         cv::Point pt;
         for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
@@ -52,12 +52,12 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
             }
         }
     }
-    virtual void Train(const std::vector<IS_PatternData*>& patterns, const std::vector<IS_LabelData*>& labels) {
+    virtual void Train(const PatternVec& patterns, const LabelVec& labels) override {
         cv::Mat samples;
         std::cout << "Training color patches -- "; 
         std::cout.flush();
         samples.create(0, num_filters, CV_32FC1);
-        for (const IS_PatternData* xp : patterns) {
+        for (const auto& xp : patterns) {
             cv::Mat im = xp->m_image;
             cv::Mat response;
             GetResponse(im, response);
@@ -73,10 +73,10 @@ class ColorPatchFeature : public InteractiveSegApp::FG {
         //std::cout << m_centers;
         std::cout << "Done!\n";
     }
-    virtual void Evaluate(const std::vector<IS_PatternData*>& patterns) override {
+    virtual void Evaluate(const PatternVec& patterns) override {
         std::cout << "Evaluating Color Patch Features...";
         std::cout.flush();
-        for (const IS_PatternData* xp : patterns) {
+        for (const auto& xp : patterns) {
             cv::Mat im = xp->m_image;
             cv::Mat response;
             cv::Mat& features = m_patch_feature[xp->Name()];
