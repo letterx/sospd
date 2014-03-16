@@ -424,4 +424,8 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseClassifyOptions(const std:
     return params;
 }
 
+std::unique_ptr<SVM_Cpp_Base> SVM_Cpp_Base::newUserApplication() {
+    return {new InteractiveSegApp{} };
+}
+
 SVM_CPP_DEFINE_DEFAULT_DELETERS

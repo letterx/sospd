@@ -37,7 +37,7 @@ struct LabelData {
 
 struct Optimizer : public CRF { };
 
-class InteractiveSegApp {
+class InteractiveSegApp : public SVM_Cpp_Base {
     public:
         struct Parameters {
             // The following are saved/loaded in model serialization
@@ -76,22 +76,23 @@ class InteractiveSegApp {
             ar & m_params.contrast_submodular_feature;
         }
 
+        InteractiveSegApp() = default;
         InteractiveSegApp(const Parameters& params);
-        void InitFeatures(const Parameters& p);
-        void ReadExamples(const std::string& file, std::vector<PatternData*>& patterns, std::vector<LabelData*>& labels);
-        long NumFeatures() const;
-        const std::vector<boost::shared_ptr<FeatureGroup>>& Features() const { return m_features; }
-        LabelData* Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
-        LabelData* FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
-        double Loss(const LabelData& y, const LabelData& ybar, double loss_scale) const;
-        void EvalPrediction(const PatternData& x, const LabelData& y, const LabelData& ypred) const;
-        bool FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
-        const Parameters& Params() const { return m_params; }
+        virtual void readExamples(const std::string& file, PatternVec& patterns, LabelVec& labels) override;
+        virtual void initFeatures() override;
+        virtual const FeatureVec& features() const { return m_features; }
+        virtual LabelPtr classify(const PatternData& x, const double* w) const override;
+        virtual LabelPtr findMostViolatedConstraint(const PatternData& x, const LabelData& y, const double* w) const override;
+        virtual double loss(const LabelData& y, const LabelData& ybar) const override;
+        //bool FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const;
+        virtual bool finalizeIteration() const override;
+        virtual void evalPrediction(const PatternData& x, const LabelData& y, const LabelData& ypred) const override;
+        const Parameters& params() const { return m_params; }
 
-        static boost::program_options::options_description GetLearnOptions();
-        static boost::program_options::options_description GetClassifyOptions();
-        static Parameters ParseLearnOptions(const std::vector<std::string>& args);
-        static Parameters ParseClassifyOptions(const std::vector<std::string>& args);
+        virtual boost::program_options::options_description getLearnParams() override;
+        virtual void parseLearnParams(const std::vector<std::string>& args) override;
+        virtual boost::program_options::options_description getClassifyParams() override;
+        virtual void parseClassifyParams(const std::vector<std::string>& args) override;
     private:
         void InitializeCRF(CRF& crf, const PatternData& x) const;
         void AddLossToCRF(CRF& crf, const PatternData& x, const LabelData& y, double scale) const;
@@ -99,7 +100,7 @@ class InteractiveSegApp {
         static boost::program_options::options_description GetCommonOptions();
 
         Parameters m_params;
-        std::vector<boost::shared_ptr<FeatureGroup>> m_features;
+        FeatureVec m_features;
 };
 
 inline double LabelDiff(unsigned char l1, unsigned char l2) {

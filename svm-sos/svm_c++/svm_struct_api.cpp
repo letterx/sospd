@@ -44,6 +44,7 @@ void        svm_struct_learn_api_init(int argc, char* argv[])
 {
   /* Called in learning part before anything else is done to allow
      any initializations that might be necessary. */
+    g_application = SVM_Cpp_Base::newUserApplication();
 }
 
 void        svm_struct_learn_api_exit()
@@ -56,6 +57,7 @@ void        svm_struct_classify_api_init(int argc, char* argv[])
 {
   /* Called in prediction part before anything else is done to allow
      any initializations that might be necessary. */
+    g_application = SVM_Cpp_Base::newUserApplication();
 }
 
 void        svm_struct_classify_api_exit()
