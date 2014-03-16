@@ -23,7 +23,7 @@ class FeatureGroup {
 
         virtual size_t NumFeatures() const = 0;
         virtual std::vector<FVAL> Psi(const PatternData& p, const LabelData& l) const = 0;
-        virtual void AddToOptimizer(Optimizer& c, const PatternData& p, double* w) const = 0;
+        virtual void AddToOptimizer(Optimizer& c, const PatternData& p, const double* w) const = 0;
         virtual Constr CollectConstrs(size_t base, double constraint_scale) const { return Constr(); }
         virtual double Violation(size_t base, double* w) const { return 0.0; }
 

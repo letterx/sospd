@@ -27,7 +27,7 @@ class PairwiseFeature : public FeatureGroup {
             v = -v;
         return psi;
     }
-    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, const double* w) const override {
         auto constPairwise = [&](long l1, long l2) {
             crf.AddPairwiseTerm(l1, l2, 0, doubleToREAL(m_scale*w[0]), doubleToREAL(m_scale*w[0]), 0);
         };
@@ -77,7 +77,7 @@ class ContrastPairwiseFeature : public FeatureGroup {
             v = -v;
         return psi;
     }
-    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, const double* w) const override {
         cv::Mat gradWeight;
         const cv::Mat& downW = m_downW[p.Name()];
         const cv::Mat& rightW = m_rightW[p.Name()];

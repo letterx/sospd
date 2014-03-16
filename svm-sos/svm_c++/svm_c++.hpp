@@ -70,9 +70,10 @@ class SVM_Cpp_Base {
 
         typedef std::unique_ptr<PatternData, PatternDeleter> PatternPtr;
         typedef std::unique_ptr<LabelData, LabelDeleter> LabelPtr;
+        typedef std::unique_ptr<FeatureGroup> FeaturePtr;
         typedef std::vector<PatternPtr> PatternVec;
         typedef std::vector<LabelPtr> LabelVec;
-        typedef std::vector<std::unique_ptr<FeatureGroup>> FeatureVec;
+        typedef std::vector<FeaturePtr> FeatureVec;
 
         /* 
          * Reads examples from a file at fname, allocating patterns and labels

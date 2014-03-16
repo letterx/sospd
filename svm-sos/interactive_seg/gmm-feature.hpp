@@ -44,7 +44,7 @@ class GMMFeature : public FeatureGroup {
             v = -v;
         return psi;
     }
-    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, const double* w) const override {
         const cv::Mat& bgdUnaries = m_bgdUnaries[p.Name()];
         const cv::Mat& fgdUnaries = m_fgdUnaries[p.Name()];
 

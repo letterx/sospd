@@ -39,7 +39,7 @@ class SubmodularFeature : public FeatureGroup {
             v = -v;
         return psi;
     }
-    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, const double* w) const override {
         std::vector<REAL> costTable(NumFeatures()+2, 0);
         for (size_t i = 0; i < NumFeatures(); ++i) {
             costTable[i+1] = doubleToREAL(m_scale*w[i]);

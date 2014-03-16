@@ -50,7 +50,7 @@ class ContrastSubmodularFeature : public FeatureGroup {
             v = -v;
         return psi;
     }
-    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, const double* w) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
         std::vector<std::vector<REAL>> costTables(num_clusters, std::vector<REAL>(per_cluster, 0));
         for (size_t i = 0; i < num_clusters; ++i) {

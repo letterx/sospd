@@ -19,43 +19,43 @@ InteractiveSegApp::InteractiveSegApp(const Parameters& params)
 : m_params(params) 
 { }
 
-void InteractiveSegApp::ReadExamples(const std::string& file, std::vector<PatternData*>& patterns, std::vector<LabelData*>& labels) {
-std::ifstream main_file(file);
+void InteractiveSegApp::readExamples(const std::string& file, PatternVec& patterns, LabelVec& labels) {
+    std::ifstream main_file(file);
 
-std::string images_dir;
-std::string trimap_dir;
-std::string gt_dir;
-std::string line;
+    std::string images_dir;
+    std::string trimap_dir;
+    std::string gt_dir;
+    std::string line;
 
-size_t n = 0;
+    size_t n = 0;
 
-do {
-    std::getline(main_file, images_dir);
-} while (images_dir[0] == '#');
-do {
-    std::getline(main_file, trimap_dir);
-} while (trimap_dir[0] == '#');
-do {
-    std::getline(main_file, gt_dir);
-} while (gt_dir[0] == '#');
-          
-while (main_file.good()) {
-    std::getline(main_file, line);
-    if (!line.empty() && line[0] != '#') {
-        n++;
-        if (n % 10 == 0) {
-            std::cout << ".";
-            std::cout.flush();
+    do {
+        std::getline(main_file, images_dir);
+    } while (images_dir[0] == '#');
+    do {
+        std::getline(main_file, trimap_dir);
+    } while (trimap_dir[0] == '#');
+    do {
+        std::getline(main_file, gt_dir);
+    } while (gt_dir[0] == '#');
+              
+    while (main_file.good()) {
+        std::getline(main_file, line);
+        if (!line.empty() && line[0] != '#') {
+            n++;
+            if (n % 10 == 0) {
+                std::cout << ".";
+                std::cout.flush();
+            }
+            cv::Mat image = cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR);
+            cv::Mat trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR);
+            cv::Mat gt = cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
+            ValidateExample(image, trimap, gt);
+            patterns.push_back(PatternPtr{new PatternData(line, image, trimap)});
+            labels.push_back(LabelPtr{new LabelData(line, gt)});
         }
-        cv::Mat image = cv::imread(images_dir + line, CV_LOAD_IMAGE_COLOR);
-        cv::Mat trimap = cv::imread(trimap_dir + line, CV_LOAD_IMAGE_COLOR);
-        cv::Mat gt = cv::imread(gt_dir + line, CV_LOAD_IMAGE_GRAYSCALE);
-        ValidateExample(image, trimap, gt);
-        patterns.push_back(new PatternData(line, image, trimap));
-        labels.push_back(new LabelData(line, gt));
     }
-}
-main_file.close();
+    main_file.close();
 }
 
 
@@ -84,7 +84,7 @@ bool LabelData::operator==(const LabelData& l) const {
     return true;
 }
 
-double InteractiveSegApp::Loss(const LabelData& l1, const LabelData& l2, double scale) const {
+double InteractiveSegApp::loss(const LabelData& l1, const LabelData& l2) const {
     ASSERT(l1.m_gt.size() == l2.m_gt.size());
     double loss = 0;
     cv::Point pt;
@@ -94,57 +94,49 @@ double InteractiveSegApp::Loss(const LabelData& l1, const LabelData& l2, double 
         }
     }
     loss /= (l1.m_gt.rows*l1.m_gt.cols);
-    return loss*scale;
+    return loss;
 }
 
 
-void InteractiveSegApp::InitFeatures(const Parameters& param) {
+void InteractiveSegApp::initFeatures() {
     std::cout << "\nFeatures: ";
     constexpr double feature_scale = 0.01;
-    m_features.push_back(boost::shared_ptr<FeatureGroup>(new GMMFeature(feature_scale, param.grabcut_unary)));
+    m_features.push_back(FeaturePtr(new GMMFeature(feature_scale, m_params.grabcut_unary)));
     std::cout << "GMMFeature ";
-    if (param.distance_unary || param.all_features) {
-        m_features.push_back(boost::shared_ptr<FeatureGroup>(new DistanceFeature(feature_scale)));
+    if (m_params.distance_unary || m_params.all_features) {
+        m_features.push_back(FeaturePtr{ new DistanceFeature(feature_scale) });
         std::cout << "DistanceFeature ";
     }
-    if (param.color_patch || param.all_features) {
-        m_features.push_back(boost::shared_ptr<FeatureGroup>(new ColorPatchFeature(feature_scale)));
+    if (m_params.color_patch || m_params.all_features) {
+        m_features.push_back(FeaturePtr{ new ColorPatchFeature(feature_scale) });
         std::cout << "ColorPatchFeature ";
     }
-    if (param.submodular_feature || param.all_features) {
-        m_features.push_back(boost::shared_ptr<FeatureGroup>(new SubmodularFeature(feature_scale)));
+    if (m_params.submodular_feature || m_params.all_features) {
+        m_features.push_back(FeaturePtr{ new SubmodularFeature(feature_scale) });
         std::cout << "SubmodularFeature ";
     }
-    if (param.pairwise_feature || param.all_features) {
-        m_features.push_back(boost::shared_ptr<FeatureGroup>(new PairwiseFeature(feature_scale)));
+    if (m_params.pairwise_feature || m_params.all_features) {
+        m_features.push_back(FeaturePtr{ new PairwiseFeature(feature_scale) });
         std::cout << "PairwiseFeature ";
     }
-    if (param.contrast_pairwise_feature || param.all_features) {
-        m_features.push_back(boost::shared_ptr<FeatureGroup>(new ContrastPairwiseFeature(feature_scale)));
+    if (m_params.contrast_pairwise_feature || m_params.all_features) {
+        m_features.push_back(FeaturePtr{ new ContrastPairwiseFeature(feature_scale) });
         std::cout << "ContrastPairwiseFeature ";
     }
-    if (param.contrast_submodular_feature || param.all_features) {
-        m_features.push_back(boost::shared_ptr<FeatureGroup>(new ContrastSubmodularFeature(feature_scale)));
+    if (m_params.contrast_submodular_feature || m_params.all_features) {
+        m_features.push_back(FeaturePtr{ new ContrastSubmodularFeature(feature_scale) });
         std::cout << "ContrastSubmodularFeature ";
     }
     std::cout << "\n";
 
-    if (param.eval_dir != std::string("")) {
-        for (auto fp : m_features) {
-            fp->LoadEvaluation(param.eval_dir);
+    if (m_params.eval_dir != std::string("")) {
+        for (auto& fp : m_features) {
+            fp->LoadEvaluation(m_params.eval_dir);
         }
     }
 }
 
-long InteractiveSegApp::NumFeatures() const {
-    long n = 0;
-    for (auto fgp : m_features) {
-        n += fgp->NumFeatures();
-    }
-    return n;
-}
-
-void InteractiveSegApp::InitializeCRF(CRF& crf, const PatternData& p) const {
+void InteractiveSegApp::initializeCRF(CRF& crf, const PatternData& p) const {
     crf.AddNode(p.m_image.rows*p.m_image.cols);
 
 }
@@ -164,8 +156,8 @@ void InteractiveSegApp::AddLossToCRF(CRF& crf, const PatternData& p, const Label
     }
 }
 
-LabelData* InteractiveSegApp::ExtractLabel(const CRF& crf, const PatternData& x) const {
-    LabelData* lp = new LabelData(x.Name());
+InteractiveSegApp::LabelPtr InteractiveSegApp::ExtractLabel(const CRF& crf, const PatternData& x) const {
+    auto lp = LabelPtr{new LabelData(x.Name())};
     lp->m_gt.create(x.m_image.rows, x.m_image.cols, CV_8UC1);
     CRF::NodeId id = 0;
     ImageIterate(lp->m_gt, 
@@ -179,11 +171,11 @@ LabelData* InteractiveSegApp::ExtractLabel(const CRF& crf, const PatternData& x)
     return lp;
 }
 
-LabelData* InteractiveSegApp::Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+InteractiveSegApp::LabelPtr InteractiveSegApp::classify(const PatternData& x, const double* w) const {
     if (m_params.grabcut_classify) {
         // FIXME(afix) this line should be uncommented and fixed
         // const_cast<std::string&>(this->m_test_stats.m_model_file) = std::string("grabcut.model");
-        LabelData* y = new LabelData(x.Name());
+        auto y = LabelPtr{ new LabelData(x.Name()) };
         x.m_tri.copyTo(y->m_gt);
         cv::Mat bgdModel;
         cv::Mat fgdModel;
@@ -201,10 +193,10 @@ LabelData* InteractiveSegApp::Classify(const PatternData& x, STRUCTMODEL* sm, ST
         } else {
             crf.Wrap(&ho);
         }
-        InitializeCRF(crf, x);
+        initializeCRF(crf, x);
         size_t feature_base = 1;
-        for (auto fgp : m_features) {
-            fgp->AddToOptimizer(crf, x, sm->w + feature_base );
+        for (const auto& fgp : m_features) {
+            fgp->AddToOptimizer(crf, x, w + feature_base );
             feature_base += fgp->NumFeatures();
         }
         crf.Solve();
@@ -212,7 +204,7 @@ LabelData* InteractiveSegApp::Classify(const PatternData& x, STRUCTMODEL* sm, ST
     }
 }
 
-LabelData* InteractiveSegApp::FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+InteractiveSegApp::LabelPtr InteractiveSegApp::findMostViolatedConstraint(const PatternData& x, const LabelData& y, const double* w) const {
     Optimizer crf;
     SubmodularFlow sf;
     HigherOrderWrapper ho;
@@ -224,18 +216,19 @@ LabelData* InteractiveSegApp::FindMostViolatedConstraint(const PatternData& x, c
     } else {
         crf.Wrap(&ho);
     }
-    InitializeCRF(crf, x);
+    initializeCRF(crf, x);
     size_t feature_base = 1;
-    for (auto fgp : m_features) {
-        fgp->AddToOptimizer(crf, x, sm->w + feature_base );
+    for (auto& fgp : m_features) {
+        fgp->AddToOptimizer(crf, x, w + feature_base );
         feature_base += fgp->NumFeatures();
     }
-    AddLossToCRF(crf, x, y, sparm->loss_scale);
+    // FIXME(afix) fix loss scale
+    AddLossToCRF(crf, x, y, 1.0);
     crf.Solve();
     return ExtractLabel(crf, x);
 }
 
-void InteractiveSegApp::EvalPrediction(const PatternData& x, const LabelData& y, const LabelData& ypred) const {
+void InteractiveSegApp::evalPrediction(const PatternData& x, const LabelData& y, const LabelData& ypred) const {
     const std::string& name = ypred.Name();
     cv::Mat color_image = MaskToColor(ypred.m_gt, x.m_image);
     if (m_params.show_images)
@@ -251,10 +244,11 @@ void InteractiveSegApp::EvalPrediction(const PatternData& x, const LabelData& y,
     }
 }
 
-bool InteractiveSegApp::FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
+bool InteractiveSegApp::finalizeIteration() const {
+    /* FIXME(afix) reimplement this
     size_t feature_base = 1;
-    for (auto fgp : m_features) {
-        double violation = fgp->Violation(feature_base, sm->w);
+    for (auto& fgp : m_features) {
+        double violation = fgp->Violation(feature_base, w);
         double w2 = 0;
         for (size_t i = feature_base; i < feature_base + fgp->NumFeatures(); ++i) 
             w2 += sm->w[i] * sm->w[i];
@@ -266,6 +260,7 @@ bool InteractiveSegApp::FinalizeIteration(double eps, STRUCTMODEL* sm, STRUCT_LE
         }
         feature_base += fgp->NumFeatures();
     }
+    */
     return false;
 }
 
@@ -282,7 +277,7 @@ po::options_description InteractiveSegApp::GetCommonOptions() {
     return desc;
 }
 
-po::options_description InteractiveSegApp::GetLearnOptions() {
+po::options_description InteractiveSegApp::getLearnParams() {
     po::options_description desc = GetCommonOptions();
     desc.add_options()
         ("all-features", po::value<bool>(), "Turn on all features (for use with feature-train)")
@@ -297,7 +292,7 @@ po::options_description InteractiveSegApp::GetLearnOptions() {
     return desc;
 }
 
-po::options_description InteractiveSegApp::GetClassifyOptions() {
+po::options_description InteractiveSegApp::getClassifyParams() {
     po::options_description desc = GetCommonOptions();
     desc.add_options()
         ("grabcut", po::value<int>(), "[0..] -> If nonzero, run n iterations of grabcut as the classifier instead. (default 0)")
@@ -308,8 +303,8 @@ po::options_description InteractiveSegApp::GetClassifyOptions() {
 }
 
 
-InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::vector<std::string>& args) {
-    Parameters params;
+void InteractiveSegApp::parseLearnParams(const std::vector<std::string>& args) {
+    Parameters& params = m_params;
     params.all_features = false;
     params.grabcut_classify = 0;
     params.crf = 0;
@@ -322,7 +317,7 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
     params.contrast_submodular_feature = 1;
     params.stats_file = std::string();
 
-    po::options_description desc = GetLearnOptions();
+    po::options_description desc = getLearnParams();
     po::variables_map vm;
     po::store(po::command_line_parser(args).options(desc).run(), vm);
 
@@ -371,10 +366,9 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseLearnOptions(const std::ve
     }
     if (vm.count("all-features"))
         params.all_features = vm["all-features"].as<bool>();
-    return params;
 }
 
-InteractiveSegApp::Parameters InteractiveSegApp::ParseClassifyOptions(const std::vector<std::string>& args) {
+void InteractiveSegApp::parseClassifyParams(const std::vector<std::string>& args) {
     Parameters params;
 
     params.show_images = false;
@@ -384,7 +378,7 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseClassifyOptions(const std:
     params.output_dir = std::string();
     params.stats_file = std::string();
 
-    po::options_description desc = GetClassifyOptions();
+    po::options_description desc = getClassifyParams();
     po::variables_map vm;
     po::store(po::command_line_parser(args).options(desc).run(), vm);
 
@@ -421,11 +415,10 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseClassifyOptions(const std:
     if (vm.count("eval-dir")) {
         params.eval_dir = vm["eval-dir"].as<std::string>();
     }
-    return params;
 }
 
 std::unique_ptr<SVM_Cpp_Base> SVM_Cpp_Base::newUserApplication() {
-    return {new InteractiveSegApp{} };
+    return std::unique_ptr<SVM_Cpp_Base>{new InteractiveSegApp{} };
 }
 
 SVM_CPP_DEFINE_DEFAULT_DELETERS

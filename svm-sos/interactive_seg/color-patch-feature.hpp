@@ -38,7 +38,7 @@ class ColorPatchFeature : public FeatureGroup {
             v = -v;
         return psi;
     }
-    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, const double* w) const override {
         cv::Mat patch_feature = m_patch_feature[p.Name()];
         cv::Point pt;
         for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
