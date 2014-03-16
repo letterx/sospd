@@ -31,6 +31,8 @@ struct LabelData {
 
         cv::Mat m_gt;
         std::string m_name;
+
+        const std::string& Name() const { return m_name; }
 };
 
 struct Optimizer : public CRF { };

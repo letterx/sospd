@@ -60,8 +60,8 @@ main_file.close();
 
 
 PatternData::PatternData(const std::string& name, const cv::Mat& image, const cv::Mat& trimap) 
-: m_name(name)
-    , m_image(image)
+    : m_image(image)
+    , m_name(name)
 {
     ConvertToMask(trimap, m_tri);
 }
@@ -181,7 +181,8 @@ LabelData* InteractiveSegApp::ExtractLabel(const CRF& crf, const PatternData& x)
 
 LabelData* InteractiveSegApp::Classify(const PatternData& x, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
     if (m_params.grabcut_classify) {
-        const_cast<std::string&>(this->m_test_stats.m_model_file) = std::string("grabcut.model");
+        // FIXME(afix) this line should be uncommented and fixed
+        // const_cast<std::string&>(this->m_test_stats.m_model_file) = std::string("grabcut.model");
         LabelData* y = new LabelData(x.Name());
         x.m_tri.copyTo(y->m_gt);
         cv::Mat bgdModel;
@@ -189,7 +190,7 @@ LabelData* InteractiveSegApp::Classify(const PatternData& x, STRUCTMODEL* sm, ST
         cv::grabCut(x.m_image, y->m_gt, cv::Rect(), bgdModel, fgdModel, m_params.grabcut_classify);
         return y;
     } else {
-        CRF crf;
+        Optimizer crf;
         SubmodularFlow sf;
         SubmodularIBFS ibfs;
         HigherOrderWrapper ho;
@@ -203,7 +204,7 @@ LabelData* InteractiveSegApp::Classify(const PatternData& x, STRUCTMODEL* sm, ST
         InitializeCRF(crf, x);
         size_t feature_base = 1;
         for (auto fgp : m_features) {
-            fgp->AddToCRF(crf, x, sm->w + feature_base );
+            fgp->AddToOptimizer(crf, x, sm->w + feature_base );
             feature_base += fgp->NumFeatures();
         }
         crf.Solve();
@@ -212,7 +213,7 @@ LabelData* InteractiveSegApp::Classify(const PatternData& x, STRUCTMODEL* sm, ST
 }
 
 LabelData* InteractiveSegApp::FindMostViolatedConstraint(const PatternData& x, const LabelData& y, STRUCTMODEL* sm, STRUCT_LEARN_PARM* sparm) const {
-    CRF crf;
+    Optimizer crf;
     SubmodularFlow sf;
     HigherOrderWrapper ho;
     SubmodularIBFS ibfs;
@@ -226,7 +227,7 @@ LabelData* InteractiveSegApp::FindMostViolatedConstraint(const PatternData& x, c
     InitializeCRF(crf, x);
     size_t feature_base = 1;
     for (auto fgp : m_features) {
-        fgp->AddToCRF(crf, x, sm->w + feature_base );
+        fgp->AddToOptimizer(crf, x, sm->w + feature_base );
         feature_base += fgp->NumFeatures();
     }
     AddLossToCRF(crf, x, y, sparm->loss_scale);
@@ -422,3 +423,5 @@ InteractiveSegApp::Parameters InteractiveSegApp::ParseClassifyOptions(const std:
     }
     return params;
 }
+
+SVM_CPP_DEFINE_DEFAULT_DELETERS

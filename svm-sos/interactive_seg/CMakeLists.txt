@@ -7,4 +7,7 @@ target_link_libraries(interactive_seg_learn
     svm_cpp_learn
     svm_cpp_common
     ${sos_svm_libs}
+    opencv_core
+    opencv_highgui
+    opencv_imgproc
     )

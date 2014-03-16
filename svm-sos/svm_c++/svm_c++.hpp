@@ -65,8 +65,8 @@ class SVM_Cpp_Base {
             void operator()(LabelData*) const;
         };
 #define SVM_CPP_DEFINE_DEFAULT_DELETERS \
-        void SVM_Cpp_Base::PatternDeleter::operator()(PatternData* p) { delete p; } \
-        void SVM_Cpp_Base::LabelDeleter::operator()(LabelData* p) { delete p; }
+        void SVM_Cpp_Base::PatternDeleter::operator()(PatternData* p) const { delete p; } \
+        void SVM_Cpp_Base::LabelDeleter::operator()(LabelData* p) const { delete p; }
 
         typedef std::unique_ptr<PatternData, PatternDeleter> PatternPtr;
         typedef std::unique_ptr<LabelData, LabelDeleter> LabelPtr;

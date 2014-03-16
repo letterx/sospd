@@ -9,7 +9,7 @@ class EnergyTableClique;
 
 class SubmodularFlow {
     public:
-        typedef size_t NodeId;
+        typedef int NodeId;
         //typedef size_t CliqueId;
         typedef int CliqueId;
         class Clique;

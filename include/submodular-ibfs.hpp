@@ -68,7 +68,10 @@ class SubmodularIBFS {
         // Add Clique pointed to by cp
         void AddClique(const CliquePtr& cp, bool normalize = true);
         // Add Clique defined by nodes and energy table given
-        void AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable, bool normalize = true);
+        void AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
+            AddClique(nodes, energyTable, true);
+        }
+        void AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable, bool normalize);
         void AddPairwiseTerm(NodeId i, NodeId j, REAL E00, REAL E01, REAL E10, REAL E11);
 
         void IBFS();

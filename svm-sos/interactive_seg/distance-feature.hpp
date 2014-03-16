@@ -30,7 +30,7 @@ class DistanceFeature : public FeatureGroup {
             v = -v;
         return psi;
     }
-    virtual void AddToCRF(CRF& crf, const PatternData& p, double* w) const {
+    virtual void AddToOptimizer(Optimizer& crf, const PatternData& p, double* w) const override {
         const cv::Mat& dist_feature = m_dist_feature[p.Name()];
         cv::Point pt;
         for (pt.y = 0; pt.y < p.m_image.rows; ++pt.y) {
