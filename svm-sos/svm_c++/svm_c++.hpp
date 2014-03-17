@@ -127,10 +127,13 @@ class SVM_Cpp_Base {
             getBaseLearnParams();
         void parseBaseLearnParams(int argc, char** argv);
         void printLearnHelp();
+
         boost::program_options::options_description
             getBaseClassifyParams();
         void parseBaseClassifyParams(int argc, char** argv);
         void printClassifyHelp();
+
+        void parseBaseFeatureParams(int argc, char** argv, std::string& trainFile, std::string& evalFile, std::string& outputDir);
 
         virtual boost::program_options::options_description
             getLearnParams() = 0;
@@ -138,6 +141,7 @@ class SVM_Cpp_Base {
         virtual boost::program_options::options_description
             getClassifyParams() = 0;
         virtual void parseClassifyParams(const std::vector<std::string>& args) = 0;
+        virtual void parseFeatureParams(const std::vector<std::string>& args) = 0;
 
 
         TestStats m_testStats;
@@ -155,6 +159,10 @@ class SVM_Cpp_Base {
         void serialize(Archive& ar, unsigned int version) {
             ar & m_testStats;
         }
+
+        double m_constraint_scale = 1.0;
+        double m_loss_scale = 1.0;
+        double m_feature_scale = 1.0;
 };
 
 extern std::unique_ptr<SVM_Cpp_Base> g_application;

@@ -417,6 +417,71 @@ void InteractiveSegApp::parseClassifyParams(const std::vector<std::string>& args
     }
 }
 
+void InteractiveSegApp::parseFeatureParams(const std::vector<std::string>& args) {
+    Parameters& params = m_params;
+    params.all_features = false;
+    params.grabcut_classify = 0;
+    params.crf = 0;
+    params.grabcut_unary = 0;
+    params.distance_unary = 1;
+    params.color_patch = 1;
+    params.pairwise_feature = 0;
+    params.contrast_pairwise_feature = 0;
+    params.submodular_feature = 0;
+    params.contrast_submodular_feature = 1;
+    params.stats_file = std::string();
+
+    po::options_description desc = getLearnParams();
+    po::variables_map vm;
+    po::store(po::command_line_parser(args).options(desc).run(), vm);
+
+    if (vm.count("crf")) {
+        std::string type = vm["crf"].as<std::string>();
+        if (type == "sf") {
+            std::cout << "SubmodularFlow optimizer\n";
+            params.crf = 0;
+        } else if (type == "ho") {
+            std::cout << "HigherOrder optimizer\n";
+            params.crf = 1;
+        } else if (type == "ibfs") {
+            std::cout << "SubmodularIBFS optimizer\n";
+            params.crf = 2;
+        } else {
+            std::cout << "Unrecognized optimizer\n";
+            exit(-1);
+        }
+    }
+    if (vm.count("grabcut-unary")) 
+        params.grabcut_unary = vm["grabcut-unary"].as<int>();
+    if (vm.count("distance-unary"))
+        params.distance_unary = vm["distance-unary"].as<int>();
+    if (vm.count("color-patch"))
+        params.color_patch = vm["color-patch"].as<bool>();
+    if (vm.count("pairwise")) {
+        params.pairwise_feature = vm["pairwise"].as<int>();
+        std::cout << "Pairwise Feature = " << params.pairwise_feature << "\n";
+    }
+    if (vm.count("contrast-pairwise")) {
+        params.contrast_pairwise_feature = vm["contrast-pairwise"].as<int>();
+        std::cout << "Contrast Pairwise Feature = " << params.contrast_pairwise_feature << "\n";
+    }
+    if (vm.count("submodular")) {
+        params.submodular_feature = vm["submodular"].as<int>();
+        std::cout << "Submodular Feature = " << params.submodular_feature << "\n";
+    }
+    if (vm.count("contrast-submodular")) {
+        params.contrast_submodular_feature = vm["contrast-submodular"].as<bool>();
+    }
+    if (vm.count("stats-file")) {
+        params.stats_file = vm["stats-file"].as<std::string>();
+    }
+    if (vm.count("eval-dir")) {
+        params.eval_dir = vm["eval-dir"].as<std::string>();
+    }
+    if (vm.count("all-features"))
+        params.all_features = vm["all-features"].as<bool>();
+}
+
 std::unique_ptr<SVM_Cpp_Base> SVM_Cpp_Base::newUserApplication() {
     return std::unique_ptr<SVM_Cpp_Base>{new InteractiveSegApp{} };
 }

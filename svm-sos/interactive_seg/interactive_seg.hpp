@@ -93,6 +93,7 @@ class InteractiveSegApp : public SVM_Cpp_Base {
         virtual void parseLearnParams(const std::vector<std::string>& args) override;
         virtual boost::program_options::options_description getClassifyParams() override;
         virtual void parseClassifyParams(const std::vector<std::string>& args) override;
+        virtual void parseFeatureParams(const std::vector<std::string>& args) override;
     private:
         void initializeCRF(CRF& crf, const PatternData& x) const;
         void AddLossToCRF(CRF& crf, const PatternData& x, const LabelData& y, double scale) const;

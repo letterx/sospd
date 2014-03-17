@@ -22,7 +22,7 @@
 
 #include "svm_struct_common.h"
 
-long struct_verbosity;                   /* verbosity level (0-4) */
+long struct_verbosity = 0;                   /* verbosity level (0-4) */
 
 void printIntArray(int* x, int n)
 {

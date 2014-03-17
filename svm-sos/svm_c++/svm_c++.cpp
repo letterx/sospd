@@ -39,15 +39,33 @@ boost::program_options::options_description
 SVM_Cpp_Base::getBaseLearnParams() {
     po::options_description desc("General learning options");
     desc.add_options()
-        ("constraint-scale", po::value<double>(), "Scaling constant for enforcing constraints")
-        ("feature-scale", po::value<double>(), "Scaling constant for features Psi")
-        ("loss-scale", po::value<double>(), "Scaling constant for loss function Delta")
+        ("constraint-scale", po::value<double>(&m_constraint_scale)->default_value(1.0), "Scaling constant for enforcing constraints")
+        ("feature-scale", po::value<double>(&m_feature_scale)->default_value(1.0), "Scaling constant for features Psi")
+        ("loss-scale", po::value<double>(&m_loss_scale)->default_value(1.0), "Scaling constant for loss function Delta")
     ;
     return desc;
 }
 
 void SVM_Cpp_Base::parseBaseLearnParams(int argc, char** argv) {
+    m_constraint_scale = 100000.0;
+    m_loss_scale = 1000.0;
 
+    po::options_description desc;
+    desc.add(getBaseLearnParams());
+    po::variables_map vm;
+    try {
+        po::parsed_options parsed = po::command_line_parser(argc, argv).
+            options(desc).
+            allow_unregistered().
+            run();
+        std::vector<std::string> passOnwards = po::collect_unrecognized(parsed.options, po::include_positional);
+        po::store(parsed, vm);
+        po::notify(vm);
+        parseLearnParams(passOnwards);
+    } catch (std::exception& e) {
+        std::cout << "Parsing exception: " << e.what() << "\n";
+        printLearnHelp();
+    }
 }
 
 void SVM_Cpp_Base::printLearnHelp() {
@@ -55,6 +73,38 @@ void SVM_Cpp_Base::printLearnHelp() {
     desc.add(getBaseLearnParams())
         .add(getLearnParams());
     std::cout << desc << "\n";
+}
+
+
+void SVM_Cpp_Base::parseBaseFeatureParams(int argc, char** argv, std::string& trainFile, std::string& evalFile, std::string& outputDir) {
+    po::options_description desc;
+    desc.add_options()
+        ("train-file", po::value<std::string>(&trainFile)->required(), "Example file for training instances")
+        ("eval-file", po::value<std::string>(&evalFile)->required(), "Example file for evaluated instances")
+        ("output-dir", po::value<std::string>(&outputDir)->required(), "Output directory for evaluated instances")
+        ("h,help", "Display this help message")
+    ;
+
+    try {
+        po::variables_map vm;
+        po::parsed_options parsed = po::command_line_parser(argc, argv).
+            options(desc).
+            allow_unregistered().
+            run();
+        std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::include_positional);
+        po::store(parsed, vm);
+        if (vm.count("help")) {
+            std::cout << desc;
+            exit(0);
+        }
+        po::notify(vm);
+
+        parseFeatureParams(pass_onwards);
+    } catch (std::exception& e) {
+        std::cout << "Error: " << e.what() << "\n";
+        std::cout << desc << "\n";
+        exit(-1);
+    }
 }
 
 boost::program_options::options_description

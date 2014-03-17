@@ -21,7 +21,10 @@ add_library(svm_cpp_learn
     "svm_struct/svm_struct_main.c"
     )
 
-add_library(svm_cpp_classify STATIC
+add_library(svm_cpp_classify 
     "svm_struct/svm_struct_classify.c"
     )
     
+add_library(svm_cpp_feature STATIC
+    feature_train.cpp
+    )
