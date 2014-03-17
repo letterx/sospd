@@ -17,7 +17,7 @@ void SVM_Cpp_Base::trainFeatures(const std::string& train_file,
     LabelVec eval_labels;
     readExamples(train_file, train_patterns, train_labels);
     readExamples(eval_file, eval_patterns, eval_labels);
-    //initFeatures(m_derived->Params());
+    initFeatures();
 
     for (const auto& fgp : features()) {
         fgp->Train(train_patterns, train_labels);

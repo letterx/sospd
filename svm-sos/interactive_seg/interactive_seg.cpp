@@ -14,6 +14,10 @@
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
+BOOST_CLASS_EXPORT(InteractiveSegApp)
 
 InteractiveSegApp::InteractiveSegApp(const Parameters& params) 
 : m_params(params) 
@@ -419,15 +423,15 @@ void InteractiveSegApp::parseClassifyParams(const std::vector<std::string>& args
 
 void InteractiveSegApp::parseFeatureParams(const std::vector<std::string>& args) {
     Parameters& params = m_params;
-    params.all_features = false;
+    params.all_features = true;
     params.grabcut_classify = 0;
     params.crf = 0;
-    params.grabcut_unary = 0;
+    params.grabcut_unary = 1;
     params.distance_unary = 1;
     params.color_patch = 1;
-    params.pairwise_feature = 0;
-    params.contrast_pairwise_feature = 0;
-    params.submodular_feature = 0;
+    params.pairwise_feature = 1;
+    params.contrast_pairwise_feature = 1;
+    params.submodular_feature = 1;
     params.contrast_submodular_feature = 1;
     params.stats_file = std::string();
 

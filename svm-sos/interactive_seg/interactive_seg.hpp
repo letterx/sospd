@@ -100,6 +100,12 @@ class InteractiveSegApp : public SVM_Cpp_Base {
         LabelPtr ExtractLabel(const CRF& crf, const PatternData& x) const;
         static boost::program_options::options_description GetCommonOptions();
 
+        friend class boost::serialization::access;
+        template <typename Archive>
+        void serialize(Archive& ar, unsigned int version) {
+            ar & boost::serialization::base_object<SVM_Cpp_Base>(*this);
+        };
+
         Parameters m_params;
         FeatureVec m_features;
 };
