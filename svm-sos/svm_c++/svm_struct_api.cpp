@@ -72,7 +72,6 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
        examples must be written into sample.n */
     SAMPLE   sample;    /* sample */
     EXAMPLE  *examples;
-    size_t n = 0;       /* number of examples */
 
     g_application->m_testStats.ResetTimer();
 
@@ -82,7 +81,7 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
     strcpy(sparm->data_file, file);
 
     g_application->readExamples(file, patterns, labels);
-    n = patterns.size();
+    auto n = patterns.size();
 
     examples=static_cast<EXAMPLE *>(my_malloc(sizeof(EXAMPLE)*n));
     for (size_t i = 0; i < n; ++i) {
@@ -129,14 +128,14 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
     Constr constrs;
     size_t feature_base = 1; 
     for (const auto& fgp : g_application->features()) {
-        Constr new_constrs = fgp->CollectConstrs(feature_base, sparm->constraint_scale);
+        Constr new_constrs = fgp->CollectConstrs(feature_base, g_application->constraintScale());
         constrs.insert(constrs.end(), new_constrs.begin(), new_constrs.end());
         feature_base += fgp->NumFeatures();
     }
     c.m = constrs.size();
     if (c.m == 0) {
-        c.lhs = NULL;
-        c.rhs = NULL;
+        c.lhs = nullptr;
+        c.rhs = nullptr;
         return c;
     }
     c.lhs = static_cast<DOC**>(my_malloc(sizeof(DOC*)*(constrs.size())));
@@ -158,7 +157,7 @@ CONSTSET    init_struct_constraints(SAMPLE sample, STRUCTMODEL *sm,
         c.rhs[i] = rhs;
         i++;
     }
-    return(c);
+    return c;
 }
 
 LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm, 
@@ -247,7 +246,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     /* insert your code for computing the label ybar here */
     ybar.data = g_application->findMostViolatedConstraint(*x.data, *y.data, sm->w).release();
 
-    return(ybar);
+    return ybar;
 }
 
 int         empty_label(LABEL y)
@@ -256,7 +255,7 @@ int         empty_label(LABEL y)
      returned by find_most_violated_constraint_???(x, y, sm) if there
      is no incorrect label that can be found for x, or if it is unable
      to label x at all */
-  return(0);
+  return 0;
 }
 
 SVECTOR     *psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
@@ -282,7 +281,6 @@ SVECTOR     *psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
      that ybar!=y that maximizes psi(x,ybar,sm)*sm.w (where * is the
      inner vector product) and the appropriate function of the
      loss + margin/slack rescaling method. See that paper for details. */
-    SVECTOR *fvec=NULL;
 
     std::vector<WORD> words;
     FNUM fnum = 1;
@@ -299,9 +297,7 @@ SVECTOR     *psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
     w.wnum = 0;
     words.push_back(w);
 
-    fvec = create_svector(words.data(), nullptr, 1.0);
-
-    return(fvec);
+    return create_svector(words.data(), nullptr, 1.0);
 }
 
 double      loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
@@ -309,7 +305,7 @@ double      loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
     /* Put your code for different loss functions here. But then
        find_most_violated_constraint_???(x, y, sm) has to return the
        highest scoring label with the largest loss. */
-    return g_application->loss(*y.data, *ybar.data)*sparm->loss_scale;
+    return g_application->loss(*y.data, *ybar.data)*g_application->lossScale();
 }
 
 int         finalize_iteration(double ceps, int cached_constraint,
@@ -387,9 +383,6 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
     std::string version = std::string(INST_VERSION);
     ar & version;
     ar & sparm->loss_function;
-    ar & sparm->constraint_scale;
-    ar & sparm->feature_scale;
-    ar & sparm->loss_scale;
     ar & model->kernel_parm.kernel_type;
     ar & model->kernel_parm.poly_degree;
     ar & model->kernel_parm.rbf_gamma;
@@ -399,7 +392,8 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
     ar & model->totwords;
     ar & model->totdoc;
 
-    ar & g_application;
+    ar & g_application->m_testStats;
+    g_application->saveState(ar);
 //    unsigned int param_version = m_derived->Params().Version();
 //    ar & param_version;
 //    m_derived->SerializeParams(ar, param_version);
@@ -451,9 +445,6 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
     ar & inst_version;
     assert(inst_version == std::string(INST_VERSION));
     ar & sparm->loss_function;
-    ar & sparm->constraint_scale;
-    ar & sparm->feature_scale;
-    ar & sparm->loss_scale;
     ar & model->kernel_parm.kernel_type;
     ar & model->kernel_parm.poly_degree;
     ar & model->kernel_parm.rbf_gamma;
@@ -463,11 +454,9 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
     ar & model->totwords;
     ar & model->totdoc;
 
-    ar & g_application;
-//    unsigned int version;
-//    ar & version;
-//    m_derived->SerializeParams(ar, version);
-//    m_derived->InitFeatures(m_derived->Params());
+    ar & g_application->m_testStats;
+    g_application->loadState(ar);
+    g_application->initFeatures();
 //    ar & m_testStats;
 
     ar & model->sv_num;

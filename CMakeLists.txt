@@ -52,7 +52,7 @@ set(libs
 ###
 ### Build configuration
 ### 
-set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Debug)
 
 # GCC settings
 #

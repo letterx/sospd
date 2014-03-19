@@ -17,7 +17,6 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
-BOOST_CLASS_EXPORT(InteractiveSegApp)
 
 InteractiveSegApp::InteractiveSegApp(const Parameters& params) 
 : m_params(params) 
@@ -184,6 +183,7 @@ InteractiveSegApp::LabelPtr InteractiveSegApp::classify(const PatternData& x, co
         cv::Mat bgdModel;
         cv::Mat fgdModel;
         cv::grabCut(x.m_image, y->m_gt, cv::Rect(), bgdModel, fgdModel, m_params.grabcut_classify);
+        //ShowImage(y->m_gt*255.0/3.0);
         return y;
     } else {
         Optimizer crf;
@@ -373,7 +373,7 @@ void InteractiveSegApp::parseLearnParams(const std::vector<std::string>& args) {
 }
 
 void InteractiveSegApp::parseClassifyParams(const std::vector<std::string>& args) {
-    Parameters params;
+    Parameters& params = m_params;
 
     params.show_images = false;
     params.grabcut_classify = 0;
@@ -484,6 +484,30 @@ void InteractiveSegApp::parseFeatureParams(const std::vector<std::string>& args)
     }
     if (vm.count("all-features"))
         params.all_features = vm["all-features"].as<bool>();
+}
+
+void InteractiveSegApp::loadState(boost::archive::text_iarchive& ar) {
+    ar & m_params.eval_dir;
+    ar & m_params.all_features;
+    ar & m_params.grabcut_unary;
+    ar & m_params.distance_unary;
+    ar & m_params.color_patch;
+    ar & m_params.pairwise_feature;
+    ar & m_params.contrast_pairwise_feature;
+    ar & m_params.submodular_feature;
+    ar & m_params.contrast_submodular_feature;
+}
+
+void InteractiveSegApp::saveState(boost::archive::text_oarchive& ar) {
+    ar & m_params.eval_dir;
+    ar & m_params.all_features;
+    ar & m_params.grabcut_unary;
+    ar & m_params.distance_unary;
+    ar & m_params.color_patch;
+    ar & m_params.pairwise_feature;
+    ar & m_params.contrast_pairwise_feature;
+    ar & m_params.submodular_feature;
+    ar & m_params.contrast_submodular_feature;
 }
 
 std::unique_ptr<SVM_Cpp_Base> SVM_Cpp_Base::newUserApplication() {

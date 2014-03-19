@@ -269,6 +269,8 @@ inline cv::Mat MaskToColor(const cv::Mat& mask, const cv::Mat& image) {
             } else if (label == cv::GC_FGD || label == cv::GC_PR_FGD) {
                 color = cv::Vec3d(0.0, 0.0, 1.0)*intensity;
             } else {
+                std::cerr << "Unexpected color: " << label << "\n";
+                std::cerr << "Expected one of " << cv::GC_BGD << " " << cv::GC_PR_BGD << " " << cv::GC_FGD << " " << cv::GC_PR_FGD << "\n";
                 ASSERT(false);
             }
             out_image.at<cv::Vec3d>(p) = color;

@@ -115,6 +115,31 @@ SVM_Cpp_Base::getBaseClassifyParams() {
 }
 
 void SVM_Cpp_Base::parseBaseClassifyParams(int argc, char** argv) {
+    po::options_description desc;
+    desc.add_options()
+        ("h,help", "Display this help message")
+    ;
+
+    try {
+        po::variables_map vm;
+        po::parsed_options parsed = po::command_line_parser(argc, argv).
+            options(desc).
+            allow_unregistered().
+            run();
+        std::vector<std::string> pass_onwards = po::collect_unrecognized(parsed.options, po::include_positional);
+        po::store(parsed, vm);
+        if (vm.count("help")) {
+            std::cout << desc;
+            exit(0);
+        }
+        po::notify(vm);
+
+        parseClassifyParams(pass_onwards);
+    } catch (std::exception& e) {
+        std::cout << "Error: " << e.what() << "\n";
+        std::cout << desc << "\n";
+        exit(-1);
+    }
 
 }
 

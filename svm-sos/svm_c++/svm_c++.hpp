@@ -22,6 +22,7 @@ struct Optimizer;
  * Other forward declarations
  */
 namespace boost { namespace program_options { class options_description; } }
+namespace boost { namespace archive { class text_iarchive; class text_oarchive; }}
 class FeatureGroup;
 
 /* 
@@ -143,23 +144,18 @@ class SVM_Cpp_Base {
         virtual void parseClassifyParams(const std::vector<std::string>& args) = 0;
         virtual void parseFeatureParams(const std::vector<std::string>& args) = 0;
 
+        virtual void saveState(boost::archive::text_oarchive& ar) = 0;
+        virtual void loadState(boost::archive::text_iarchive& ar) = 0;
+
 
         TestStats m_testStats;
         std::string m_statsFile;
 
-    private:
-        /*
-         * If the user-defined subclass has any data members that need saving,
-         * it must also implement serialize, and export itself to the
-         * serialization library with BOOST_CLASS_EXPORT_GUID, so that we can
-         * serialize it from a pointer-to-base-class.
-         */
-        friend class boost::serialization::access;
-        template <typename Archive>
-        void serialize(Archive& ar, unsigned int version) {
-            ar & m_testStats;
-        }
+        double constraintScale() const { return m_constraint_scale; }
+        double lossScale() const { return m_loss_scale; }
+        double featureScale() const { return m_feature_scale; }
 
+    private:
         double m_constraint_scale = 1.0;
         double m_loss_scale = 1.0;
         double m_feature_scale = 1.0;

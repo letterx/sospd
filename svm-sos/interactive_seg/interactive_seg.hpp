@@ -43,7 +43,6 @@ class InteractiveSegApp : public SVM_Cpp_Base {
             // The following are saved/loaded in model serialization
             std::string eval_dir;
             bool all_features;
-            int grabcut_classify;
             int grabcut_unary;
             bool distance_unary;
             bool color_patch;
@@ -52,29 +51,12 @@ class InteractiveSegApp : public SVM_Cpp_Base {
             bool submodular_feature;
             bool contrast_submodular_feature;
             // These parameters are classify-specific
+            int grabcut_classify;
             bool show_images;
             std::string output_dir;
             std::string stats_file;
             int crf;
-
-            unsigned int Version() const { return 1; }
         };
-        template <typename Archive>
-        void SerializeParams(Archive& ar, const unsigned int version) {
-            ar & m_params.eval_dir;
-            ar & m_params.all_features;
-            if (version < 1) {
-                bool dummy_grabcut_classify;
-                ar & dummy_grabcut_classify;
-            }
-            ar & m_params.grabcut_unary;
-            ar & m_params.distance_unary;
-            ar & m_params.color_patch;
-            ar & m_params.pairwise_feature;
-            ar & m_params.contrast_pairwise_feature;
-            ar & m_params.submodular_feature;
-            ar & m_params.contrast_submodular_feature;
-        }
 
         InteractiveSegApp() = default;
         InteractiveSegApp(const Parameters& params);
@@ -94,17 +76,29 @@ class InteractiveSegApp : public SVM_Cpp_Base {
         virtual boost::program_options::options_description getClassifyParams() override;
         virtual void parseClassifyParams(const std::vector<std::string>& args) override;
         virtual void parseFeatureParams(const std::vector<std::string>& args) override;
+        virtual void saveState(boost::archive::text_oarchive& ar) override;
+        virtual void loadState(boost::archive::text_iarchive& ar) override;
     private:
         void initializeCRF(CRF& crf, const PatternData& x) const;
         void AddLossToCRF(CRF& crf, const PatternData& x, const LabelData& y, double scale) const;
         LabelPtr ExtractLabel(const CRF& crf, const PatternData& x) const;
         static boost::program_options::options_description GetCommonOptions();
 
-        friend class boost::serialization::access;
-        template <typename Archive>
-        void serialize(Archive& ar, unsigned int version) {
-            ar & boost::serialization::base_object<SVM_Cpp_Base>(*this);
-        };
+//        friend class boost::serialization::access;
+//        template <typename Archive>
+//        void serialize(Archive& ar, unsigned int version) {
+//            ar & boost::serialization::base_object<SVM_Cpp_Base>(*this);
+//
+//            ar & m_params.eval_dir;
+//            ar & m_params.all_features;
+//            ar & m_params.grabcut_unary;
+//            ar & m_params.distance_unary;
+//            ar & m_params.color_patch;
+//            ar & m_params.pairwise_feature;
+//            ar & m_params.contrast_pairwise_feature;
+//            ar & m_params.submodular_feature;
+//            ar & m_params.contrast_submodular_feature;
+//        };
 
         Parameters m_params;
         FeatureVec m_features;
