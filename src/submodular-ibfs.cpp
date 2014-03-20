@@ -110,8 +110,6 @@ void SubmodularIBFS::GraphInit()
     // initialize arc lists
     Arc arc;
     arc.i_idx = arc.j_idx = 0;
-    arc.cached_cap = 0;
-    arc.cache_time = -1;
     for (NodeId i = 0; i < m_num_nodes; ++i) {
         // arcs from source
         arc.i = s;
@@ -510,11 +508,7 @@ void SubmodularIBFS::MakeOrphan(NodeId i) {
 
 REAL SubmodularIBFS::ResCap(Arc& arc) {
     if (arc.c >= 0) {
-        if (arc.cache_time != m_cliques[arc.c].Time()) {
-            arc.cached_cap = m_cliques[arc.c].ExchangeCapacity(arc.i_idx, arc.j_idx);
-            arc.cache_time = m_cliques[arc.c].Time();
-        }
-        return arc.cached_cap;
+        return m_cliques[arc.c].ExchangeCapacity(arc.i_idx, arc.j_idx);
     } else if (arc.i == s) {
         return m_c_si[arc.j] - m_phi_si[arc.j];
     } else if (arc.j == s) {

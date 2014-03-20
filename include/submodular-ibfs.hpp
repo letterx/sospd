@@ -20,8 +20,6 @@ class SubmodularIBFS {
 	        NodeId i, j;
             size_t i_idx, j_idx;
 	        CliqueId c; // if this is a clique edge; -1 otherwise
-            REAL cached_cap; // Is the true capacity if cached_time == c.m_time
-            int64_t cache_time;
         };
         typedef std::vector<Arc> ArcList;
         typedef boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>> ListHook;
