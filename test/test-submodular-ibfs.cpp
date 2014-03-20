@@ -144,8 +144,7 @@ BOOST_AUTO_TEST_CASE(randomFlowNormalized) {
         BOOST_CHECK_EQUAL(sf.GetPhi_it()[i], 0);
     }
 
-    for (const SubmodularIBFS::CliquePtr& cp : sf.GetCliques()) {
-        const SubmodularIBFS::Clique& c = *cp;
+    for (const auto& c : sf.GetCliques()) {
         BOOST_CHECK_EQUAL(c.Nodes().size(), 4);
         CheckNormalized(c, sf.GetLabels());
     }

@@ -75,22 +75,16 @@ void SubmodularIBFS::ClearUnaries() {
     }
 }
 
-void SubmodularIBFS::AddClique(const CliquePtr& cp, bool normalize) {
+void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable, bool normalize) {
     ASSERT(s == -1);
-    m_cliques.push_back(cp);
-    for (NodeId i : cp->Nodes()) {
+    m_cliques.push_back(IBFSEnergyTableClique{nodes, energyTable});
+    for (NodeId i : nodes) {
         ASSERT(0 <= i && i < m_num_nodes);
         m_neighbors[i].push_back(m_num_cliques);
     }
-    m_num_cliques++;
     if (normalize)
-        cp->NormalizeEnergy(*this);//Chen
-}
-
-void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable, bool normalize) {
-    ASSERT(s == -1);
-    CliquePtr cp(new IBFSEnergyTableClique(nodes, energyTable));
-    AddClique(cp, normalize);
+        m_cliques[m_num_cliques].NormalizeEnergy(*this);//Chen
+    m_num_cliques++;
 }
 
 void SubmodularIBFS::AddPairwiseTerm(NodeId i, NodeId j, REAL E00, REAL E01, REAL E10, REAL E11) {
@@ -146,17 +140,17 @@ void SubmodularIBFS::GraphInit()
 
     // Arcs between nodes of clique
     for (int cid = 0; cid < m_num_cliques; ++cid) {
-        CliquePtr cp = m_cliques[cid];
-        int size = cp->Nodes().size();
+        auto& c = m_cliques[cid];
+        int size = c.Nodes().size();
         num_edges += size*(size-1);
-        for (NodeId i : cp->Nodes()) {
-            for (NodeId j : cp->Nodes()) {
+        for (NodeId i : c.Nodes()) {
+            for (NodeId j : c.Nodes()) {
                 if (i == j) continue;
                 arc.i = i;
                 arc.j = j;
                 arc.c = cid;
-                arc.i_idx = cp->GetIndex(i);
-                arc.j_idx = cp->GetIndex(j);
+                arc.i_idx = c.GetIndex(i);
+                arc.j_idx = c.GetIndex(j);
                 m_nodes[i].out_arcs.push_back(arc);
                 m_nodes[j].in_arcs.push_back(arc);
             }
@@ -200,9 +194,9 @@ void SubmodularIBFS::IBFSInit()
 
     // Reset Clique parameters
     for (int cid = 0; cid < m_num_cliques; ++cid) {
-        CliquePtr cp = m_cliques[cid];
-        cp->ResetAlpha();
-        cp->ComputeMinTightSets();
+        auto& c = m_cliques[cid];
+        c.ResetAlpha();
+        c.ComputeMinTightSets();
     }
 
     // saturate all s-i-t paths
@@ -516,9 +510,9 @@ void SubmodularIBFS::MakeOrphan(NodeId i) {
 
 REAL SubmodularIBFS::ResCap(Arc& arc) {
     if (arc.c >= 0) {
-        if (arc.cache_time != m_cliques[arc.c]->Time()) {
-            arc.cached_cap = m_cliques[arc.c]->ExchangeCapacity(arc.i_idx, arc.j_idx);
-            arc.cache_time = m_cliques[arc.c]->Time();
+        if (arc.cache_time != m_cliques[arc.c].Time()) {
+            arc.cached_cap = m_cliques[arc.c].ExchangeCapacity(arc.i_idx, arc.j_idx);
+            arc.cache_time = m_cliques[arc.c].Time();
         }
         return arc.cached_cap;
     } else if (arc.i == s) {
@@ -536,7 +530,7 @@ REAL SubmodularIBFS::ResCap(Arc& arc) {
 
 bool SubmodularIBFS::NonzeroCap(Arc& arc) {
     if (arc.c >= 0) {
-        return m_cliques[arc.c]->NonzeroCapacity(arc.i_idx, arc.j_idx);
+        return m_cliques[arc.c].NonzeroCapacity(arc.i_idx, arc.j_idx);
     } else if (arc.i == s) {
         return (m_c_si[arc.j] - m_phi_si[arc.j]) != 0;
     } else if (arc.j == s) {
@@ -571,7 +565,7 @@ void SubmodularIBFS::Push(Arc& arc, REAL delta) {
     } else { // Clique arc
         m_num_clique_pushes++;
         //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
-        auto& c = *m_cliques[arc.c];
+        auto& c = m_cliques[arc.c];
         c.Push(arc.i_idx, arc.j_idx, delta);
         c.Time()++;
         for (NodeId n : c.Nodes()) {
@@ -617,8 +611,8 @@ REAL SubmodularIBFS::ComputeEnergy(const std::vector<int>& labels) const {
         if (labels[i] == 1) total += m_c_it[i];
         else total += m_c_si[i];
     }
-    for (const CliquePtr& cp : m_cliques) {
-        total += cp->ComputeEnergy(labels);
+    for (const auto& c : m_cliques) {
+        total += c.ComputeEnergy(labels);
     }
     return total;
 }
@@ -648,7 +642,7 @@ static void CheckSubmodular(size_t n, const std::vector<REAL>& m_energy) {
     }
 }
 
-void IBFSEnergyTableClique::NormalizeEnergy(SubmodularIBFS& sf) {
+void SubmodularIBFS::IBFSEnergyTableClique::NormalizeEnergy(SubmodularIBFS& sf) {
     EnforceSubmodularity();
     const size_t n = this->m_nodes.size();
     CheckSubmodular(n, m_energy);
@@ -686,7 +680,7 @@ void IBFSEnergyTableClique::NormalizeEnergy(SubmodularIBFS& sf) {
 
 }
 
-REAL IBFSEnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
+REAL SubmodularIBFS::IBFSEnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const {
     Assignment assgn = 0;
     for (size_t i = 0; i < this->m_nodes.size(); ++i) {
         NodeId n = this->m_nodes[i];
@@ -697,7 +691,7 @@ REAL IBFSEnergyTableClique::ComputeEnergy(const std::vector<int>& labels) const 
     return m_energy[assgn];
 }
 
-REAL IBFSEnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
+REAL SubmodularIBFS::IBFSEnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
     const size_t n = this->m_nodes.size();
     ASSERT(u_idx < n);
     ASSERT(v_idx < n);
@@ -722,7 +716,7 @@ REAL IBFSEnergyTableClique::ExchangeCapacity(size_t u_idx, size_t v_idx) const {
     return min_energy;
 }
 
-void IBFSEnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
+void SubmodularIBFS::IBFSEnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
     ASSERT(u_idx >= 0 && u_idx < this->m_nodes.size());
     ASSERT(v_idx >= 0 && v_idx < this->m_nodes.size());
     m_alpha_Ci[u_idx] += delta;
@@ -748,7 +742,7 @@ void IBFSEnergyTableClique::Push(size_t u_idx, size_t v_idx, REAL delta) {
     ComputeMinTightSets();
 }
 
-void IBFSEnergyTableClique::ComputeMinTightSets() {
+void SubmodularIBFS::IBFSEnergyTableClique::ComputeMinTightSets() {
     size_t n = this->m_nodes.size();
     Assignment num_assgns = 1 << n;
     const Assignment bound = num_assgns-1;
@@ -766,7 +760,7 @@ void IBFSEnergyTableClique::ComputeMinTightSets() {
     }
 }
 
-bool IBFSEnergyTableClique::NonzeroCapacity(size_t u_idx, size_t v_idx) const {
+bool SubmodularIBFS::IBFSEnergyTableClique::NonzeroCapacity(size_t u_idx, size_t v_idx) const {
     Assignment min_set = m_min_tight_set[u_idx];
     return (min_set & (1 << v_idx)) != 0;
 }
@@ -778,7 +772,7 @@ static inline int32_t NextPerm(uint32_t v) {
     return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(v) + 1));
 }
 
-void IBFSEnergyTableClique::EnforceSubmodularity() {
+void SubmodularIBFS::IBFSEnergyTableClique::EnforceSubmodularity() {
     // Decreasing marginal costs, so we require
     // f(ti) - f(t) <= f(si) - f(s)
     // i.e. f(si) - f(s) - f(ti) + f(t) >= 0
@@ -814,7 +808,7 @@ void IBFSEnergyTableClique::EnforceSubmodularity() {
     }
 }
 
-void IBFSEnergyTableClique::ResetAlpha() {
+void SubmodularIBFS::IBFSEnergyTableClique::ResetAlpha() {
     for (auto& a : this->m_alpha_Ci) {
         a = 0;
     }

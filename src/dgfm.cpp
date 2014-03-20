@@ -100,7 +100,7 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
         const size_t k = c.Size();
         ASSERT(k < 32);
 
-        auto& ibfs_c = *ibfs_cliques[clique_index];
+        auto& ibfs_c = ibfs_cliques[clique_index];
         ASSERT(k == ibfs_c.Size());
         std::vector<REAL>& energy_table = ibfs_c.EnergyTable();
         Assgn max_assgn = 1 << k;
@@ -242,8 +242,8 @@ bool DualGuidedFusionMove::UpdatePrimalDual(SubmodularIBFS& crf) {
     size_t i = 0;
     for (const CliquePtr& cp : m_energy->Cliques()) {
         const Clique& c = *cp;
-        SubmodularIBFS::CliquePtr ibfs_c = clique[i];
-        const std::vector<REAL>& phiCi = ibfs_c->AlphaCi();
+        auto& ibfs_c = clique[i];
+        const std::vector<REAL>& phiCi = ibfs_c.AlphaCi();
         for (size_t j = 0; j < phiCi.size(); ++j) {
             m_dual[i][j][m_fusion_labels[c.Nodes()[j]]] += phiCi[j];
             Height(c.Nodes()[j], m_fusion_labels[c.Nodes()[j]]) += phiCi[j];

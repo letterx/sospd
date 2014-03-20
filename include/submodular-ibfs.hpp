@@ -13,9 +13,6 @@ class SubmodularIBFS {
     public:
         typedef int NodeId;
         typedef int CliqueId;
-        class Clique;
-        typedef boost::shared_ptr<IBFSEnergyTableClique> CliquePtr;
-        typedef std::vector<CliquePtr> CliqueVec;
         enum class NodeState : char {
             S, T, S_orphan, T_orphan, N
         };
@@ -61,8 +58,6 @@ class SubmodularIBFS {
         void AddUnaryTerm(NodeId n, REAL coeff);
         void ClearUnaries();
 
-        // Add Clique pointed to by cp
-        void AddClique(const CliquePtr& cp, bool normalize = true);
         // Add Clique defined by nodes and energy table given
         void AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable) {
             AddClique(nodes, energyTable, true);
@@ -132,14 +127,49 @@ class SubmodularIBFS {
             std::vector<REAL> m_alpha_Ci; // The reparameterization variables for this clique
             int64_t m_time;
 
-            // Prohibit copying and moving clique functions, to prevent slicing
-            // of derived class data
-            Clique(Clique&&) = delete;
-            Clique& operator=(Clique&&) = delete;
-            Clique(const Clique&) = delete;
-            Clique& operator=(const Clique&) = delete;
+        };
+        /*
+         * IBFSEnergyTableClique: stores energy as a list of 2^k values for each subset
+         */
+        class IBFSEnergyTableClique : public Clique {
+            public:
+                typedef SubmodularIBFS::NodeId NodeId;
+                typedef uint32_t Assignment;
+
+                IBFSEnergyTableClique() : SubmodularIBFS::Clique(), m_energy(), m_alpha_energy(), m_min_tight_set() { }
+                IBFSEnergyTableClique(const std::vector<NodeId>& nodes,
+                                  const std::vector<REAL>& energy)
+                    : SubmodularIBFS::Clique(nodes),
+                    m_energy(energy),
+                    m_alpha_energy(energy),
+                    m_min_tight_set(nodes.size(), (1 << nodes.size()) - 1)
+                { 
+                    ASSERT(nodes.size() <= 31); 
+                }
+
+                // Virtual overrides
+                virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
+                REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
+                bool NonzeroCapacity(size_t u_idx, size_t v_idx) const;
+                void NormalizeEnergy(SubmodularIBFS& sf);
+                void Push(size_t u_idx, size_t v_idx, REAL delta);
+
+                void ComputeMinTightSets();
+                void EnforceSubmodularity();
+                std::vector<REAL>& EnergyTable() { return m_energy; }
+                const std::vector<REAL>& EnergyTable() const { return m_energy; }
+
+                void ResetAlpha();
+
+            protected:
+                std::vector<REAL> m_energy;
+                std::vector<REAL> m_alpha_energy;
+                std::vector<Assignment> m_min_tight_set;
 
         };
+
+
+        typedef std::vector<IBFSEnergyTableClique> CliqueVec;
 
     protected:
         // Layers store vertices by distance.
@@ -213,46 +243,6 @@ class SubmodularIBFS {
 
         REAL ResCap(Arc& arc);
         bool NonzeroCap(Arc& arc);
-
-};
-
-/*
- * IBFSEnergyTableClique: stores energy as a list of 2^k values for each subset
- */
-class IBFSEnergyTableClique : public SubmodularIBFS::Clique {
-    public:
-        typedef SubmodularIBFS::NodeId NodeId;
-        typedef uint32_t Assignment;
-
-        IBFSEnergyTableClique() : SubmodularIBFS::Clique(), m_energy(), m_alpha_energy(), m_min_tight_set() { }
-        IBFSEnergyTableClique(const std::vector<NodeId>& nodes,
-                          const std::vector<REAL>& energy)
-            : SubmodularIBFS::Clique(nodes),
-            m_energy(energy),
-            m_alpha_energy(energy),
-            m_min_tight_set(nodes.size(), (1 << nodes.size()) - 1)
-        { 
-            ASSERT(nodes.size() <= 31); 
-        }
-
-        // Virtual overrides
-        virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
-        REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
-        bool NonzeroCapacity(size_t u_idx, size_t v_idx) const;
-        void NormalizeEnergy(SubmodularIBFS& sf);
-        void Push(size_t u_idx, size_t v_idx, REAL delta);
-
-        void ComputeMinTightSets();
-        void EnforceSubmodularity();
-        std::vector<REAL>& EnergyTable() { return m_energy; }
-        const std::vector<REAL>& EnergyTable() const { return m_energy; }
-
-        void ResetAlpha();
-
-    protected:
-        std::vector<REAL> m_energy;
-        std::vector<REAL> m_alpha_energy;
-        std::vector<Assignment> m_min_tight_set;
 
 };
 
