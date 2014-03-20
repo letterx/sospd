@@ -5,10 +5,6 @@
 #include <limits>
 #include <queue>
 #include <chrono>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 
 typedef std::chrono::system_clock::time_point TimePt;
 typedef std::chrono::duration<double> Duration;
@@ -607,28 +603,8 @@ void SubmodularIBFS::ComputeMinCut() {
 }
 
 void SubmodularIBFS::Solve() {
-    if (m_crash_dump) {
-        try {
-            IBFS();
-            ComputeMinCut();
-        } catch(std::logic_error& e) {
-            auto now = std::chrono::system_clock::now();
-            size_t count = now.time_since_epoch().count();
-            std::string error_file = "ibfs-crash-" + std::to_string(count);
-            std::ofstream of(error_file);
-            {
-                boost::archive::binary_oarchive ar(of);
-                ar & *this;
-            }
-            of.flush();
-            of.close();
-            std::cout << "Wrote crash dump to " << error_file << "\n";
-            throw;
-        }
-    } else {
-        IBFS();
-        ComputeMinCut();
-    }
+    IBFS();
+    ComputeMinCut();
 }
 
 REAL SubmodularIBFS::ComputeEnergy() const {

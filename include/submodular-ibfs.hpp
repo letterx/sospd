@@ -4,8 +4,6 @@
 #include "energy-common.hpp"
 #include <list>
 #include <algorithm>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/base_object.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/intrusive/list.hpp>
 
@@ -37,12 +35,7 @@ class SubmodularIBFS {
             ArcList in_arcs;
             typename ArcList::iterator parent_arc;
             NodeId parent;
-            bool active;
-            Node() : state(NodeState::N), dis(std::numeric_limits<int>::max()), out_arcs(), in_arcs(), parent_arc(), active(false) { }
-            private:
-            friend class boost::serialization::access;
-            template <typename Archive>
-            void serialize(Archive& ar, const unsigned int version) { }
+            Node() : state(NodeState::N), dis(std::numeric_limits<int>::max()), out_arcs(), in_arcs(), parent_arc() { }
         };
 
         typedef boost::intrusive::list<Node> NodeQueue;
@@ -146,14 +139,6 @@ class SubmodularIBFS {
             Clique(const Clique&) = delete;
             Clique& operator=(const Clique&) = delete;
 
-            private:
-            friend class boost::serialization::access;
-            template <typename Archive>
-            void serialize(Archive& ar, const unsigned int version) {
-                ar & m_nodes;
-                ar & m_alpha_Ci;
-                ar & m_time;
-            }
         };
 
     protected:
@@ -202,8 +187,6 @@ class SubmodularIBFS {
 
         size_t m_num_clique_pushes;
 
-        bool m_crash_dump = false;
-
         double m_totalTime = 0;
         double m_graphInitTime = 0;
         double m_initTime = 0;
@@ -231,23 +214,6 @@ class SubmodularIBFS {
         REAL ResCap(Arc& arc);
         bool NonzeroCap(Arc& arc);
 
-    private:
-        friend class boost::serialization::access;
-        template <typename Archive>
-        void serialize(Archive& ar, const unsigned int version) {
-            ar & s;
-            ar & t;
-            ar & m_constant_term;
-            ar & m_num_nodes;
-            ar & m_nodes;
-            ar & m_c_si;
-            ar & m_c_it;
-            ar & m_phi_si;
-            ar & m_phi_it;
-            ar & m_labels;
-            ar & m_num_cliques;
-            ar & m_cliques;
-        }
 };
 
 /*
@@ -288,15 +254,6 @@ class IBFSEnergyTableClique : public SubmodularIBFS::Clique {
         std::vector<REAL> m_alpha_energy;
         std::vector<Assignment> m_min_tight_set;
 
-    private:
-        friend class boost::serialization::access;
-        template <typename Archive>
-        void serialize(Archive& ar, const unsigned int version) {
-            ar & boost::serialization::base_object<SubmodularIBFS::Clique>(*this);
-            ar & m_energy;
-            ar & m_alpha_energy;
-            ar & m_min_tight_set;
-        }
 };
 
 
