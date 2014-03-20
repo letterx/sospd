@@ -77,7 +77,7 @@ void SubmodularIBFS::ClearUnaries() {
 
 void SubmodularIBFS::AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable, bool normalize) {
     ASSERT(s == -1);
-    m_cliques.push_back(IBFSEnergyTableClique{nodes, energyTable});
+    m_cliques.emplace_back(nodes, energyTable);
     for (NodeId i : nodes) {
         ASSERT(0 <= i && i < m_num_nodes);
         m_neighbors[i].push_back(m_num_cliques);
