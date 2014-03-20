@@ -10,6 +10,10 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
+typedef std::chrono::system_clock::time_point TimePt;
+typedef std::chrono::duration<double> Duration;
+typedef std::chrono::system_clock Clock;
+
 SubmodularIBFS::SubmodularIBFS()
     : s(-1), 
     t(-1),
@@ -105,6 +109,8 @@ void SubmodularIBFS::GraphInit()
     // Check to see if we've already initialized, if so: do nothing
     if (s != -1) return;
 
+    auto start = Clock::now();
+
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
     num_edges = 2 * m_num_nodes; // source sink edges
@@ -168,10 +174,12 @@ void SubmodularIBFS::GraphInit()
         std::sort(m_nodes[i].in_arcs.begin(), m_nodes[i].in_arcs.end(),
                 [](const Arc& n1, const Arc& n2) { return n1.i < n2.i || (n1.i == n2.i && n1.c < n2.c); });
     }
+    m_graphInitTime += Duration{ Clock::now() - start }.count();
 }
 
 void SubmodularIBFS::IBFSInit()
 {
+    auto start = Clock::now();
     // reset distance, state and parent
     for (int i = 0; i < m_num_nodes + 2; ++i) {
         Node& node = m_nodes[i];
@@ -224,9 +232,11 @@ void SubmodularIBFS::IBFSInit()
             ASSERT(NonzeroCap(*m_nodes[i].parent_arc));
         }
     }
+    m_initTime += Duration{ Clock::now() - start }.count();
 }
 
 void SubmodularIBFS::IBFS() {
+    auto start = Clock::now();
     GraphInit();
     IBFSInit();
 
@@ -342,9 +352,18 @@ void SubmodularIBFS::IBFS() {
             AdvanceSearchNode();
         }
     } // End while
+    m_totalTime += Duration{ Clock::now() - start }.count();
+
+    std::cout << "Total time:      " << m_totalTime << "\n";
+    std::cout << "Graph init time: " << m_graphInitTime << "\n";
+    std::cout << "Init time:       " << m_initTime << "\n";
+    std::cout << "Augment time:    " << m_augmentTime << "\n";
+    std::cout << "Adopt time:      " << m_adoptTime << "\n";
 }
 
 void SubmodularIBFS::Augment(Arc& arc) {
+    auto start = Clock::now();
+
     NodeId i = arc.i;
     NodeId j = arc.j;
     REAL bottleneck = ResCap(arc);
@@ -377,9 +396,11 @@ void SubmodularIBFS::Augment(Arc& arc) {
         Push(a, bottleneck);
         current = a.j;
     }
+    m_augmentTime += Duration{ Clock::now() - start }.count();
 }
 
 void SubmodularIBFS::Adopt() {
+    auto start = Clock::now();
     while (!m_source_orphans.empty()) {
         NodeId i = m_source_orphans.front();
         m_source_orphans.pop_front();
@@ -478,6 +499,7 @@ void SubmodularIBFS::Adopt() {
             n.state = NodeState::T;
         }
     }
+    m_adoptTime += Duration{ Clock::now() - start }.count();
 }
 
 void SubmodularIBFS::MakeOrphan(NodeId i) {

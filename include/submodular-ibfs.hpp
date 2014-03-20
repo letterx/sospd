@@ -203,6 +203,12 @@ class SubmodularIBFS {
 
         bool m_crash_dump = false;
 
+        double m_totalTime = 0;
+        double m_graphInitTime = 0;
+        double m_initTime = 0;
+        double m_augmentTime = 0;
+        double m_adoptTime = 0;
+
     public:
         // Functions for reading out data, useful for testing
         NodeId GetS() const { return s; }

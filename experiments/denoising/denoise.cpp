@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
         ("help", "Display this help message")
         ("iters,i", po::value<int>(&iterations)->default_value(300), "Maximum number of iterations")
         ("image", po::value<std::string>(&basename)->required(), "Name of image (without extension)")
-        ("method,m", po::value<std::string>(&method)->default_value(std::string("spd")), "Optimization method")
+        ("method,m", po::value<std::string>(&method)->default_value(std::string("spd-grad")), "Optimization method")
         ("lower-bound", po::value<bool>(&spd_lower_bound)->default_value(true), "Use lower bound for SPD3")
         ("eta", po::value<double>(&eta)->default_value(60), "Scale for gradient descent steps")
         ("sigma", po::value<double>(&sigma)->default_value(25.0), "Strength of unary terms")
