@@ -7,6 +7,7 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/intrusive/list.hpp>
 
 class IBFSEnergyTableClique;
 
@@ -17,7 +18,6 @@ class SubmodularIBFS {
         class Clique;
         typedef boost::shared_ptr<IBFSEnergyTableClique> CliquePtr;
         typedef std::vector<CliquePtr> CliqueVec;
-        typedef std::list<NodeId> NodeQueue;
         enum class NodeState : char {
             S, T, S_orphan, T_orphan, N
         };
@@ -29,7 +29,8 @@ class SubmodularIBFS {
             int64_t cache_time;
         };
         typedef std::vector<Arc> ArcList;
-        struct Node {
+        typedef boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>> ListHook;
+        struct Node : public ListHook {
             NodeState state;
             int dis;
             ArcList out_arcs;
@@ -37,13 +38,15 @@ class SubmodularIBFS {
             typename ArcList::iterator parent_arc;
             NodeId parent;
             bool active;
-            typename NodeQueue::iterator q_iterator;
             Node() : state(NodeState::N), dis(std::numeric_limits<int>::max()), out_arcs(), in_arcs(), parent_arc(), active(false) { }
             private:
             friend class boost::serialization::access;
             template <typename Archive>
             void serialize(Archive& ar, const unsigned int version) { }
         };
+
+        typedef boost::intrusive::list<Node> NodeQueue;
+        typedef std::list<NodeId> NodeIdList;
 
 
 
@@ -157,18 +160,16 @@ class SubmodularIBFS {
         // Layers store vertices by distance.
         std::vector<NodeQueue> m_source_layers;
         std::vector<NodeQueue> m_sink_layers;
-        NodeQueue m_source_orphans;
-        NodeQueue m_sink_orphans;
+        NodeIdList m_source_orphans;
+        NodeIdList m_sink_orphans;
         int m_source_tree_d;
         int m_sink_tree_d;
-        typename NodeQueue::iterator m_search_node_iter;
-        typename NodeQueue::iterator m_search_node_end;
+        typedef typename NodeQueue::iterator queue_iterator;
+        queue_iterator m_search_node_iter;
+        queue_iterator m_search_node_end;
         typename ArcList::iterator m_search_arc;
         typename ArcList::iterator m_search_arc_end;
         bool m_forward_search;
-
-        typedef typename NodeQueue::iterator queue_iterator;
-        std::vector<queue_iterator> queue_ptr;
 
         // Data needed during push-relabel
         NodeId s,t;

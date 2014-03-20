@@ -193,12 +193,14 @@ void SubmodularIBFS::IBFSInit()
     m_source_orphans.clear();
     m_sink_orphans.clear();
 
-    m_nodes[s].state = NodeState::S;
-    m_nodes[s].dis = 0;
-    m_source_layers[0].push_back(s);
-    m_nodes[t].state = NodeState::T;
-    m_nodes[t].dis = 0;
-    m_sink_layers[0].push_back(t);
+    auto& sNode = m_nodes[s];
+    sNode.state = NodeState::S;
+    sNode.dis = 0;
+    m_source_layers[0].push_back(sNode);
+    auto& tNode = m_nodes[t];
+    tNode.state = NodeState::T;
+    tNode.dis = 0;
+    m_sink_layers[0].push_back(tNode);
 
     // Reset Clique parameters
     for (int cid = 0; cid < m_num_cliques; ++cid) {
@@ -213,23 +215,25 @@ void SubmodularIBFS::IBFSInit()
         m_phi_si[i] = min_cap;
         m_phi_it[i] = min_cap;
         if (m_c_si[i] > min_cap) {
-            m_nodes[i].state = NodeState::S;
-            m_nodes[i].dis = 1;
+            auto& node = m_nodes[i];
+            node.state = NodeState::S;
+            node.dis = 1;
             AddToLayer(i);
-            m_nodes[i].parent_arc = std::find_if(m_nodes[i].in_arcs.begin(), m_nodes[i].in_arcs.end(),
+            node.parent_arc = std::find_if(node.in_arcs.begin(), node.in_arcs.end(),
                     [&](const Arc& n) { return n.i == s; });
-            m_nodes[i].parent = s;
-            ASSERT(m_nodes[i].parent_arc->j == i);
-            ASSERT(NonzeroCap(*m_nodes[i].parent_arc));
+            node.parent = s;
+            ASSERT(node.parent_arc->j == i);
+            ASSERT(NonzeroCap(*node.parent_arc));
         } else if (m_c_it[i] > min_cap) {
-            m_nodes[i].state = NodeState::T;
-            m_nodes[i].dis = 1;
+            auto& node = m_nodes[i];
+            node.state = NodeState::T;
+            node.dis = 1;
             AddToLayer(i);
-            m_nodes[i].parent_arc = std::find_if(m_nodes[i].out_arcs.begin(), m_nodes[i].out_arcs.end(),
+            node.parent_arc = std::find_if(node.out_arcs.begin(), node.out_arcs.end(),
                     [&](const Arc& n) { return n.j == t; });
-            m_nodes[i].parent = t;
-            ASSERT(m_nodes[i].parent_arc->i == i);
-            ASSERT(NonzeroCap(*m_nodes[i].parent_arc));
+            node.parent = t;
+            ASSERT(node.parent_arc->i == i);
+            ASSERT(NonzeroCap(*node.parent_arc));
         }
     }
     m_initTime += Duration{ Clock::now() - start }.count();
@@ -264,7 +268,7 @@ void SubmodularIBFS::IBFS() {
             m_search_node_end = current_q->end();
             m_forward_search = !m_forward_search;
             if (!current_q->empty()) {
-                Node& n = m_nodes[*m_search_node_iter];
+                Node& n = *m_search_node_iter;
                 if (m_forward_search) {
                     ASSERT(n.state == NodeState::S || n.state == NodeState::S_orphan);
                     m_search_arc = n.out_arcs.begin();
@@ -277,8 +281,8 @@ void SubmodularIBFS::IBFS() {
             }
             continue;
         }
-        NodeId search_node = *m_search_node_iter;
-        Node& n = m_nodes[search_node];
+        Node& n = *m_search_node_iter;
+        NodeId search_node = &n - m_nodes.data();
         int distance;
         if (m_forward_search) {
             distance = m_source_tree_d;
@@ -403,8 +407,8 @@ void SubmodularIBFS::Adopt() {
     auto start = Clock::now();
     while (!m_source_orphans.empty()) {
         NodeId i = m_source_orphans.front();
-        m_source_orphans.pop_front();
         Node& n = m_nodes[i];
+        m_source_orphans.pop_front();
         int old_dist = n.dis;
         while (n.parent_arc != n.in_arcs.end()
                 && (m_nodes[n.parent].state == NodeState::T
@@ -452,8 +456,8 @@ void SubmodularIBFS::Adopt() {
     }
     while (!m_sink_orphans.empty()) {
         NodeId i = m_sink_orphans.front();
-        m_sink_orphans.pop_front();
         Node& n = m_nodes[i];
+        m_sink_orphans.pop_front();
         int old_dist = n.dis;
         while (n.parent_arc != n.out_arcs.end()
                 && (m_nodes[n.parent].state == NodeState::S
@@ -847,26 +851,28 @@ void IBFSEnergyTableClique::ResetAlpha() {
 }
 
 void SubmodularIBFS::AddToLayer(NodeId i) {
-    int dis = m_nodes[i].dis;
-    if (m_nodes[i].state == NodeState::S) {
-        m_source_layers[dis].push_front(i);
-        m_nodes[i].q_iterator = m_source_layers[dis].begin();
-    } else if (m_nodes[i].state == NodeState::T) {
-        m_sink_layers[dis].push_front(i);
-        m_nodes[i].q_iterator = m_sink_layers[dis].begin();
+    auto& node = m_nodes[i];
+    int dis = node.dis;
+    if (node.state == NodeState::S) {
+        m_source_layers[dis].push_front(node);
+    } else if (node.state == NodeState::T) {
+        m_sink_layers[dis].push_front(node);
     } else {
         ASSERT(false);
     }
 }
 
 void SubmodularIBFS::RemoveFromLayer(NodeId i) {
-    if (m_search_node_iter != m_search_node_end && *m_search_node_iter == i)
+    auto& node = m_nodes[i];
+    if (m_search_node_iter != m_search_node_end && &(*m_search_node_iter) == &node)
         AdvanceSearchNode();
-    int dis = m_nodes[i].dis;
-    if (m_nodes[i].state == NodeState::S || m_nodes[i].state == NodeState::S_orphan) {
-        m_source_layers[dis].erase(m_nodes[i].q_iterator);
-    } else if (m_nodes[i].state == NodeState::T || m_nodes[i].state == NodeState::T_orphan) {
-        m_sink_layers[dis].erase(m_nodes[i].q_iterator);
+    int dis = node.dis;
+    if (node.state == NodeState::S || node.state == NodeState::S_orphan) {
+        auto& layer = m_source_layers[dis];
+        layer.erase(layer.iterator_to(node));
+    } else if (node.state == NodeState::T || node.state == NodeState::T_orphan) {
+        auto& layer = m_sink_layers[dis];
+        layer.erase(layer.iterator_to(node));
     } else {
         ASSERT(false);
     }
@@ -875,7 +881,7 @@ void SubmodularIBFS::RemoveFromLayer(NodeId i) {
 void SubmodularIBFS::AdvanceSearchNode() {
     m_search_node_iter++;
     if (m_search_node_iter != m_search_node_end) {
-        Node& n = m_nodes[*m_search_node_iter];
+        Node& n = *m_search_node_iter;
         if (m_forward_search) {
             ASSERT(n.state == NodeState::S || n.state == NodeState::S_orphan);
             m_search_arc = n.out_arcs.begin();
