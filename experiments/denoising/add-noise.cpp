@@ -28,7 +28,5 @@ int main(int argc, char **argv) {
     out = out + noise;
     cv::imwrite(argv[2], out);
 
-
-
     return 0;
 }

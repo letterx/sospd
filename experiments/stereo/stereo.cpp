@@ -71,7 +71,8 @@ REAL StereoClique::Energy(const Label buf[]) const {
 
 MultilabelEnergy SetupEnergy(const std::vector<cv::Mat>& proposals,
         const std::vector<cv::Mat>& unaries);
-void AlphaProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
+void AlphaProposal(int niter, const std::vector<Label>& current, 
+        std::vector<Label>& proposed);
 std::vector<cv::Mat> ReadUnaries(const std::string& unaryFilename);
 std::vector<cv::Mat> ReadProposals(const std::string& proposalFilename);
 void ShowImage(const cv::Mat& im);
@@ -105,13 +106,28 @@ int main(int argc, char **argv) {
     po::options_description options("Stereo arguments");
     options.add_options()
         ("help", "Display this help message")
-        ("iters,i", po::value<int>(&iterations)->default_value(300), "Maximum number of iterations")
-        ("image", po::value<std::string>(&basename)->required(), "Name of image (without extension)")
-        ("method,m", po::value<std::string>(&method)->default_value(std::string("spd-alpha")), "Optimization method")
-        ("lower-bound", po::value<bool>(&spdLowerBound)->default_value(true), "Use lower bound for SPD3")
-        ("kappa", po::value<float>(&StereoClique::kappa)->default_value(0.001), "Truncation for stereo prior")
-        ("alpha", po::value<float>(&StereoClique::alpha)->default_value(10), "Max gradient for stereo prior")
-        ("lambda", po::value<float>(&StereoClique::scale)->default_value(20000), "Scale for stereo prior")
+        ("iters,i", 
+         po::value<int>(&iterations)->default_value(300), 
+         "Maximum number of iterations")
+        ("image",
+         po::value<std::string>(&basename)->required(),
+         "Name of image (without extension)")
+        ("method,m",
+         po::value<std::string>(&method)
+            ->default_value(std::string("spd-alpha")),
+         "Optimization method")
+        ("lower-bound",
+         po::value<bool>(&spdLowerBound)->default_value(true),
+         "Use lower bound for SPD3")
+        ("kappa", 
+         po::value<float>(&StereoClique::kappa)->default_value(0.001),
+         "Truncation for stereo prior")
+        ("alpha",
+         po::value<float>(&StereoClique::alpha)->default_value(10),
+         "Max gradient for stereo prior")
+        ("lambda",
+         po::value<float>(&StereoClique::scale)->default_value(20000),
+         "Scale for stereo prior")
     ;
 
     po::positional_options_description positionalOpts;
@@ -135,8 +151,10 @@ int main(int argc, char **argv) {
 
     unaryFilename = basename + ".unary";
     proposalFilename = basename + ".proposals";
-    outfilename = basename + "-" + method + "-" + std::to_string(spdLowerBound) + ".pgm";
-    statsFilename = basename + "-" + method + "-" + std::to_string(spdLowerBound) + ".stats";
+    outfilename = basename + "-" + method + "-" 
+        + std::to_string(spdLowerBound) + ".pgm";
+    statsFilename = basename + "-" + method + "-" 
+        + std::to_string(spdLowerBound) + ".stats";
 
     // Read stored unaries and proposed moves
     std::cout << "Reading proposals...\n";
@@ -156,22 +174,26 @@ int main(int argc, char **argv) {
     if (method == std::string("reduction")) {
         FusionMove<4>::ProposalCallback pc(AlphaProposal);
         FusionMove<4> fusion(&energyFunction, pc, current);
-        Optimize(fusion, energyFunction, proposals, image, current, iterations, stats);
+        Optimize(fusion, energyFunction, proposals, image, current, 
+                iterations, stats);
     } else if (method == std::string("hocr")) {
         FusionMove<4>::ProposalCallback pc(AlphaProposal);
         FusionMove<4> fusion(&energyFunction, pc, current);
         fusion.SetHOCR(true);
-        Optimize(fusion, energyFunction, proposals, image, current, iterations, stats);
+        Optimize(fusion, energyFunction, proposals, image, current, 
+                iterations, stats);
     } else if (method == std::string("spd-alpha")) {
         DualGuidedFusionMove dgfm(&energyFunction);
         dgfm.SetAlphaExpansion();
         dgfm.SetLowerBound(spdLowerBound);
-        Optimize(dgfm, energyFunction, proposals, image, current, iterations, stats);
+        Optimize(dgfm, energyFunction, proposals, image, current, 
+                iterations, stats);
     } else if (method == std::string("spd-alpha-height")) {
         DualGuidedFusionMove dgfm(&energyFunction);
         dgfm.SetHeightAlphaExpansion();
         dgfm.SetLowerBound(spdLowerBound);
-        Optimize(dgfm, energyFunction, proposals, image, current, iterations, stats);
+        Optimize(dgfm, energyFunction, proposals, image, current, 
+                iterations, stats);
     } else {
         std::cout << "Unrecognized method: " << method << "!\n";
         exit(-1);
@@ -220,7 +242,8 @@ void Optimize(Optimizer& opt,
     REAL lastEnergy = energyFunction.ComputeEnergy(current);
     auto startTime = Clock::now();
     for (int i = 0; i < iterations; ++i) {
-        std::cout << "Iteration " << i+1 << "\tCurrent Energy: " << lastEnergy << std::endl;
+        std::cout << "Iteration " << i+1 
+            << "\tCurrent Energy: " << lastEnergy << std::endl;
 
         auto iterStartTime = Clock::now();
         IterationStat s;
@@ -255,15 +278,18 @@ void Optimize(Optimizer& opt,
 
         for (int i = 0; i < height; ++i)
             for (int j = 0; j < width; ++j)
-                image.at<float>(i, j) = proposals[current[i*width+j]].at<float>(i, j);
+                image.at<float>(i, j) = 
+                    proposals[current[i*width+j]].at<float>(i, j);
     }
 
     for (int i = 0; i < height; ++i)
         for (int j = 0; j < width; ++j)
-            image.at<float>(i, j) = proposals[current[i*width+j]].at<float>(i, j);
+            image.at<float>(i, j) = 
+                proposals[current[i*width+j]].at<float>(i, j);
 }
 
-void AlphaProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {
+void AlphaProposal(int niter, const std::vector<Label>& current, 
+        std::vector<Label>& proposed) {
     proposed.resize(height*width);
     Label alpha = niter % nproposals;
     for (Label& l : proposed)
@@ -333,7 +359,8 @@ std::vector<cv::Mat> ReadUnaries(const std::string& unaryFilename) {
     std::string nproposals_s;
     std::getline(f, nproposals_s);
     if (stoi(nproposals_s) != nproposals) {
-        std::cout << "Number of proposals in label file does not match proposal file\n";
+        std::cout << "Number of proposals in label file " \
+            "does not match proposal file\n";
         exit(-1);
     }
     for (int i = 0; i < nproposals; ++i) {
@@ -342,7 +369,8 @@ std::vector<cv::Mat> ReadUnaries(const std::string& unaryFilename) {
         int size = std::stoi(size_line);
         if (size != width*height) {
             std::cout << "Size and width*height don't match in Unary file!\n";
-            std::cout << "Size: " << size << "\tWidth: " << width << "\tHeight: " << height << "\n";
+            std::cout << "Size: " << size << "\tWidth: " 
+                << width << "\tHeight: " << height << "\n";
             exit(-1);
         }
         cv::Mat m(width, height, CV_32FC1);

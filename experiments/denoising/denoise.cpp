@@ -33,20 +33,24 @@ std::vector<Label> randomAlphaOrder;
 
 struct IterationStat {
     int iter;
-    REAL start_energy;
-    REAL end_energy;
-    double iter_time;
-    double total_time;
+    REAL startEnergy;
+    REAL endEnergy;
+    double iterTime;
+    double totalTime;
 };
 
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image);
-void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
-void AlphaProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed);
-void GradientProposal(int niter, const std::vector<Label>& current, const std::vector<Label>& orig, const MultilabelEnergy& energy, double sigma, double eta, std::vector<Label>& proposed);
+void FusionProposal(int niter, const std::vector<Label>& current,
+        std::vector<Label>& proposed);
+void AlphaProposal(int niter, const std::vector<Label>& current,
+        std::vector<Label>& proposed);
+void GradientProposal(int niter, const std::vector<Label>& current,
+        const std::vector<Label>& orig, const MultilabelEnergy& energy,
+        double sigma, double eta, std::vector<Label>& proposed);
 
 template <typename Optimizer>
 void Optimize(Optimizer& opt, 
-        const MultilabelEnergy& energy_function, 
+        const MultilabelEnergy& energyFunction, 
         cv::Mat& image, 
         std::vector<Label>& current, 
         int iterations, 
@@ -54,7 +58,7 @@ void Optimize(Optimizer& opt,
 
 int width = 0;
 int height = 0;
-double max_time = 0;
+double maxTime = 0;
 
 int main(int argc, char **argv) {
     namespace po = boost::program_options;
@@ -65,40 +69,52 @@ int main(int argc, char **argv) {
     std::string statsfilename;
     int iterations;
     std::string method;
-    bool spd_lower_bound;
+    bool spdLowerBound;
     double eta = 60;
 
-    po::options_description options_desc("Denoising arguments");
-    options_desc.add_options()
+    po::options_description options("Denoising arguments");
+    options.add_options()
         ("help", "Display this help message")
-        ("iters,i", po::value<int>(&iterations)->default_value(300), "Maximum number of iterations")
-        ("image", po::value<std::string>(&basename)->required(), "Name of image (without extension)")
-        ("method,m", po::value<std::string>(&method)->default_value(std::string("spd-grad")), "Optimization method")
-        ("lower-bound", po::value<bool>(&spd_lower_bound)->default_value(true), "Use lower bound for SPD3")
-        ("eta", po::value<double>(&eta)->default_value(60), "Scale for gradient descent steps")
-        ("sigma", po::value<double>(&sigma)->default_value(25.0), "Strength of unary terms")
-        ("thresh", po::value<REAL>(&threshold)->default_value(1000), "Threshold to stop optimization")
-        ("time", po::value<double>(&max_time)->default_value(0), "Maximum time to run")
+        ("iters,i", po::value<int>(&iterations)->default_value(300), 
+         "Maximum number of iterations")
+        ("image", po::value<std::string>(&basename)->required(),
+         "Name of image (without extension)")
+        ("method,m",
+         po::value<std::string>(&method)
+            ->default_value(std::string("spd-grad")),
+         "Optimization method")
+        ("lower-bound", po::value<bool>(&spdLowerBound)->default_value(true),
+         "Use lower bound for SPD3")
+        ("eta", po::value<double>(&eta)->default_value(60),
+         "Scale for gradient descent steps")
+        ("sigma", po::value<double>(&sigma)->default_value(25.0),
+         "Strength of unary terms")
+        ("thresh", po::value<REAL>(&threshold)->default_value(1000),
+         "Threshold to stop optimization")
+        ("time", po::value<double>(&maxTime)->default_value(0),
+         "Maximum time to run")
     ;
 
-    po::positional_options_description popts_desc;
-    popts_desc.add("image", 1);
+    po::positional_options_description positionalOptions;
+    positionalOptions.add("image", 1);
 
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).
-            options(options_desc).positional(popts_desc).run(), vm);
+            options(options).positional(positionalOptions).run(), vm);
 
     try {
         po::notify(vm);
     } catch (std::exception& e) {
         std::cout << "Parsing error: " << e.what() << "\n";
         std::cout << "Usage: denoise [options] basename\n";
-        std::cout << options_desc;
+        std::cout << options;
         exit(-1);
     }
     infilename = basename + ".pgm";
-    outfilename = basename + "-" + method + "-" + std::to_string(spd_lower_bound) + ".pgm";
-    statsfilename = basename + "-" + method + "-" + std::to_string(spd_lower_bound) + ".stats";
+    outfilename = basename + "-" + method + "-" 
+        + std::to_string(spdLowerBound) + ".pgm";
+    statsfilename = basename + "-" + method + "-" 
+        + std::to_string(spdLowerBound) + ".stats";
 
     cv::Mat image = cv::imread(infilename.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
     if (!image.data) {
@@ -116,56 +132,58 @@ int main(int argc, char **argv) {
     std::random_shuffle(randomAlphaOrder.begin(), randomAlphaOrder.end());
 
     std::vector<Label> current(image.data, image.data + width*height);
-    MultilabelEnergy energy_function = SetupEnergy(current);
+    MultilabelEnergy energyFunction = SetupEnergy(current);
 
     std::vector<Label> orig = current;
-    std::function<void(int, const std::vector<Label>&, std::vector<Label>&)> gradCallback = 
-        [&](int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {
-            GradientProposal(niter, current, orig, energy_function, sigma, eta, proposed);
+    std::function<void(int, const std::vector<Label>&, std::vector<Label>&)> 
+        gradCallback = [&](int niter, const std::vector<Label>& current,
+                std::vector<Label>& proposed) {
+            GradientProposal(niter, current, orig, energyFunction,
+                    sigma, eta, proposed);
         };
 
     if (method == std::string("reduction")) {
         FusionMove<4>::ProposalCallback pc(FusionProposal);
-        FusionMove<4> fusion(&energy_function, pc, current);
-        Optimize(fusion, energy_function, image, current, iterations, stats);
+        FusionMove<4> fusion(&energyFunction, pc, current);
+        Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("hocr")) {
         FusionMove<4>::ProposalCallback pc(FusionProposal);
-        FusionMove<4> fusion(&energy_function, pc, current);
+        FusionMove<4> fusion(&energyFunction, pc, current);
         fusion.SetHOCR(true);
-        Optimize(fusion, energy_function, image, current, iterations, stats);
+        Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("reduction-alpha")) {
         FusionMove<4>::ProposalCallback pc(AlphaProposal);
-        FusionMove<4> fusion(&energy_function, pc, current);
-        Optimize(fusion, energy_function, image, current, iterations, stats);
+        FusionMove<4> fusion(&energyFunction, pc, current);
+        Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("reduction-grad")) {
         FusionMove<4>::ProposalCallback pc = gradCallback;
-        FusionMove<4> fusion(&energy_function, pc, current);
-        Optimize(fusion, energy_function, image, current, iterations, stats);
+        FusionMove<4> fusion(&energyFunction, pc, current);
+        Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("hocr-grad")) {
         FusionMove<4>::ProposalCallback pc = gradCallback;
-        FusionMove<4> fusion(&energy_function, pc, current);
+        FusionMove<4> fusion(&energyFunction, pc, current);
         fusion.SetHOCR(true);
-        Optimize(fusion, energy_function, image, current, iterations, stats);
+        Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
-        DualGuidedFusionMove dgfm(&energy_function);
+        DualGuidedFusionMove dgfm(&energyFunction);
         dgfm.SetProposalCallback(AlphaProposal);
-        dgfm.SetLowerBound(spd_lower_bound);
-        Optimize(dgfm, energy_function, image, current, iterations, stats);
+        dgfm.SetLowerBound(spdLowerBound);
+        Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha-height")) {
-        DualGuidedFusionMove dgfm(&energy_function);
+        DualGuidedFusionMove dgfm(&energyFunction);
         dgfm.SetHeightAlphaExpansion();
-        dgfm.SetLowerBound(spd_lower_bound);
-        Optimize(dgfm, energy_function, image, current, iterations, stats);
+        dgfm.SetLowerBound(spdLowerBound);
+        Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-blur-random")) {
-        DualGuidedFusionMove dgfm(&energy_function);
+        DualGuidedFusionMove dgfm(&energyFunction);
         dgfm.SetProposalCallback(FusionProposal);
-        dgfm.SetLowerBound(spd_lower_bound);
-        Optimize(dgfm, energy_function, image, current, iterations, stats);
+        dgfm.SetLowerBound(spdLowerBound);
+        Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-grad")) {
-        DualGuidedFusionMove dgfm(&energy_function);
+        DualGuidedFusionMove dgfm(&energyFunction);
         dgfm.SetProposalCallback(gradCallback);
-        dgfm.SetLowerBound(spd_lower_bound);
-        Optimize(dgfm, energy_function, image, current, iterations, stats);
+        dgfm.SetLowerBound(spdLowerBound);
+        Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else {
         std::cout << "Unrecognized method: " << method << "!\n";
         exit(-1);
@@ -176,65 +194,67 @@ int main(int argc, char **argv) {
     std::ofstream statsfile(statsfilename);
     for (const IterationStat& s : stats) {
         statsfile << s.iter << "\t";
-        statsfile << s.iter_time << "\t";
-        statsfile << s.total_time << "\t";
-        statsfile << s.start_energy << "\t";
-        statsfile << s.end_energy << "\n";
+        statsfile << s.iterTime << "\t";
+        statsfile << s.totalTime << "\t";
+        statsfile << s.startEnergy << "\t";
+        statsfile << s.endEnergy << "\n";
     }
     statsfile.close();
 
 
-    REAL energy  = energy_function.ComputeEnergy(current);
+    REAL energy  = energyFunction.ComputeEnergy(current);
     std::cout << "Final Energy: " << energy << std::endl;
 
     return 0;
 }
 
 template <typename Optimizer>
-void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& image, std::vector<Label>& current, int iterations, std::vector<IterationStat>& stats) {
+void Optimize(Optimizer& opt, const MultilabelEnergy& energyFunction,
+        cv::Mat& image, std::vector<Label>& current, int iterations,
+        std::vector<IterationStat>& stats) {
+    typedef std::chrono::system_clock Clock;
+    typedef std::chrono::duration<double> Duration;
     // energies keeps track of last [thresholdIters] energy values to know
     // when we reach convergence
     std::vector<REAL> energies(thresholdIters);
 
-    REAL last_energy = energy_function.ComputeEnergy(current);
-    std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
+    REAL lastEnergy = energyFunction.ComputeEnergy(current);
+    auto startTime = Clock::now();
     for (int i = 0; i < iterations; ++i) {
-        std::chrono::system_clock::time_point iterStartTime = std::chrono::system_clock::now();
+        auto iterStartTime = Clock::now();
         IterationStat s;
         s.iter = i;
         std::cout << "Iteration " << i+1 << std::endl;
 
-        s.start_energy = last_energy;
+        s.startEnergy = lastEnergy;
         // check if we've reached convergence
         if (i > thresholdIters 
                 && threshold > 0 
-                && energies[i%thresholdIters] - last_energy < threshold) {
+                && energies[i%thresholdIters] - lastEnergy < threshold) {
             break;
         }
         // Do some statistic gathering
-        energies[i%thresholdIters] = last_energy;
-        std::cout << "    Current Energy: " << (double)last_energy / DoubleToREAL << std::endl;
+        energies[i%thresholdIters] = lastEnergy;
+        std::cout << "    Current Energy: " 
+            << (double)lastEnergy / DoubleToREAL << std::endl;
 
         opt.Solve(1);
 
-        std::chrono::system_clock::time_point iterStopTime = std::chrono::system_clock::now();
-        std::chrono::duration<double> iterTime = iterStopTime - iterStartTime;
-        s.iter_time = iterTime.count();
-        std::chrono::duration<double> totalTime = iterStopTime - startTime;
-        s.total_time = totalTime.count();
+        s.iterTime = Duration{ Clock::now() - iterStartTime }.count();
+        s.totalTime = Duration{ Clock::now() - startTime }.count();
 
-        std::vector<Label> next_labeling(width*height);
+        std::vector<Label> nextLabeling(width*height);
         for (int i = 0; i < width*height; ++i)
-            next_labeling[i] = opt.GetLabel(i);
-        REAL energy  = energy_function.ComputeEnergy(next_labeling); 
-        if (energy < last_energy) {
-            last_energy = energy;
-            current = next_labeling;
+            nextLabeling[i] = opt.GetLabel(i);
+        REAL energy  = energyFunction.ComputeEnergy(nextLabeling); 
+        if (energy < lastEnergy) {
+            lastEnergy = energy;
+            current = nextLabeling;
         }
-        s.end_energy = last_energy;
+        s.endEnergy = lastEnergy;
         stats.push_back(s);
         
-        if (s.total_time > max_time && max_time > 0)
+        if (s.totalTime > maxTime && maxTime > 0)
             break;
     }
 
@@ -242,19 +262,23 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energy_function, cv::Mat& 
         image.data[i] = current[i];
 }
 
-void AlphaProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {
+void AlphaProposal(int niter, const std::vector<Label>& current,
+        std::vector<Label>& proposed) {
     Label alpha = randomAlphaOrder[niter%256];
     for (Label& l : proposed)
         l = alpha;
 }
 
-void FusionProposal(int niter, const std::vector<Label>& current, std::vector<Label>& proposed) {
+void FusionProposal(int niter, const std::vector<Label>& current,
+        std::vector<Label>& proposed) {
     // Set up the RNGs
     static boost::mt19937 rng;
     static boost::uniform_int<> uniform255(0, 255);
     static boost::uniform_int<> uniform3sigma(-1.5*sigma, 1.5*sigma);
-    static boost::variate_generator<boost::mt19937&, boost::uniform_int<> > noise255(rng, uniform255);
-    static boost::variate_generator<boost::mt19937&, boost::uniform_int<> > noise3sigma(rng, uniform3sigma);
+    typedef boost::variate_generator<boost::mt19937&, boost::uniform_int<> > 
+        Generator;
+    static Generator noise255(rng, uniform255);
+    static Generator noise3sigma(rng, uniform3sigma);
 
     proposed.resize(height*width);
     if (niter % 2 == 0) {
@@ -285,7 +309,9 @@ void FusionProposal(int niter, const std::vector<Label>& current, std::vector<La
     }
 }
 
-void GradientProposal(int niter, const std::vector<Label>& current, const std::vector<Label>& orig, const MultilabelEnergy& energy, double sigma, double eta, std::vector<Label>& proposed) {
+void GradientProposal(int niter, const std::vector<Label>& current,
+        const std::vector<Label>& orig, const MultilabelEnergy& energy,
+        double sigma, double eta, std::vector<Label>& proposed) {
     std::vector<double> grad(current.size(), 0.0);
     for (const auto& cp : energy.Cliques())
         AddFoEGrad(*cp, current, grad);
@@ -293,10 +319,10 @@ void GradientProposal(int niter, const std::vector<Label>& current, const std::v
         grad[i] += FoEUnaryGrad(orig[i], current[i], sigma);
     double scale = eta*7/double(7+niter); 
     for (size_t i = 0; i < current.size(); ++i) {
-        int new_label = current[i] - Label(round(scale*grad[i]));
-        if (new_label > 255) new_label = 255;
-        if (new_label < 0) new_label = 0;
-        proposed[i] = new_label;
+        int newLabel = current[i] - Label(round(scale*grad[i]));
+        if (newLabel > 255) newLabel = 255;
+        if (newLabel < 0) newLabel = 0;
+        proposed[i] = newLabel;
     }
 }
     
