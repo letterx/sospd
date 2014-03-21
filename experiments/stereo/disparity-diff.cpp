@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
     assert(gt.rows == stereo_result.rows);
     assert(gt.cols == stereo_result.cols);
 
+    // Counts for identical pixels, and within plus/minus 1 and 4
     int same = 0;
     int pm_1 = 0;
     int pm_4 = 0;
@@ -34,12 +35,13 @@ int main(int argc, char **argv) {
             sum_squared_diff += diff*diff;
         }
     }
-    std::cout << "Total pixels:      " << gt.rows * gt.cols << "\n";
+    auto numPixels = gt.rows * gt.cols;
+    std::cout << "Total pixels:      " << numPixels << "\n";
     std::cout << "Same label:        " << same << "\n";
-    std::cout << "Percent same:      " << double(same)/double(gt.rows*gt.cols) << "\n";
+    std::cout << "Percent same:      " << double(same)/double(numPixels) << "\n";
     std::cout << "Plus/minus 1:      " << pm_1 << "\n";
     std::cout << "Plus/minus 4:      " << pm_4 << "\n";
-    std::cout << "Percent in p/m 4:  " << double(pm_4)/double(gt.rows*gt.cols) << "\n";
+    std::cout << "Percent in p/m 4:  " << double(pm_4)/double(numPixels) << "\n";
     std::cout << "Sum squared diff:  " << sum_squared_diff << "\n";
 
 
