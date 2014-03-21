@@ -45,8 +45,7 @@ set(lib-sources ${lib-sources} ${qpbo-sources})
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(libs
-    "boost_serialization")
+set(libs)
 
 
 ###

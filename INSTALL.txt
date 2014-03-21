@@ -5,8 +5,9 @@ To build, you will need to have installed CMake (www.cmake.org)
 You will also need to install the Boost C++ libraries 
 (www.boost.org). If you are not installing these from a pre-built
 package, you will need to compile the libraries 
--- program_options
 -- serialization
+-- program_options
+-- unit_test_framework
 
 To compile the experiments, OpenCV is required (www.opencv.org)
 
