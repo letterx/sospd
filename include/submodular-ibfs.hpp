@@ -129,6 +129,10 @@ class SubmodularIBFS {
                 { 
                     ASSERT(nodes.size() <= 31); 
                 }
+                IBFSEnergyTableClique(const IBFSEnergyTableClique& c) = default;
+                IBFSEnergyTableClique& operator=(const IBFSEnergyTableClique& c) = default;
+                IBFSEnergyTableClique(IBFSEnergyTableClique&& c) = default;
+                IBFSEnergyTableClique& operator=(IBFSEnergyTableClique&& c) = default;
 
                 // Virtual overrides
                 virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
