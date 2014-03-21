@@ -152,6 +152,7 @@ class SubmodularIBFS {
             NodeId source;
             NeighborList::iterator cIter;
             int cliqueIdx;
+            int cliqueSize;
             SubmodularIBFS* ibfs;
             
             bool operator!=(const ArcIterator& a) {
@@ -166,15 +167,18 @@ class SubmodularIBFS {
             }
 
             ArcIterator& operator++() {
-                ASSERT(*cIter < static_cast<int>(ibfs->m_cliques.size()));
-                const auto& clique = ibfs->m_cliques[*cIter];
+                //ASSERT(*cIter < static_cast<int>(ibfs->m_cliques.size()));
                 cliqueIdx++;
-                if (cliqueIdx == static_cast<int>(clique.Size())) {
+                if (cliqueIdx == cliqueSize) {
                     cliqueIdx = 0;
                     cIter++;
+                    if (cIter != ibfs->m_neighbors[source].end())
+                        cliqueSize = ibfs->m_cliques[*cIter].Size();
+                    else
+                        cliqueSize = 0;
                 }
-                ASSERT(cIter == ibfs->m_neighbors[source].end() || *cIter < static_cast<int>(ibfs->m_cliques.size()));
-                ASSERT(cIter == ibfs->m_neighbors[source].end() || cliqueIdx < static_cast<int>(ibfs->m_cliques[*cIter].Nodes().size()));
+                //ASSERT(cIter == ibfs->m_neighbors[source].end() || *cIter < static_cast<int>(ibfs->m_cliques.size()));
+                //ASSERT(cIter == ibfs->m_neighbors[source].end() || cliqueIdx < static_cast<int>(ibfs->m_cliques[*cIter].Nodes().size()));
                 return *this;
             }
             NodeId Source() const {
@@ -192,7 +196,7 @@ class SubmodularIBFS {
                 auto newSource = Target();
                 auto newCIter = std::find(ibfs->m_neighbors[newSource].begin(), ibfs->m_neighbors[newSource].end(), *cIter);
                 auto newCliqueIdx = ibfs->GetCliques()[*newCIter].GetIndex(source);
-                return {newSource, newCIter, static_cast<int>(newCliqueIdx), ibfs};
+                return {newSource, newCIter, static_cast<int>(newCliqueIdx), static_cast<int>(ibfs->m_cliques[*newCIter].Size()), ibfs};
             }
         };
 
@@ -209,11 +213,14 @@ class SubmodularIBFS {
         typedef boost::intrusive::list<Node> NodeQueue;
 
         ArcIterator ArcsBegin(NodeId i) {
-            return {i, m_neighbors[i].begin(), 0, this};
+            auto cIter = m_neighbors[i].begin();
+            if (cIter == m_neighbors[i].end())
+                return ArcsEnd(i);
+            return {i, cIter, 0, static_cast<int>(m_cliques[*cIter].Size()), this};
         }
         ArcIterator ArcsEnd(NodeId i) {
             auto& neighborList = m_neighbors[i];
-            return {i, neighborList.end(), 0, this};
+            return {i, neighborList.end(), 0, 0, this};
         }
 
         typedef std::vector<IBFSEnergyTableClique> CliqueVec;
