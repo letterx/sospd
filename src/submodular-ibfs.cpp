@@ -32,7 +32,7 @@ SubmodularIBFS::NodeId SubmodularIBFS::AddNode(int n) {
     ASSERT(s == -1);
     NodeId first_node = m_num_nodes;
     for (int i = 0; i < n; ++i) {
-        m_nodes.push_back(Node());
+        m_nodes.push_back(Node(m_num_nodes));
         m_c_si.push_back(0);
         m_c_it.push_back(0);
         m_phi_si.push_back(0);
@@ -104,8 +104,8 @@ void SubmodularIBFS::GraphInit()
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
     num_edges = 2 * m_num_nodes; // source sink edges
-    m_nodes.push_back(Node());
-    m_nodes.push_back(Node());
+    m_nodes.push_back(Node(s));
+    m_nodes.push_back(Node(t));
 
     m_graphInitTime += Duration{ Clock::now() - start }.count();
 }
@@ -196,7 +196,7 @@ void SubmodularIBFS::IBFS() {
             m_forward_search = !m_forward_search;
             if (!current_q->empty()) {
                 Node& n = *m_search_node_iter;
-                NodeId nodeIdx = &n - m_nodes.data();
+                NodeId nodeIdx = n.id;
                 if (m_forward_search) {
                     ASSERT(n.state == NodeState::S || n.state == NodeState::S_orphan);
                     m_search_arc = ArcsBegin(nodeIdx);
@@ -210,7 +210,7 @@ void SubmodularIBFS::IBFS() {
             continue;
         }
         Node& n = *m_search_node_iter;
-        NodeId search_node = &n - m_nodes.data();
+        NodeId search_node = n.id;
         int distance;
         if (m_forward_search) {
             distance = m_source_tree_d;
@@ -336,8 +336,8 @@ void SubmodularIBFS::Augment(ArcIterator& arc) {
 void SubmodularIBFS::Adopt() {
     auto start = Clock::now();
     while (!m_source_orphans.empty()) {
-        NodeId i = m_source_orphans.front();
-        Node& n = m_nodes[i];
+        Node& n = m_source_orphans.front();
+        NodeId i = n.id;
         m_source_orphans.pop_front();
         int old_dist = n.dis;
         while (n.parent_arc != ArcsEnd(i)
@@ -387,8 +387,8 @@ void SubmodularIBFS::Adopt() {
         }
     }
     while (!m_sink_orphans.empty()) {
-        NodeId i = m_sink_orphans.front();
-        Node& n = m_nodes[i];
+        Node& n = m_sink_orphans.front();
+        NodeId i = n.id;
         m_sink_orphans.pop_front();
         int old_dist = n.dis;
         while (n.parent_arc != ArcsEnd(i)
@@ -444,10 +444,10 @@ void SubmodularIBFS::MakeOrphan(NodeId i) {
     Node& n = m_nodes[i];
     if (n.state == NodeState::S) {
         n.state = NodeState::S_orphan;
-        m_source_orphans.push_back(i);
+        m_source_orphans.push_back(n);
     } else if (n.state == NodeState::T) {
         n.state = NodeState::T_orphan;
-        m_sink_orphans.push_back(i);
+        m_sink_orphans.push_back(n);
     }
 }
 
@@ -764,7 +764,7 @@ void SubmodularIBFS::AdvanceSearchNode() {
     m_search_node_iter++;
     if (m_search_node_iter != m_search_node_end) {
         Node& n = *m_search_node_iter;
-        NodeId i = &n - m_nodes.data();
+        NodeId i = n.id;
         if (m_forward_search) {
             ASSERT(n.state == NodeState::S || n.state == NodeState::S_orphan);
             m_search_arc = ArcsBegin(i);

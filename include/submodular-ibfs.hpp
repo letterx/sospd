@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
 #include <boost/intrusive/list.hpp>
+#include <boost/intrusive/slist.hpp>
+#include <boost/intrusive/options.hpp>
 
 class IBFSEnergyTableClique;
 
@@ -201,16 +203,19 @@ class SubmodularIBFS {
         };
 
         typedef boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>> ListHook;
-        struct Node : public ListHook {
+        typedef boost::intrusive::slist_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>> OrphanListHook;
+        struct Node : public ListHook, OrphanListHook {
+            NodeId id;
             NodeState state;
             int dis;
             ArcIterator parent_arc;
             NodeId parent;
             NeighborList cliques;
-            Node() : state(NodeState::N), dis(std::numeric_limits<int>::max()), parent_arc(), cliques() { }
+            Node(NodeId _id) : id(_id), state(NodeState::N), dis(std::numeric_limits<int>::max()), parent_arc(), cliques() { }
         };
 
         typedef boost::intrusive::list<Node> NodeQueue;
+        typedef boost::intrusive::slist<Node, boost::intrusive::base_hook<OrphanListHook>, boost::intrusive::cache_last<true>> OrphanList;
 
         ArcIterator ArcsBegin(NodeId i) {
             auto cIter = m_neighbors[i].begin();
@@ -229,8 +234,8 @@ class SubmodularIBFS {
         // Layers store vertices by distance.
         std::vector<NodeQueue> m_source_layers;
         std::vector<NodeQueue> m_sink_layers;
-        NodeIdList m_source_orphans;
-        NodeIdList m_sink_orphans;
+        OrphanList m_source_orphans;
+        OrphanList m_sink_orphans;
         int m_source_tree_d;
         int m_sink_tree_d;
         typedef typename NodeQueue::iterator queue_iterator;
