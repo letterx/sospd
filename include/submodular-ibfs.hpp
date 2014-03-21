@@ -185,8 +185,8 @@ class SubmodularIBFS {
                 return source;
             }
             NodeId Target() const {
-                ASSERT(*cIter < static_cast<int>(ibfs->m_cliques.size()));
-                ASSERT(cliqueIdx < static_cast<int>(ibfs->m_cliques[*cIter].Nodes().size()));
+                //ASSERT(*cIter < static_cast<int>(ibfs->m_cliques.size()));
+                //ASSERT(cliqueIdx < static_cast<int>(ibfs->m_cliques[*cIter].Nodes().size()));
                 return ibfs->m_cliques[*cIter].Nodes()[cliqueIdx];
             }
             int SourceIdx() const { return ibfs->m_cliques[*cIter].GetIndex(source); }
