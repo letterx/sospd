@@ -164,7 +164,6 @@ void CheckCut(SubmodularIBFS& sf) {
     auto& phi_it = sf.GetPhi_it();
     auto& c_si = sf.GetC_si();
     auto& c_it = sf.GetC_it();
-    auto& nodes = sf.GetNodes();
     for (SubmodularIBFS::NodeId i = 0; i < sf.GetNumNodes(); ++i) {
         int label = sf.GetLabel(i);
         if (label == 0) {
@@ -172,15 +171,15 @@ void CheckCut(SubmodularIBFS& sf) {
         } else {
             BOOST_CHECK_EQUAL(phi_it[i], c_it[i]);
         }
-        for (auto arc : nodes[i].out_arcs) {
-            auto j = arc.j;
+        for (auto arc = sf.ArcsBegin(i); arc != sf.ArcsEnd(i); ++arc) {
+            auto j = arc.Target();
             if (j >= sf.GetNumNodes())
                 continue;
             int label_j = sf.GetLabel(j);
             if (label == 1 && label_j == 0) {
-                BOOST_CHECK_EQUAL(sf.ResCap(arc), 0);
-                if (sf.ResCap(arc) != 0)
-                    std::cout << "Bad Arc: " << arc.i << ", " << arc.j << "\n";
+                BOOST_CHECK_EQUAL(sf.ResCap(arc, true), 0);
+                if (sf.ResCap(arc, true) != 0)
+                    std::cout << "Bad Arc: " << arc.Source() << ", " << arc.Target() << "\n";
             }
         }
 

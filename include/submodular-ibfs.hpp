@@ -13,29 +13,11 @@ class SubmodularIBFS {
     public:
         typedef int NodeId;
         typedef int CliqueId;
+        typedef std::vector<CliqueId> NeighborList;
         enum class NodeState : char {
             S, T, S_orphan, T_orphan, N
         };
-        struct Arc {
-	        NodeId i, j;
-            size_t i_idx, j_idx;
-	        CliqueId c; // if this is a clique edge; -1 otherwise
-        };
-        typedef std::vector<Arc> ArcList;
-        typedef boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>> ListHook;
-        struct Node : public ListHook {
-            NodeState state;
-            int dis;
-            ArcList out_arcs;
-            ArcList in_arcs;
-            typename ArcList::iterator parent_arc;
-            NodeId parent;
-            Node() : state(NodeState::N), dis(std::numeric_limits<int>::max()), out_arcs(), in_arcs(), parent_arc() { }
-        };
-
-        typedef boost::intrusive::list<Node> NodeQueue;
         typedef std::list<NodeId> NodeIdList;
-
 
 
         SubmodularIBFS();
@@ -81,6 +63,7 @@ class SubmodularIBFS {
          */
         class Clique {
             public:
+            typedef std::vector<NodeId> NodeVec;
             Clique() : m_nodes(), m_alpha_Ci(), m_time(0) { }
             Clique(const std::vector<NodeId>& nodes)
                 : m_nodes(nodes),
@@ -121,7 +104,7 @@ class SubmodularIBFS {
             int64_t Time() const { return m_time; }
 
             protected:
-            std::vector<NodeId> m_nodes; // The list of nodes in the clique
+            NodeVec m_nodes; // The list of nodes in the clique
             std::vector<REAL> m_alpha_Ci; // The reparameterization variables for this clique
             int64_t m_time;
 
@@ -165,7 +148,73 @@ class SubmodularIBFS {
                 std::vector<Assignment> m_min_tight_set;
 
         };
+        struct ArcIterator {
+            NodeId source;
+            NeighborList::iterator cIter;
+            int cliqueIdx;
+            SubmodularIBFS* ibfs;
+            
+            bool operator!=(const ArcIterator& a) {
+                return (cIter != a.cIter) || (cliqueIdx != a.cliqueIdx);
+            }
+            bool operator==(const ArcIterator& a) {
+                return !(*this != a);
+            }
+            bool operator<(const ArcIterator& a) {
+                ASSERT(source == a.source);
+                return (cIter == a.cIter) ? (source < a.source) : (cIter < a.cIter);
+            }
 
+            ArcIterator& operator++() {
+                ASSERT(*cIter < static_cast<int>(ibfs->m_cliques.size()));
+                const auto& clique = ibfs->m_cliques[*cIter];
+                cliqueIdx++;
+                if (cliqueIdx == static_cast<int>(clique.Size())) {
+                    cliqueIdx = 0;
+                    cIter++;
+                }
+                ASSERT(cIter == ibfs->m_neighbors[source].end() || *cIter < static_cast<int>(ibfs->m_cliques.size()));
+                ASSERT(cIter == ibfs->m_neighbors[source].end() || cliqueIdx < static_cast<int>(ibfs->m_cliques[*cIter].Nodes().size()));
+                return *this;
+            }
+            NodeId Source() const {
+                return source;
+            }
+            NodeId Target() const {
+                ASSERT(*cIter < static_cast<int>(ibfs->m_cliques.size()));
+                ASSERT(cliqueIdx < static_cast<int>(ibfs->m_cliques[*cIter].Nodes().size()));
+                return ibfs->m_cliques[*cIter].Nodes()[cliqueIdx];
+            }
+            int SourceIdx() const { return ibfs->m_cliques[*cIter].GetIndex(source); }
+            int TargetIdx() const { return cliqueIdx; }
+            CliqueId CliqueId() const { return *cIter; }
+            ArcIterator Reverse() const {
+                auto newSource = Target();
+                auto newCIter = std::find(ibfs->m_neighbors[newSource].begin(), ibfs->m_neighbors[newSource].end(), *cIter);
+                auto newCliqueIdx = ibfs->GetCliques()[*newCIter].GetIndex(source);
+                return {newSource, newCIter, static_cast<int>(newCliqueIdx), ibfs};
+            }
+        };
+
+        typedef boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>> ListHook;
+        struct Node : public ListHook {
+            NodeState state;
+            int dis;
+            ArcIterator parent_arc;
+            NodeId parent;
+            NeighborList cliques;
+            Node() : state(NodeState::N), dis(std::numeric_limits<int>::max()), parent_arc(), cliques() { }
+        };
+
+        typedef boost::intrusive::list<Node> NodeQueue;
+
+        ArcIterator ArcsBegin(NodeId i) {
+            return {i, m_neighbors[i].begin(), 0, this};
+        }
+        ArcIterator ArcsEnd(NodeId i) {
+            auto& neighborList = m_neighbors[i];
+            return {i, neighborList.end(), 0, this};
+        }
 
         typedef std::vector<IBFSEnergyTableClique> CliqueVec;
 
@@ -180,16 +229,16 @@ class SubmodularIBFS {
         typedef typename NodeQueue::iterator queue_iterator;
         queue_iterator m_search_node_iter;
         queue_iterator m_search_node_end;
-        typename ArcList::iterator m_search_arc;
-        typename ArcList::iterator m_search_arc_end;
+        ArcIterator m_search_arc;
+        ArcIterator m_search_arc_end;
         bool m_forward_search;
 
         // Data needed during push-relabel
         NodeId s,t;
         long num_edges;
 
-        void Push(Arc& arc, REAL delta);
-        void Augment(Arc& arc);
+        void Push(ArcIterator& arc, bool forwardArc, REAL delta);
+        void Augment(ArcIterator& arc);
         void Adopt();
         void MakeOrphan(NodeId i);
         void RemoveFromLayer(NodeId i);
@@ -198,7 +247,6 @@ class SubmodularIBFS {
 
         void IBFSInit();
 
-        typedef std::vector<CliqueId> NeighborList;
 
         REAL m_constant_term;
         NodeId m_num_nodes;
@@ -239,8 +287,8 @@ class SubmodularIBFS {
         const std::vector<int>& GetLabels() const { return m_labels; }
         const std::vector<Node>& GetNodes() const { return m_nodes; }
 
-        REAL ResCap(Arc& arc);
-        bool NonzeroCap(Arc& arc);
+        REAL ResCap(const ArcIterator& arc, bool forwardArc);
+        bool NonzeroCap(const ArcIterator& arc, bool forwardArc);
 
 };
 
