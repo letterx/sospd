@@ -9,34 +9,37 @@
 int main(int argc, char **argv) {
     typedef HigherOrderEnergy<REAL, 4> HOE;
     typedef typename HOE::NodeId NodeId;
-    typedef std::chrono::system_clock::time_point TimePt;
+    typedef std::chrono::system_clock Clock;
+    typedef Clock::time_point TimePt;
     typedef std::chrono::duration<double> Duration;
 
     const NodeId n = 160000;
     const size_t m = 160000;
     const size_t k = 4;
 
-    TimePt ibfsStart = std::chrono::system_clock::now();
+    // Run IBFS on random instance
+    TimePt ibfsStart = Clock::now();
 
     SubmodularIBFS ibfs;
     GenRandom(ibfs, n, k, m, (REAL)100, (REAL)800, (REAL)1600, 0);
     ibfs.IBFS();
     ibfs.ComputeMinCut();
 
-    Duration ibfsTime = std::chrono::system_clock::now() - ibfsStart;
+    Duration ibfsTime = Clock::now() - ibfsStart;
 
 
-    TimePt hoStart = std::chrono::system_clock::now();
+    // Run FGBZ reduction on same random instance
+    TimePt hoStart = Clock::now();
     HOE ho;
 
     GenRandom(ho, n, k, m, (REAL)100, (REAL)800, (REAL)1600, 0);
-
 
     QPBO<REAL> qr(n, 0);
     ho.ToQuadratic(qr);
     qr.Solve();
 
-    Duration hoTime = std::chrono::system_clock::now() - hoStart;
+    Duration hoTime = Clock::now() - hoStart;
+
 
     size_t labeled = 0;
     size_t ones = 0;
