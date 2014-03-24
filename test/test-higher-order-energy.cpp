@@ -1,12 +1,7 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 #include "higher-order-energy.hpp"
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-writable-strings"
-#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
-#pragma clang diagnostic ignored "-Wnested-anon-types"
-#include "QPBO.h"
-#pragma clang diagnostic pop
+#include "qpbo.hpp"
 
 BOOST_AUTO_TEST_SUITE(basicHigherOrder)
 

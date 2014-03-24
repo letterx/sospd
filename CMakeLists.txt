@@ -23,6 +23,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 ###
 include_directories(${SOS_OPT_SOURCE_DIR}/include)
 include_directories(${SOS_OPT_SOURCE_DIR}/src)
+include_directories(thirdparty)
 include_directories(thirdparty/QPBO)
 include_directories(thirdparty/HOCR)
 

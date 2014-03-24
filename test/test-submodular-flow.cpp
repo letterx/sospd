@@ -3,12 +3,7 @@
 #include "submodular-flow.hpp"
 #include "higher-order-energy.hpp"
 #include "gen-random.hpp"
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-writable-strings"
-#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
-#pragma clang diagnostic ignored "-Wnested-anon-types"
-#include "QPBO.h"
-#pragma clang diagnostic pop
+#include "qpbo.hpp"
 
 typedef SubmodularFlow::NodeId NodeId;
 typedef SubmodularFlow::CliqueId CliqueId;

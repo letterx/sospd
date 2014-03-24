@@ -26,13 +26,7 @@
 #include "higher-order-energy.hpp"
 #include "HOCR.h"
 #include "clique.hpp"
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wall"
-#pragma clang diagnostic ignored "-Wdeprecated-writable-strings"
-#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
-#pragma clang diagnostic ignored "-Wnested-anon-types"
-#include "QPBO.h"
-#pragma clang diagnostic pop
+#include "qpbo.hpp"
 #include "generic-higher-order.hpp"
 
 template <int MaxDegree>

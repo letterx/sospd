@@ -4,12 +4,7 @@
 #include "submodular-flow.hpp"
 #include "higher-order-energy.hpp"
 #include "submodular-ibfs.hpp"
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-writable-strings"
-#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
-#pragma clang diagnostic ignored "-Wnested-anon-types"
-#include "QPBO.h"
-#pragma clang diagnostic pop
+#include "qpbo.hpp"
 
 inline REAL doubleToREAL(double d) { return (REAL)(d * 500000.0); }
 
