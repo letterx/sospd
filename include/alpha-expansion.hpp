@@ -2,15 +2,15 @@
 #define _ALPHA_EXPANSION_HPP_
 
 #include "energy-common.hpp"
-#include "submodular-flow.hpp"
-#include "submodular-ibfs.hpp"
 #include <vector>
+
+class SubmodularIBFS;
 
 class MultiLabelCRF {
     public:
         typedef int Label;
         typedef int NodeId;
-        struct Clique;
+        class Clique;
         typedef std::shared_ptr<Clique> CliquePtr;
         typedef std::vector<REAL> UnaryCost;
 

@@ -202,7 +202,7 @@ int main(int argc, char **argv) {
     statsfile.close();
 
 
-    REAL energy  = energyFunction.ComputeEnergy(current);
+    REAL energy  = energyFunction.computeEnergy(current);
     std::cout << "Final Energy: " << energy << std::endl;
 
     return 0;
@@ -218,7 +218,7 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energyFunction,
     // when we reach convergence
     std::vector<REAL> energies(thresholdIters);
 
-    REAL lastEnergy = energyFunction.ComputeEnergy(current);
+    REAL lastEnergy = energyFunction.computeEnergy(current);
     auto startTime = Clock::now();
     for (int i = 0; i < iterations; ++i) {
         auto iterStartTime = Clock::now();
@@ -246,7 +246,7 @@ void Optimize(Optimizer& opt, const MultilabelEnergy& energyFunction,
         std::vector<Label> nextLabeling(width*height);
         for (int i = 0; i < width*height; ++i)
             nextLabeling[i] = opt.GetLabel(i);
-        REAL energy  = energyFunction.ComputeEnergy(nextLabeling); 
+        REAL energy  = energyFunction.computeEnergy(nextLabeling); 
         if (energy < lastEnergy) {
             lastEnergy = energy;
             current = nextLabeling;
@@ -313,7 +313,7 @@ void GradientProposal(int niter, const std::vector<Label>& current,
         const std::vector<Label>& orig, const MultilabelEnergy& energy,
         double sigma, double eta, std::vector<Label>& proposed) {
     std::vector<double> grad(current.size(), 0.0);
-    for (const auto& cp : energy.Cliques())
+    for (const auto& cp : energy.cliques())
         AddFoEGrad(*cp, current, grad);
     for (size_t i = 0; i < current.size(); ++i)
         grad[i] += FoEUnaryGrad(orig[i], current[i], sigma);
@@ -328,7 +328,7 @@ void GradientProposal(int niter, const std::vector<Label>& current,
     
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image) {
     MultilabelEnergy energy(256);
-    energy.AddNode(width*height);
+    energy.addNode(width*height);
     
     // For each 2x2 patch, add in a Field of Experts clique
     for (int i = 0; i < height - 1; ++i) {
@@ -339,7 +339,7 @@ MultilabelEnergy SetupEnergy(const std::vector<Label>& image) {
             nodes[bufIdx++] = (i+1)*width + j;
             nodes[bufIdx++] = i*width + j+1;
             nodes[bufIdx++] = (i+1)*width + j+1;
-            energy.AddClique(new FoEEnergy(nodes));
+            energy.addClique(new FoEEnergy(nodes));
         }
     }
     // Add the unary terms
@@ -349,7 +349,7 @@ MultilabelEnergy SetupEnergy(const std::vector<Label>& image) {
             NodeId n = i*width + j;
             for (int l = 0; l < 256; ++l)
                 unary[l] = FoEUnaryEnergy(image[n], l, sigma);
-            energy.AddUnaryTerm(n, unary);
+            energy.addUnaryTerm(n, unary);
         }
     }
     return energy;

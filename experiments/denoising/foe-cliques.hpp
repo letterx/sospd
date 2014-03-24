@@ -29,9 +29,9 @@ class FoEEnergy : public Clique {
                 m_nodes[i] = nodes[i];
         }
 
-        virtual REAL Energy(const Label buf[]) const override;
-        virtual const NodeId* Nodes() const override { return m_nodes; }
-        virtual size_t Size() const override { return 4; }
+        virtual REAL energy(const Label buf[]) const override;
+        virtual const NodeId* nodes() const override { return m_nodes; }
+        virtual size_t size() const override { return 4; }
 
     protected:
         NodeId m_nodes[4];

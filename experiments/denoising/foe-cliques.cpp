@@ -19,7 +19,7 @@ double expert[3][4] = {
 };
 
 
-REAL FoEEnergy::Energy(const Label* buf) const {
+REAL FoEEnergy::energy(const Label* buf) const {
     double energy = 0.0;
     for (int i = 0; i < 3; ++i) {
         double dot = 0.0;
@@ -41,13 +41,13 @@ void AddFoEGrad(const Clique& clique, const std::vector<Label>& current,
         std::vector<double>& grad) {
     Label values[4];
     for (int i = 0; i < 4; ++i)
-        values[i] = current[clique.Nodes()[i]];
+        values[i] = current[clique.nodes()[i]];
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 3; ++j) {
             double dot = 0.0;
             for (int k = 0; k < 4; ++k)
                 dot += expert[j][k] * values[k];
-            grad[clique.Nodes()[i]] += alpha[j] * expert[j][i] 
+            grad[clique.nodes()[i]] += alpha[j] * expert[j][i] 
                 * dot / (1 + 0.5 * dot * dot);
         }
     }

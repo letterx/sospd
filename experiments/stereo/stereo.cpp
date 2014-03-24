@@ -36,9 +36,9 @@ class StereoClique : public Clique {
                 m_nodes[i] = nodes[i];
         }
 
-        virtual REAL Energy(const Label buf[]) const override;
-        virtual const NodeId* Nodes() const override { return m_nodes; }
-        virtual size_t Size() const override { return 3; }
+        virtual REAL energy(const Label buf[]) const override;
+        virtual const NodeId* nodes() const override { return m_nodes; }
+        virtual size_t size() const override { return 3; }
 
         static float kappa;
         static float alpha;
@@ -53,7 +53,7 @@ float StereoClique::alpha = 10.0;
 float StereoClique::scale = 20000;
 
 
-REAL StereoClique::Energy(const Label buf[]) const {
+REAL StereoClique::energy(const Label buf[]) const {
     float disparity[3];
     double energy;
     for (int i = 0; i < 3; ++i)
@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
     statsfile.close();
 
 
-    REAL energy  = energyFunction.ComputeEnergy(current);
+    REAL energy  = energyFunction.computeEnergy(current);
     std::cout << "Final Energy: " << energy << std::endl;
 
     return 0;
@@ -239,7 +239,7 @@ void Optimize(Optimizer& opt,
     // when we reach convergence
     std::vector<REAL> energies(thresholdIters);
 
-    REAL lastEnergy = energyFunction.ComputeEnergy(current);
+    REAL lastEnergy = energyFunction.computeEnergy(current);
     auto startTime = Clock::now();
     for (int i = 0; i < iterations; ++i) {
         std::cout << "Iteration " << i+1 
@@ -266,7 +266,7 @@ void Optimize(Optimizer& opt,
         std::vector<Label> nextLabeling(width*height);
         for (int i = 0; i < width*height; ++i)
             nextLabeling[i] = opt.GetLabel(i);
-        REAL energy  = energyFunction.ComputeEnergy(nextLabeling); 
+        REAL energy  = energyFunction.computeEnergy(nextLabeling); 
 
         // Only keep track of best energy labeling seen so far
         if (energy < lastEnergy) {
@@ -300,20 +300,20 @@ void AlphaProposal(int niter, const std::vector<Label>& current,
 MultilabelEnergy SetupEnergy(const std::vector<cv::Mat>& proposals, 
         const std::vector<cv::Mat>& unary) {
     MultilabelEnergy energy(nproposals);
-    energy.AddNode(width*height);
+    energy.addNode(width*height);
     
     // For each 1x3 patch, add in a StereoClique
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width - 2; ++j) {
             int nodes[3] = { i*width+j, i*width+j+1, i*width+j+2 };
-            energy.AddClique(new StereoClique(nodes, proposals));
+            energy.addClique(new StereoClique(nodes, proposals));
         }
     }
     // For each 3x1 patch, add in a StereoClique
     for (int i = 0; i < height-2; ++i) {
         for (int j = 0; j < width; ++j) {
             int nodes[3] = { i*width+j, (i+1)*width+j, (i+2)*width+j };
-            energy.AddClique(new StereoClique(nodes, proposals));
+            energy.addClique(new StereoClique(nodes, proposals));
         }
     }
     // Add the unary terms
@@ -323,7 +323,7 @@ MultilabelEnergy SetupEnergy(const std::vector<cv::Mat>& proposals,
             NodeId n = i*width + j;
             for (int l = 0; l < nproposals; ++l)
                 unaryBuf[l] = REAL(std::round(unary[l].at<float>(i, j)));
-            energy.AddUnaryTerm(n, unaryBuf);
+            energy.addUnaryTerm(n, unaryBuf);
         }
     }
     return energy;

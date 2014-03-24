@@ -4,9 +4,9 @@
 DualGuidedFusionMove::DualGuidedFusionMove(const MultilabelEnergy* energy)
     : m_energy(energy),
     m_ibfs(),
-    m_num_labels(energy->NumLabels()),
-    m_labels(energy->NumNodes(), 0),
-    m_fusion_labels(energy->NumNodes(), 0),
+    m_num_labels(energy->numLabels()),
+    m_labels(energy->numNodes(), 0),
+    m_fusion_labels(energy->numNodes(), 0),
     m_dual(),
     m_heights(),
     m_expansion_submodular(false),
@@ -20,12 +20,12 @@ int DualGuidedFusionMove::GetLabel(NodeId i) const {
 }
 
 void DualGuidedFusionMove::InitialLabeling() {
-    const NodeId n = m_energy->NumNodes();
+    const NodeId n = m_energy->numNodes();
     for (NodeId i = 0; i < n; ++i) {
         REAL best_cost = std::numeric_limits<REAL>::max();
         for (size_t l = 0; l < m_num_labels; ++l) {
-            if (m_energy->Unary(i, l) < best_cost) {
-                best_cost = m_energy->Unary(i, l);
+            if (m_energy->unary(i, l) < best_cost) {
+                best_cost = m_energy->unary(i, l);
                 m_labels[i] = l;
             }
         }
@@ -34,22 +34,22 @@ void DualGuidedFusionMove::InitialLabeling() {
 
 void DualGuidedFusionMove::InitialDual() {
     // Initialize heights
-    m_heights = std::vector<REAL>(m_energy->NumNodes()*m_num_labels, 0);
-    for (NodeId i = 0; i < m_energy->NumNodes(); ++i)
+    m_heights = std::vector<REAL>(m_energy->numNodes()*m_num_labels, 0);
+    for (NodeId i = 0; i < m_energy->numNodes(); ++i)
         for (Label l = 0; l < m_num_labels; ++l)
-            Height(i, l) = m_energy->Unary(i, l);
+            Height(i, l) = m_energy->unary(i, l);
 
     m_dual.clear();
     Label labelBuf[32];
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-		const NodeId* nodes = c.Nodes();
-		int k = c.Size();
+		const NodeId* nodes = c.nodes();
+		int k = c.size();
         ASSERT(k < 32);
 		for (int i = 0; i < k; ++i) {
             labelBuf[i] = m_labels[nodes[i]];
 		}
-		REAL energy = c.Energy(labelBuf);
+		REAL energy = c.energy(labelBuf);
         m_dual.push_back(Dual(k, std::vector<REAL>(m_num_labels, 0)));
 		Dual& newDual = m_dual.back();
         
@@ -73,10 +73,10 @@ void DualGuidedFusionMove::InitialNodeCliqueList() {
     m_node_clique_list.resize(n);
 
     int clique_index = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const NodeId* nodes = c.Nodes();
-        const size_t k = c.Size();
+        const NodeId* nodes = c.nodes();
+        const size_t k = c.size();
         for (size_t i = 0; i < k; ++i) {
             m_node_clique_list[nodes[i]].push_back(std::make_pair(clique_index, i));
         }
@@ -95,9 +95,9 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
 
     SubmodularIBFS::CliqueVec& ibfs_cliques = crf.GetCliques();
     int clique_index = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const size_t k = c.Size();
+        const size_t k = c.size();
         ASSERT(k < 32);
 
         auto& ibfs_c = ibfs_cliques[clique_index];
@@ -112,8 +112,8 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
         current_lambda.resize(k);
         fusion_lambda.resize(k);
         for (size_t i = 0; i < k; ++i) {
-            current_labels[i] = m_labels[c.Nodes()[i]];
-            fusion_labels[i] = m_fusion_labels[c.Nodes()[i]];
+            current_labels[i] = m_labels[c.nodes()[i]];
+            fusion_labels[i] = m_fusion_labels[c.nodes()[i]];
             current_lambda[i] = m_dual[clique_index][i][current_labels[i]];
             fusion_lambda[i] = m_dual[clique_index][i][fusion_labels[i]];
         }
@@ -123,7 +123,7 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
             Assgn last_gray = 0;
             for (size_t i_idx = 0; i_idx < k; ++i_idx)
                 label_buf[i_idx] = current_labels[i_idx];
-            energy_table[0] = c.Energy(label_buf);
+            energy_table[0] = c.energy(label_buf);
             for (Assgn a = 1; a < max_assgn; ++a) {
                 Assgn gray = a ^ (a >> 1);
                 Assgn diff = gray ^ last_gray;
@@ -133,7 +133,7 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
                 else
                     label_buf[changed_idx] = current_labels[changed_idx];
                 last_gray = gray;
-                energy_table[gray] = c.Energy(label_buf);
+                energy_table[gray] = c.energy(label_buf);
             }
         }
 
@@ -166,7 +166,7 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
         // g(S) - lambda_fusion(S) - lambda_current(C\S) >= 0
         for (size_t i = 0; i < k; ++i) {
             m_dual[clique_index][i][fusion_labels[i]] -= psi[i];
-            Height(c.Nodes()[i], fusion_labels[i]) -= psi[i];
+            Height(c.nodes()[i], fusion_labels[i]) -= psi[i];
         }
 
         ++clique_index;
@@ -174,7 +174,7 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
 }
 
 REAL DualGuidedFusionMove::ComputeHeight(NodeId i, Label x) {
-    REAL ret = m_energy->Unary(i, x);
+    REAL ret = m_energy->unary(i, x);
     for (const auto& p : m_node_clique_list[i]) {
         ret += m_dual[p.first][p.second][x];
     }
@@ -182,7 +182,7 @@ REAL DualGuidedFusionMove::ComputeHeight(NodeId i, Label x) {
 }
 
 REAL DualGuidedFusionMove::ComputeHeightDiff(NodeId i, Label l1, Label l2) const {
-    REAL ret = m_energy->Unary(i, l1) - m_energy->Unary(i, l2);
+    REAL ret = m_energy->unary(i, l1) - m_energy->unary(i, l2);
     for (const auto& p : m_node_clique_list[i]) {
         const auto& lambda_Ci = m_dual[p.first][p.second];
         ret += lambda_Ci[l1] - lambda_Ci[l2];
@@ -196,12 +196,12 @@ void DualGuidedFusionMove::SetupGraph(SubmodularIBFS& crf) {
     crf.AddNode(n);
 
     size_t clique_index = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const size_t k = c.Size();
+        const size_t k = c.size();
         ASSERT(k < 32);
         const Assgn max_assgn = 1 << k;
-        std::vector<SubmodularIBFS::NodeId> nodes(c.Nodes(), c.Nodes() + c.Size());
+        std::vector<SubmodularIBFS::NodeId> nodes(c.nodes(), c.nodes() + c.size());
         crf.AddClique(nodes, std::vector<REAL>(max_assgn, 0), false);
         ++clique_index;
     }
@@ -240,13 +240,13 @@ bool DualGuidedFusionMove::UpdatePrimalDual(SubmodularIBFS& crf) {
     }
     SubmodularIBFS::CliqueVec clique = crf.GetCliques();
     size_t i = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
         auto& ibfs_c = clique[i];
         const std::vector<REAL>& phiCi = ibfs_c.AlphaCi();
         for (size_t j = 0; j < phiCi.size(); ++j) {
-            m_dual[i][j][m_fusion_labels[c.Nodes()[j]]] += phiCi[j];
-            Height(c.Nodes()[j], m_fusion_labels[c.Nodes()[j]]) += phiCi[j];
+            m_dual[i][j][m_fusion_labels[c.nodes()[j]]] += phiCi[j];
+            Height(c.nodes()[j], m_fusion_labels[c.nodes()[j]]) += phiCi[j];
         }
         ++i;
     }
@@ -256,15 +256,15 @@ bool DualGuidedFusionMove::UpdatePrimalDual(SubmodularIBFS& crf) {
 void DualGuidedFusionMove::PostEditDual() {
     Label labelBuf[32];
     int clique_index = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const NodeId* nodes = c.Nodes();
-        int k = c.Size();
+        const NodeId* nodes = c.nodes();
+        int k = c.size();
         ASSERT(k < 32);
 		for (int i = 0; i < k; ++i) {
             labelBuf[i] = m_labels[nodes[i]];
 		}
-		REAL energy = c.Energy(labelBuf);
+		REAL energy = c.energy(labelBuf);
         REAL avg = energy / k;
         int remainder = energy % k;
 		for (int i = 0; i < k; ++i) {
@@ -395,15 +395,15 @@ bool DualGuidedFusionMove::CheckHeightInvariant() {
 bool DualGuidedFusionMove::CheckLabelInvariant() {
     size_t clique_index = 0;
     Label labelBuf[32];
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const NodeId* nodes = c.Nodes();
-        const size_t k = c.Size();
+        const NodeId* nodes = c.nodes();
+        const size_t k = c.size();
         ASSERT(k < 32);
         for (size_t i = 0; i < k; ++i) {
             labelBuf[i] = m_labels[nodes[i]];
         }
-        REAL energy = c.Energy(labelBuf);
+        REAL energy = c.energy(labelBuf);
         REAL sum = 0;
         for (size_t i = 0; i < k; ++i) {
             sum += m_dual[clique_index][i][labelBuf[i]];
@@ -421,9 +421,9 @@ bool DualGuidedFusionMove::CheckLabelInvariant() {
 
 bool DualGuidedFusionMove::CheckDualBoundInvariant() {
     size_t clique_index = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        REAL energyBound = c.FMax();
+        REAL energyBound = c.fMax();
         for (size_t i = 0; i < m_dual[clique_index].size(); ++i) {
             for (size_t j = 0; j < m_num_labels; ++j) {
                 if (m_dual[clique_index][i][j] > energyBound) {
@@ -443,10 +443,10 @@ bool DualGuidedFusionMove::CheckDualBoundInvariant() {
 
 bool DualGuidedFusionMove::CheckActiveInvariant() {
     size_t clique_index = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const NodeId* nodes = c.Nodes();
-        const size_t k = c.Size();
+        const NodeId* nodes = c.nodes();
+        const size_t k = c.size();
         for (size_t i = 0; i < k; ++i) {
             if (m_dual[clique_index][i][m_labels[nodes[i]]] < 0) {
                 std::cout << "CliqueId: " << clique_index << std::endl;
@@ -463,9 +463,9 @@ bool DualGuidedFusionMove::CheckActiveInvariant() {
 /*
 bool DualGuidedFusionMove::CheckZeroSumInvariant() {
     size_t clique_index = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const size_t k = c.Nodes().size();
+        const size_t k = c.nodes().size();
         for (Label i = 0; i < m_num_labels; ++i) {
             REAL dualSum = 0;
             for (size_t j = 0; j < k; ++j) {
@@ -488,23 +488,23 @@ double DualGuidedFusionMove::LowerBound() {
     std::cout << "Computing Lower Bound\n";
     double max_ratio = 0;
     int clique_index = 0;
-    for (const CliquePtr& cp : m_energy->Cliques()) {
+    for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const size_t k = c.Size();
+        const size_t k = c.size();
         ASSERT(k == 3); // Lower bound doesn't work for larger numbers
         Label buf[3];
         for (buf[0] = 0; buf[0] < m_num_labels; ++buf[0]) {
             for (buf[1] = 0; buf[1] < m_num_labels; ++buf[1]) {
                 for (buf[2] = 0; buf[2] < m_num_labels; ++buf[2]) {
-                    REAL energy = c.Energy(buf);
+                    REAL energy = c.energy(buf);
                     REAL dualSum = m_dual[clique_index][0][buf[0]]
                         + m_dual[clique_index][1][buf[1]]
                         + m_dual[clique_index][2][buf[2]];
                     if (energy == 0) {
                         for (int i = 0; i < 3; ++i) {
-                            if (buf[i] != m_labels[c.Nodes()[i]]) {
+                            if (buf[i] != m_labels[c.nodes()[i]]) {
                                 m_dual[clique_index][i][buf[i]] -= dualSum - energy;
-                                Height(c.Nodes()[i], buf[i]) -= dualSum - energy;
+                                Height(c.nodes()[i], buf[i]) -= dualSum - energy;
                                 dualSum = energy;
                                 break;
                             }
@@ -519,7 +519,7 @@ double DualGuidedFusionMove::LowerBound() {
         clique_index++;
     }
     REAL dual_objective = 0;
-    for (NodeId i = 0; i < m_energy->NumNodes(); ++i) {
+    for (NodeId i = 0; i < m_energy->numNodes(); ++i) {
         REAL min_height = std::numeric_limits<REAL>::max();
         for (Label l = 0; l < m_num_labels; ++l)
             min_height = std::min(min_height, Height(i, l));

@@ -37,7 +37,7 @@ class FusionMove {
         typedef std::vector<Label> LabelVec;
         typedef std::function<void(int, const LabelVec&, LabelVec&)> ProposalCallback;
         FusionMove(const MultilabelEnergy* energy, const ProposalCallback& pc)
-            : m_energy(energy), m_pc(pc), m_labels(energy->NumNodes(), 0), m_iter(0), m_hocr(false) { }
+            : m_energy(energy), m_pc(pc), m_labels(energy->numNodes(), 0), m_iter(0), m_hocr(false) { }
         FusionMove(const MultilabelEnergy* energy, const ProposalCallback& pc, const LabelVec& current)
             : m_energy(energy), m_pc(pc), m_labels(current), m_iter(0), m_hocr(false) { }
 
@@ -112,14 +112,14 @@ void FusionMove<MaxDegree>::GetFusedImage(const LabelVec& proposed, QPBO<REAL>& 
 template <int MaxDegree>
 template <typename HO>
 void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe) const {
-    AddVars(hoe,m_energy->NumNodes());
-    for (NodeId i = 0; i < m_energy->NumNodes(); ++i)
-        hoe.AddUnaryTerm(i, m_energy->Unary(i, m_labels[i]), m_energy->Unary(i, proposed[i]));
+    AddVars(hoe,m_energy->numNodes());
+    for (NodeId i = 0; i < m_energy->numNodes(); ++i)
+        hoe.AddUnaryTerm(i, m_energy->unary(i, m_labels[i]), m_energy->unary(i, proposed[i]));
 
     std::vector<REAL> energy_table;
-    for (const auto& cp : m_energy->Cliques()) {
+    for (const auto& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        NodeId size = c.Size();
+        NodeId size = c.size();
         ASSERT(size > 1);
 
         uint32_t numAssignments = 1 << size;
@@ -131,15 +131,15 @@ void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe)
         for (uint32_t assignment = 0; assignment < numAssignments; ++assignment) {
             for (NodeId i = 0; i < size; ++i) {
                 if (assignment & (1 << i)) { 
-                    cliqueLabels[i] = proposed[c.Nodes()[i]];
+                    cliqueLabels[i] = proposed[c.nodes()[i]];
                 } else {
-                    cliqueLabels[i] = m_labels[c.Nodes()[i]];
+                    cliqueLabels[i] = m_labels[c.nodes()[i]];
                 }
             }
-            energy_table[assignment] = c.Energy(cliqueLabels.data());
+            energy_table[assignment] = c.energy(cliqueLabels.data());
         }
-        std::vector<NodeId> nodes(c.Nodes(), c.Nodes() + c.Size());
-        AddClique(hoe, int(c.Size()), energy_table.data(), nodes.data());
+        std::vector<NodeId> nodes(c.nodes(), c.nodes() + c.size());
+        AddClique(hoe, int(c.size()), energy_table.data(), nodes.data());
     }
 }
 
