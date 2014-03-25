@@ -1,7 +1,6 @@
 #ifndef _CRF_HPP_
 #define _CRF_HPP_
 
-#include "submodular-flow.hpp"
 #include "higher-order-energy.hpp"
 #include "submodular-ibfs.hpp"
 #include "qpbo.hpp"

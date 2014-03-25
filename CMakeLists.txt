@@ -29,7 +29,6 @@ include_directories(thirdparty/HOCR)
 
 set(lib-sources
     "src/submodular-ibfs.cpp"
-    "src/submodular-flow.cpp"
     "src/gen-random.cpp"
     "src/sospd.cpp"
 )

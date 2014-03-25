@@ -1,7 +1,6 @@
 #include "gen-random.hpp"
 #include <random>
 #include <algorithm>
-#include "submodular-flow.hpp"
 #include "higher-order-energy.hpp"
 #include "submodular-ibfs.hpp"
 
@@ -61,6 +60,5 @@ void GenRandom(HigherOrder& ho,
 typedef HigherOrderEnergy<REAL, 4> HO;
 GEN_RANDOM_INSTANTIATE(HO, REAL);
 GEN_RANDOM_INSTANTIATE(SubmodularIBFS, REAL);
-GEN_RANDOM_INSTANTIATE(SubmodularFlow, REAL);
 
 #undef GEN_RANDOM_INSTANTIATE

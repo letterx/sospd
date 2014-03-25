@@ -187,12 +187,9 @@ InteractiveSegApp::LabelPtr InteractiveSegApp::classify(const PatternData& x, co
         return y;
     } else {
         Optimizer crf;
-        SubmodularFlow sf;
         SubmodularIBFS ibfs;
         HigherOrderWrapper ho;
         if (m_params.crf == 0) {
-            crf.Wrap(&sf);
-        } else if (m_params.crf == 2) {
             crf.Wrap(&ibfs);
         } else {
             crf.Wrap(&ho);
@@ -210,12 +207,9 @@ InteractiveSegApp::LabelPtr InteractiveSegApp::classify(const PatternData& x, co
 
 InteractiveSegApp::LabelPtr InteractiveSegApp::findMostViolatedConstraint(const PatternData& x, const LabelData& y, const double* w) const {
     Optimizer crf;
-    SubmodularFlow sf;
     HigherOrderWrapper ho;
     SubmodularIBFS ibfs;
     if (m_params.crf == 0) {
-        crf.Wrap(&sf);
-    } else if (m_params.crf == 2) {
         crf.Wrap(&ibfs);
     } else {
         crf.Wrap(&ho);
@@ -327,15 +321,12 @@ void InteractiveSegApp::parseLearnParams(const std::vector<std::string>& args) {
 
     if (vm.count("crf")) {
         std::string type = vm["crf"].as<std::string>();
-        if (type == "sf") {
-            std::cout << "SubmodularFlow optimizer\n";
+        if (type == "ibfs") {
+            std::cout << "SubmodularIBFS optimizer\n";
             params.crf = 0;
         } else if (type == "ho") {
             std::cout << "HigherOrder optimizer\n";
             params.crf = 1;
-        } else if (type == "ibfs") {
-            std::cout << "SubmodularIBFS optimizer\n";
-            params.crf = 2;
         } else {
             std::cout << "Unrecognized optimizer\n";
             exit(-1);
@@ -388,15 +379,12 @@ void InteractiveSegApp::parseClassifyParams(const std::vector<std::string>& args
 
     if (vm.count("crf")) {
         std::string type = vm["crf"].as<std::string>();
-        if (type == "sf") {
-            std::cout << "SubmodularFlow optimizer\n";
+        if (type == "ibfs") {
+            std::cout << "SubmodularIBFS optimizer\n";
             params.crf = 0;
         } else if (type == "ho") {
             std::cout << "HigherOrder optimizer\n";
             params.crf = 1;
-        } else if (type == "ibfs") {
-            std::cout << "SubmodularIBFS optimizer\n";
-            params.crf = 2;
         } else {
             std::cout << "Unrecognized optimizer\n";
             exit(-1);
@@ -441,15 +429,12 @@ void InteractiveSegApp::parseFeatureParams(const std::vector<std::string>& args)
 
     if (vm.count("crf")) {
         std::string type = vm["crf"].as<std::string>();
-        if (type == "sf") {
-            std::cout << "SubmodularFlow optimizer\n";
+        if (type == "ibfs") {
+            std::cout << "SubmodularIBFS optimizer\n";
             params.crf = 0;
         } else if (type == "ho") {
             std::cout << "HigherOrder optimizer\n";
             params.crf = 1;
-        } else if (type == "ibfs") {
-            std::cout << "SubmodularIBFS optimizer\n";
-            params.crf = 2;
         } else {
             std::cout << "Unrecognized optimizer\n";
             exit(-1);

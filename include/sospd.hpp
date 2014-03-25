@@ -57,10 +57,13 @@ class SoSPD {
         /** Return label of a node i, returns -1 if Solve has not been called.*/
         int GetLabel(NodeId i) const;
 
-        /** Enable optimization if energy known to be expansion submodular. */
+        /** Give hint that energy is expansion submodular. Enables optimizations
+         * because we don't need to find submodular upper/lower bounds for the
+         * function.
+         */
         void SetExpansionSubmodular(bool b) { m_expansion_submodular = b; }
 
-        /** Choose whether to use lower or upper bound in approximating function.
+        /** Choose whether to use lower/upper bound in approximating function.
          */
         void SetLowerBound(bool b) { m_lower_bound = b; }
 

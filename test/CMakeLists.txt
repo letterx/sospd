@@ -1,6 +1,5 @@
 set(test-sources
     "test-higher-order-energy.cpp"
-    "test-submodular-flow.cpp"
     "test-submodular-ibfs.cpp"
 )
 
