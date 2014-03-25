@@ -1,6 +1,8 @@
 build
 release
 thirdparty/QPBO
+doc/html
+doc/latex
 
 # Trash files
 *~
