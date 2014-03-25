@@ -1,4 +1,4 @@
-#include "dgfm.hpp"
+#include "sospd.hpp"
 #include "clique.hpp"
 
 SoSPD::SoSPD(const MultilabelEnergy* energy)

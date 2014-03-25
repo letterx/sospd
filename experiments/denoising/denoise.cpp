@@ -24,7 +24,7 @@
 #include "foe-cliques.hpp"
 #include "higher-order-energy.hpp"
 #include "fusion-move.hpp"
-#include "dgfm.hpp"
+#include "sospd.hpp"
 
 double sigma = 20.0;
 REAL threshold = 100.0 * 60;

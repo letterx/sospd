@@ -1,5 +1,5 @@
-#ifndef _DGFM_HPP_
-#define _DGFM_HPP_
+#ifndef _SOSPD_HPP_
+#define _SOSPD_HPP_
 
 //#define PROGRESS_DISPLAY
 //#define CHECK_INVARIANTS

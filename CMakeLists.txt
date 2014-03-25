@@ -31,7 +31,7 @@ set(lib-sources
     "src/submodular-ibfs.cpp"
     "src/submodular-flow.cpp"
     "src/gen-random.cpp"
-    "src/dgfm.cpp"
+    "src/sospd.cpp"
 )
 
 set(qpbo-sources

@@ -17,7 +17,7 @@
 #include <boost/program_options.hpp>
 #include "clique.hpp"
 #include "fusion-move.hpp"
-#include "dgfm.hpp"
+#include "sospd.hpp"
 
 struct IterationStat {
     int iter;
