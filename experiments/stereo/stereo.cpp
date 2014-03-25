@@ -183,13 +183,13 @@ int main(int argc, char **argv) {
         Optimize(fusion, energyFunction, proposals, image, current, 
                 iterations, stats);
     } else if (method == std::string("spd-alpha")) {
-        DualGuidedFusionMove dgfm(&energyFunction);
+        SoSPD dgfm(&energyFunction);
         dgfm.SetAlphaExpansion();
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, proposals, image, current, 
                 iterations, stats);
     } else if (method == std::string("spd-alpha-height")) {
-        DualGuidedFusionMove dgfm(&energyFunction);
+        SoSPD dgfm(&energyFunction);
         dgfm.SetHeightAlphaExpansion();
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, proposals, image, current, 

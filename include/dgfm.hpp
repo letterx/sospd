@@ -5,14 +5,14 @@
 //#define CHECK_INVARIANTS
 
 #include "energy-common.hpp"
-#include "clique.hpp"
-#include "submodular-flow.hpp"
-#include "submodular-ibfs.hpp"
-#include "submodular-functions.hpp"
 #include <vector>
 #include <functional>
 
-class DualGuidedFusionMove {
+#include "clique.hpp"
+#include "submodular-ibfs.hpp"
+#include "submodular-functions.hpp"
+
+class SoSPD {
     public:
         typedef MultilabelEnergy::NodeId NodeId;
         typedef MultilabelEnergy::Label Label;
@@ -21,8 +21,8 @@ class DualGuidedFusionMove {
         typedef std::vector<std::vector<std::pair<size_t, size_t> > > NodeCliqueList;
         typedef std::function<void(int, const std::vector<Label>&, std::vector<Label>&)> ProposalCallback;
 
-        DualGuidedFusionMove() = delete;
-        explicit DualGuidedFusionMove(const MultilabelEnergy* energy);
+        SoSPD() = delete;
+        explicit SoSPD(const MultilabelEnergy* energy);
 
         void Solve(int niters = std::numeric_limits<int>::max());
         int GetLabel(NodeId i) const;

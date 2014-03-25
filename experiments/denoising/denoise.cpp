@@ -165,22 +165,22 @@ int main(int argc, char **argv) {
         fusion.SetHOCR(true);
         Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
-        DualGuidedFusionMove dgfm(&energyFunction);
+        SoSPD dgfm(&energyFunction);
         dgfm.SetProposalCallback(AlphaProposal);
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha-height")) {
-        DualGuidedFusionMove dgfm(&energyFunction);
+        SoSPD dgfm(&energyFunction);
         dgfm.SetHeightAlphaExpansion();
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-blur-random")) {
-        DualGuidedFusionMove dgfm(&energyFunction);
+        SoSPD dgfm(&energyFunction);
         dgfm.SetProposalCallback(FusionProposal);
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-grad")) {
-        DualGuidedFusionMove dgfm(&energyFunction);
+        SoSPD dgfm(&energyFunction);
         dgfm.SetProposalCallback(gradCallback);
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, image, current, iterations, stats);

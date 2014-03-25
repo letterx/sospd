@@ -1,7 +1,7 @@
 #include "dgfm.hpp"
 #include "clique.hpp"
 
-DualGuidedFusionMove::DualGuidedFusionMove(const MultilabelEnergy* energy)
+SoSPD::SoSPD(const MultilabelEnergy* energy)
     : m_energy(energy),
     m_ibfs(),
     m_num_labels(energy->numLabels()),
@@ -15,11 +15,11 @@ DualGuidedFusionMove::DualGuidedFusionMove(const MultilabelEnergy* energy)
     m_pc([&](int, const std::vector<Label>&, std::vector<Label>&) { HeightAlphaProposal(); })
 { }
 
-int DualGuidedFusionMove::GetLabel(NodeId i) const {
+int SoSPD::GetLabel(NodeId i) const {
     return m_labels[i];
 }
 
-void DualGuidedFusionMove::InitialLabeling() {
+void SoSPD::InitialLabeling() {
     const NodeId n = m_energy->numNodes();
     for (NodeId i = 0; i < n; ++i) {
         REAL best_cost = std::numeric_limits<REAL>::max();
@@ -32,7 +32,7 @@ void DualGuidedFusionMove::InitialLabeling() {
     }
 }
 
-void DualGuidedFusionMove::InitialDual() {
+void SoSPD::InitialDual() {
     // Initialize heights
     m_heights = std::vector<REAL>(m_energy->numNodes()*m_num_labels, 0);
     for (NodeId i = 0; i < m_energy->numNodes(); ++i)
@@ -67,7 +67,7 @@ void DualGuidedFusionMove::InitialDual() {
     }
 }
 
-void DualGuidedFusionMove::InitialNodeCliqueList() {
+void SoSPD::InitialNodeCliqueList() {
     size_t n = m_labels.size();
     m_node_clique_list.clear();
     m_node_clique_list.resize(n);
@@ -84,7 +84,7 @@ void DualGuidedFusionMove::InitialNodeCliqueList() {
     }
 }
 
-void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
+void SoSPD::PreEditDual(SubmodularIBFS& crf) {
     // Allocate all the buffers we need in one place, resize as necessary
     Label label_buf[32];
     std::vector<Label> current_labels;
@@ -173,7 +173,7 @@ void DualGuidedFusionMove::PreEditDual(SubmodularIBFS& crf) {
     }
 }
 
-REAL DualGuidedFusionMove::ComputeHeight(NodeId i, Label x) {
+REAL SoSPD::ComputeHeight(NodeId i, Label x) {
     REAL ret = m_energy->unary(i, x);
     for (const auto& p : m_node_clique_list[i]) {
         ret += m_dual[p.first][p.second][x];
@@ -181,7 +181,7 @@ REAL DualGuidedFusionMove::ComputeHeight(NodeId i, Label x) {
     return ret;
 }
 
-REAL DualGuidedFusionMove::ComputeHeightDiff(NodeId i, Label l1, Label l2) const {
+REAL SoSPD::ComputeHeightDiff(NodeId i, Label l1, Label l2) const {
     REAL ret = m_energy->unary(i, l1) - m_energy->unary(i, l2);
     for (const auto& p : m_node_clique_list[i]) {
         const auto& lambda_Ci = m_dual[p.first][p.second];
@@ -190,7 +190,7 @@ REAL DualGuidedFusionMove::ComputeHeightDiff(NodeId i, Label l1, Label l2) const
     return ret;
 }
 
-void DualGuidedFusionMove::SetupGraph(SubmodularIBFS& crf) {
+void SoSPD::SetupGraph(SubmodularIBFS& crf) {
     typedef int32_t Assgn;
     const size_t n = m_labels.size();
     crf.AddNode(n);
@@ -209,7 +209,7 @@ void DualGuidedFusionMove::SetupGraph(SubmodularIBFS& crf) {
     crf.GraphInit();
 }
 
-void DualGuidedFusionMove::SetupAlphaEnergy(SubmodularIBFS& crf) {
+void SoSPD::SetupAlphaEnergy(SubmodularIBFS& crf) {
     typedef int32_t Assgn;
     const size_t n = m_labels.size();
     crf.ClearUnaries();
@@ -225,7 +225,7 @@ void DualGuidedFusionMove::SetupAlphaEnergy(SubmodularIBFS& crf) {
     }
 }
 
-bool DualGuidedFusionMove::UpdatePrimalDual(SubmodularIBFS& crf) {
+bool SoSPD::UpdatePrimalDual(SubmodularIBFS& crf) {
     bool ret = false;
     SetupAlphaEnergy(crf);
     crf.Solve();
@@ -253,7 +253,7 @@ bool DualGuidedFusionMove::UpdatePrimalDual(SubmodularIBFS& crf) {
     return ret;
 }
 
-void DualGuidedFusionMove::PostEditDual() {
+void SoSPD::PostEditDual() {
     Label labelBuf[32];
     int clique_index = 0;
     for (const CliquePtr& cp : m_energy->cliques()) {
@@ -278,7 +278,7 @@ void DualGuidedFusionMove::PostEditDual() {
     }
 }
 
-void DualGuidedFusionMove::DualFit() {
+void SoSPD::DualFit() {
     // FIXME: This is the only function that doesn't work with integer division.
     // It's also not really used for anything at the moment
     /*
@@ -289,7 +289,7 @@ void DualGuidedFusionMove::DualFit() {
                 */
 }
 
-bool DualGuidedFusionMove::InitialFusionLabeling() {
+bool SoSPD::InitialFusionLabeling() {
     m_pc(m_iter, m_labels, m_fusion_labels);
     for (size_t i = 0; i < m_labels.size(); ++i) {
         if (m_labels[i] != m_fusion_labels[i])
@@ -298,7 +298,7 @@ bool DualGuidedFusionMove::InitialFusionLabeling() {
     return false;
 }
 
-void DualGuidedFusionMove::HeightAlphaProposal() {
+void SoSPD::HeightAlphaProposal() {
     const size_t n = m_labels.size();
     REAL max_s_capacity = 0;
     Label alpha = 0;
@@ -318,7 +318,7 @@ void DualGuidedFusionMove::HeightAlphaProposal() {
         m_fusion_labels[i] = alpha;
 }
 
-void DualGuidedFusionMove::AlphaProposal() {
+void SoSPD::AlphaProposal() {
     Label alpha = m_iter % m_num_labels;
     const size_t n = m_labels.size();
     for (size_t i = 0; i < n; ++i)
@@ -326,7 +326,7 @@ void DualGuidedFusionMove::AlphaProposal() {
 }
 
 
-void DualGuidedFusionMove::Solve(int niters) {
+void SoSPD::Solve(int niters) {
     if (m_iter == 0) {
         SetupGraph(m_ibfs);
         InitialLabeling();
@@ -374,7 +374,7 @@ void DualGuidedFusionMove::Solve(int niters) {
     //LowerBound();
 }
 
-bool DualGuidedFusionMove::CheckHeightInvariant() {
+bool SoSPD::CheckHeightInvariant() {
     size_t m = m_labels.size();
     for (size_t i = 0; i < m; ++i) {
         REAL hx = ComputeHeight(i, m_labels[i]);
@@ -392,7 +392,7 @@ bool DualGuidedFusionMove::CheckHeightInvariant() {
     return true;
 }
 
-bool DualGuidedFusionMove::CheckLabelInvariant() {
+bool SoSPD::CheckLabelInvariant() {
     size_t clique_index = 0;
     Label labelBuf[32];
     for (const CliquePtr& cp : m_energy->cliques()) {
@@ -419,7 +419,7 @@ bool DualGuidedFusionMove::CheckLabelInvariant() {
     return true;
 }
 
-bool DualGuidedFusionMove::CheckDualBoundInvariant() {
+bool SoSPD::CheckDualBoundInvariant() {
     size_t clique_index = 0;
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
@@ -441,7 +441,7 @@ bool DualGuidedFusionMove::CheckDualBoundInvariant() {
     return true;
 }
 
-bool DualGuidedFusionMove::CheckActiveInvariant() {
+bool SoSPD::CheckActiveInvariant() {
     size_t clique_index = 0;
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
@@ -461,7 +461,7 @@ bool DualGuidedFusionMove::CheckActiveInvariant() {
 }
 
 /*
-bool DualGuidedFusionMove::CheckZeroSumInvariant() {
+bool SoSPD::CheckZeroSumInvariant() {
     size_t clique_index = 0;
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
@@ -484,7 +484,7 @@ bool DualGuidedFusionMove::CheckZeroSumInvariant() {
 }
 */
 
-double DualGuidedFusionMove::LowerBound() {
+double SoSPD::LowerBound() {
     std::cout << "Computing Lower Bound\n";
     double max_ratio = 0;
     int clique_index = 0;
