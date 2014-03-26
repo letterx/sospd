@@ -50,19 +50,19 @@ void SoSPD::InitialDual() {
             labelBuf[i] = m_labels[nodes[i]];
 		}
 		REAL energy = c.energy(labelBuf);
-        m_dual.push_back(Dual(k, std::vector<REAL>(m_num_labels, 0)));
-		Dual& newDual = m_dual.back();
+        m_dual.emplace_back(k*m_num_labels, 0);
+		LambdaAlpha& lambda_a = m_dual.back();
         
         ASSERT(energy >= 0);
         REAL avg = energy / k;
         int remainder = energy % k;
         for (int i = 0; i < k; ++i) {
             Label l = m_labels[nodes[i]];
-            REAL& dual_i_l = newDual[i][l];
-            dual_i_l = avg;
+            REAL& lambda_ail = dualVariable(lambda_a, i, l);
+            lambda_ail = avg;
             if (i < remainder) // Have to distribute remainder to maintain average
-                dual_i_l += 1;
-            Height(nodes[i], l) += dual_i_l;
+                lambda_ail += 1;
+            Height(nodes[i], l) += lambda_ail;
         }
     }
 }
@@ -100,6 +100,8 @@ void SoSPD::PreEditDual(SubmodularIBFS& crf) {
         const size_t k = c.size();
         ASSERT(k < 32);
 
+        auto& lambda_a = lambdaAlpha(clique_index);
+
         auto& ibfs_c = ibfs_cliques[clique_index];
         ASSERT(k == ibfs_c.Size());
         std::vector<REAL>& energy_table = ibfs_c.EnergyTable();
@@ -114,8 +116,8 @@ void SoSPD::PreEditDual(SubmodularIBFS& crf) {
         for (size_t i = 0; i < k; ++i) {
             current_labels[i] = m_labels[c.nodes()[i]];
             fusion_labels[i] = m_fusion_labels[c.nodes()[i]];
-            current_lambda[i] = m_dual[clique_index][i][current_labels[i]];
-            fusion_lambda[i] = m_dual[clique_index][i][fusion_labels[i]];
+            current_lambda[i] = dualVariable(lambda_a, i, current_labels[i]);
+            fusion_lambda[i] = dualVariable(lambda_a, i, fusion_labels[i]);
         }
         
         // Compute costs of all fusion assignments
@@ -165,7 +167,7 @@ void SoSPD::PreEditDual(SubmodularIBFS& crf) {
         // Update lambda_fusion[i] so that 
         // g(S) - lambda_fusion(S) - lambda_current(C\S) >= 0
         for (size_t i = 0; i < k; ++i) {
-            m_dual[clique_index][i][fusion_labels[i]] -= psi[i];
+            dualVariable(lambda_a, i, fusion_labels[i]) -= psi[i];
             Height(c.nodes()[i], fusion_labels[i]) -= psi[i];
         }
 
@@ -176,7 +178,7 @@ void SoSPD::PreEditDual(SubmodularIBFS& crf) {
 REAL SoSPD::ComputeHeight(NodeId i, Label x) {
     REAL ret = m_energy->unary(i, x);
     for (const auto& p : m_node_clique_list[i]) {
-        ret += m_dual[p.first][p.second][x];
+        ret += dualVariable(p.first, p.second, x);
     }
     return ret;
 }
@@ -184,8 +186,8 @@ REAL SoSPD::ComputeHeight(NodeId i, Label x) {
 REAL SoSPD::ComputeHeightDiff(NodeId i, Label l1, Label l2) const {
     REAL ret = m_energy->unary(i, l1) - m_energy->unary(i, l2);
     for (const auto& p : m_node_clique_list[i]) {
-        const auto& lambda_Ci = m_dual[p.first][p.second];
-        ret += lambda_Ci[l1] - lambda_Ci[l2];
+        ret += dualVariable(p.first, p.second, l1) 
+            - dualVariable(p.first, p.second, l2);
     }
     return ret;
 }
@@ -245,7 +247,7 @@ bool SoSPD::UpdatePrimalDual(SubmodularIBFS& crf) {
         auto& ibfs_c = clique[i];
         const std::vector<REAL>& phiCi = ibfs_c.AlphaCi();
         for (size_t j = 0; j < phiCi.size(); ++j) {
-            m_dual[i][j][m_fusion_labels[c.nodes()[j]]] += phiCi[j];
+            dualVariable(i, j, m_fusion_labels[c.nodes()[j]]) += phiCi[j];
             Height(c.nodes()[j], m_fusion_labels[c.nodes()[j]]) += phiCi[j];
         }
         ++i;
@@ -268,11 +270,12 @@ void SoSPD::PostEditDual() {
         REAL avg = energy / k;
         int remainder = energy % k;
 		for (int i = 0; i < k; ++i) {
-            Height(nodes[i], labelBuf[i]) -= m_dual[clique_index][i][labelBuf[i]];
-		    m_dual[clique_index][i][labelBuf[i]] = avg;
+            auto& lambda_ail = dualVariable(clique_index,  i, labelBuf[i]);
+            Height(nodes[i], labelBuf[i]) -= lambda_ail;
+		    lambda_ail = avg;
             if (i < remainder)
-                m_dual[clique_index][i][labelBuf[i]] += 1;
-            Height(nodes[i], labelBuf[i]) += m_dual[clique_index][i][labelBuf[i]];
+                lambda_ail += 1;
+            Height(nodes[i], labelBuf[i]) += lambda_ail;
 		}
 		++clique_index;
     }
@@ -287,6 +290,7 @@ void SoSPD::DualFit() {
 			for (size_t k = 0; k < m_dual[i][j].size(); ++k)
 				m_dual[i][j][k] /= (m_mu * m_rho);
                 */
+    ASSERT(false /* unimplemented */);
 }
 
 bool SoSPD::InitialFusionLabeling() {
@@ -406,7 +410,7 @@ bool SoSPD::CheckLabelInvariant() {
         REAL energy = c.energy(labelBuf);
         REAL sum = 0;
         for (size_t i = 0; i < k; ++i) {
-            sum += m_dual[clique_index][i][labelBuf[i]];
+            sum += dualVariable(clique_index, i, labelBuf[i]);
         }
         if (abs(sum - energy)) {
             std::cout << "CliqueId: " << clique_index << std::endl;
@@ -424,13 +428,14 @@ bool SoSPD::CheckDualBoundInvariant() {
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
         REAL energyBound = c.fMax();
-        for (size_t i = 0; i < m_dual[clique_index].size(); ++i) {
+        for (size_t i = 0; i < c.size(); ++i) {
             for (size_t j = 0; j < m_num_labels; ++j) {
-                if (m_dual[clique_index][i][j] > energyBound) {
+                if (dualVariable(clique_index, i, j) > energyBound) {
                     std::cout << "CliqueId: " << clique_index << std::endl;
                     std::cout << "NodeId (w.r.t. Clique): " << i << std::endl;
                     std::cout << "Label: " << j << std::endl;
-                    std::cout << "Dual Value: " << m_dual[clique_index][i][j] << std::endl;
+                    std::cout << "Dual Value: " 
+                        << dualVariable(clique_index, i, j) << std::endl;
                     std::cout << "Energy Bound: " << energyBound << std::endl;
                     return false;
                 }
@@ -448,16 +453,45 @@ bool SoSPD::CheckActiveInvariant() {
         const NodeId* nodes = c.nodes();
         const size_t k = c.size();
         for (size_t i = 0; i < k; ++i) {
-            if (m_dual[clique_index][i][m_labels[nodes[i]]] < 0) {
+            
+            if (dualVariable(clique_index, i, m_labels[nodes[i]]) < 0) {
                 std::cout << "CliqueId: " << clique_index << std::endl;
                 std::cout << "NodeId (w.r.t. Clique): " << i << std::endl;
-                std::cout << "Dual Value: " << m_dual[clique_index][i][m_labels[nodes[i]]] << std::endl;
+                std::cout << "Dual Value: " 
+                    << dualVariable(clique_index, i, m_labels[nodes[i]]) 
+                    << std::endl;
                 return false;
             }
         }
         clique_index++;
     }
     return true;
+}
+
+REAL SoSPD::dualVariable(int alpha, NodeId i, Label l) const {
+    return m_dual[alpha][i*m_num_labels+l];
+}
+
+REAL& SoSPD::dualVariable(int alpha, NodeId i, Label l) {
+    return m_dual[alpha][i*m_num_labels+l];
+}
+
+REAL SoSPD::dualVariable(const LambdaAlpha& lambdaAlpha, 
+        NodeId i, Label l) const {
+    return lambdaAlpha[i*m_num_labels+l];
+}
+
+REAL& SoSPD::dualVariable(LambdaAlpha& lambdaAlpha, 
+        NodeId i, Label l) {
+    return lambdaAlpha[i*m_num_labels+l];
+}
+
+SoSPD::LambdaAlpha& SoSPD::lambdaAlpha(int alpha) {
+    return m_dual[alpha];
+}
+
+const SoSPD::LambdaAlpha& SoSPD::lambdaAlpha(int alpha) const {
+    return m_dual[alpha];
 }
 
 /*
@@ -497,13 +531,13 @@ double SoSPD::LowerBound() {
             for (buf[1] = 0; buf[1] < m_num_labels; ++buf[1]) {
                 for (buf[2] = 0; buf[2] < m_num_labels; ++buf[2]) {
                     REAL energy = c.energy(buf);
-                    REAL dualSum = m_dual[clique_index][0][buf[0]]
-                        + m_dual[clique_index][1][buf[1]]
-                        + m_dual[clique_index][2][buf[2]];
+                    REAL dualSum = dualVariable(clique_index, 0, buf[0])
+                        + dualVariable(clique_index, 1, buf[1])
+                        + dualVariable(clique_index, 2, buf[2]);
                     if (energy == 0) {
                         for (int i = 0; i < 3; ++i) {
                             if (buf[i] != m_labels[c.nodes()[i]]) {
-                                m_dual[clique_index][i][buf[i]] -= dualSum - energy;
+                                dualVariable(clique_index, i, buf[i]) -= dualSum - energy;
                                 Height(c.nodes()[i], buf[i]) -= dualSum - energy;
                                 dualSum = energy;
                                 break;

@@ -259,11 +259,11 @@ void SubmodularIBFS::IBFS() {
     } // End while
     m_totalTime += Duration{ Clock::now() - start }.count();
 
-    std::cout << "Total time:      " << m_totalTime << "\n";
-    std::cout << "Graph init time: " << m_graphInitTime << "\n";
-    std::cout << "Init time:       " << m_initTime << "\n";
-    std::cout << "Augment time:    " << m_augmentTime << "\n";
-    std::cout << "Adopt time:      " << m_adoptTime << "\n";
+    //std::cout << "Total time:      " << m_totalTime << "\n";
+    //std::cout << "Graph init time: " << m_graphInitTime << "\n";
+    //std::cout << "Init time:       " << m_initTime << "\n";
+    //std::cout << "Augment time:    " << m_augmentTime << "\n";
+    //std::cout << "Adopt time:      " << m_adoptTime << "\n";
 }
 
 void SubmodularIBFS::Augment(ArcIterator& arc) {

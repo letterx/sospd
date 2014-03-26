@@ -96,9 +96,11 @@ class SoSPD {
         /** Return lower bound on optimum, determined by current dual */
         double LowerBound();
 
+        REAL dualVariable(int alpha, NodeId i, Label l) const;
+
     private:
         typedef MultilabelEnergy::CliquePtr CliquePtr;
-        typedef std::vector<std::vector<REAL> > Dual;
+        typedef std::vector<REAL> LambdaAlpha;
         typedef std::vector<std::pair<size_t, size_t>> NodeNeighborList;
         typedef std::vector<NodeNeighborList> NodeCliqueList;
 
@@ -121,6 +123,14 @@ class SoSPD {
         bool CheckActiveInvariant();
         REAL& Height(NodeId i, Label l) { return m_heights[i*m_num_labels+l]; }
 
+        REAL& dualVariable(int alpha, NodeId i, Label l);
+        REAL dualVariable(const LambdaAlpha& lambdaAlpha, 
+                NodeId i, Label l) const;
+        REAL& dualVariable(LambdaAlpha& lambdaAlpha, 
+                NodeId i, Label l);
+        LambdaAlpha& lambdaAlpha(int alpha);
+        const LambdaAlpha& lambdaAlpha(int alpha) const;
+
         // Move Proposals
         void HeightAlphaProposal();
         void AlphaProposal();
@@ -135,8 +145,8 @@ class SoSPD {
         // Factor this list back into a node list?
         NodeCliqueList m_node_clique_list;
         // FIXME(afix) change way m_dual is stored. Put lambda_alpha as separate
-        // double* for each clique, indexed by i, l. 
-        std::vector<Dual> m_dual;
+        // REAL* for each clique, indexed by i, l. 
+        std::vector<LambdaAlpha> m_dual;
         std::vector<REAL> m_heights;
         bool m_expansion_submodular;
         bool m_lower_bound;
