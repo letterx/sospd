@@ -240,7 +240,7 @@ bool SoSPD::UpdatePrimalDual(SubmodularIBFS& crf) {
             m_labels[i] = alpha;
         }
     }
-    SubmodularIBFS::CliqueVec clique = crf.GetCliques();
+    const SubmodularIBFS::CliqueVec& clique = crf.GetCliques();
     size_t i = 0;
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
