@@ -105,6 +105,7 @@ class SoSPD {
         REAL ComputeHeight(NodeId, Label);
         REAL ComputeHeightDiff(NodeId i, Label l1, Label l2) const;
         void SetupGraph(SubmodularIBFS& crf);
+        // TODO(afix): redo this
         void SetupAlphaEnergy(SubmodularIBFS& crf);
         void InitialLabeling();
         void InitialDual();
@@ -125,11 +126,16 @@ class SoSPD {
         void AlphaProposal();
 
         const MultilabelEnergy* m_energy;
+        // Unique ptr so we can forward declare?
         SubmodularIBFS m_ibfs;
         const size_t m_num_labels;
         std::vector<Label> m_labels;
+        /// The proposed labeling in a given iteration
         std::vector<Label> m_fusion_labels;
+        // Factor this list back into a node list?
         NodeCliqueList m_node_clique_list;
+        // FIXME(afix) change way m_dual is stored. Put lambda_alpha as separate
+        // double* for each clique, indexed by i, l. 
         std::vector<Dual> m_dual;
         std::vector<REAL> m_heights;
         bool m_expansion_submodular;
