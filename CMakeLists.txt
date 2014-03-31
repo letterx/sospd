@@ -45,7 +45,18 @@ set(lib-sources ${lib-sources} ${qpbo-sources})
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(libs)
+set(petter-libs
+    pseudoboolean
+    petter
+    maxflow3
+    QPBO
+    Clp
+    CoinUtils
+    )
+
+set(libs
+    ${petter-libs}
+    )
 
 
 ###

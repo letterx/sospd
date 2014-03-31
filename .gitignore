@@ -3,6 +3,8 @@ release
 thirdparty/QPBO
 doc/html
 doc/latex
+results
+data
 
 # Trash files
 *~

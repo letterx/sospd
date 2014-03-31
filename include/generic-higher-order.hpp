@@ -3,6 +3,7 @@
 
 #include "higher-order-energy.hpp"
 #include "HOCR.h"
+#include "PseudoBoolean.h"
 #include <string>
 
 enum class OptType {
@@ -84,6 +85,34 @@ void ToQuadratic(PBF<REAL, D>& opt, QR& qr) {
     PBF<REAL, 2> tmp_qr;
     opt.toQuadratic(tmp_qr);
     convert(qr, tmp_qr);
+}
+
+template <typename REAL>
+void AddVars(Petter::PseudoBoolean<REAL>& opt, size_t numVars) {
+    // noop
+}
+
+template <typename REAL, typename PB_REAL>
+void AddUnaryTerm(Petter::PseudoBoolean<PB_REAL>& opt, int v, REAL coeff) {
+    opt.add_monomial(v, coeff);
+}
+
+template <typename REAL, typename PB_REAL>
+void AddClique(Petter::PseudoBoolean<PB_REAL>& opt, int d, const REAL* coeffs, const int *vars) {
+    ASSERT(d <= 4 && d >= 0);
+    if (d == 0)
+        return;
+    else if (d == 1) {
+        opt.add_clique(vars[0], coeffs[0], coeffs[1]);
+    } else if (d == 2) {
+        opt.add_clique(vars[0], vars[1], coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+    } else if (d == 3) {
+        std::vector<PB_REAL> vec_coeffs(coeffs, coeffs+(1 << d));
+        opt.add_clique(vars[0], vars[1], vars[2], vec_coeffs);
+    } else if (d == 4) {
+        std::vector<PB_REAL> vec_coeffs(coeffs, coeffs+(1 << d));
+        opt.add_clique(vars[0], vars[1], vars[2], vars[3], vec_coeffs);
+    }
 }
 
 #endif

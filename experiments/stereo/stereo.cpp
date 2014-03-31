@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
     } else if (method == std::string("hocr")) {
         FusionMove<4>::ProposalCallback pc(AlphaProposal);
         FusionMove<4> fusion(&energyFunction, pc, current);
-        fusion.SetHOCR(true);
+        fusion.SetMethod(FusionMove<4>::Method::HOCR);
         Optimize(fusion, energyFunction, proposals, image, current, 
                 iterations, stats);
     } else if (method == std::string("spd-alpha")) {

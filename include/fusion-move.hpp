@@ -32,18 +32,32 @@
 template <int MaxDegree>
 class FusionMove {
     public:
+        enum class Method { FGBZ, HOCR, GRD };
         typedef MultilabelEnergy::NodeId NodeId;
         typedef MultilabelEnergy::Label Label;
         typedef std::vector<Label> LabelVec;
         typedef std::function<void(int, const LabelVec&, LabelVec&)> ProposalCallback;
         FusionMove(const MultilabelEnergy* energy, const ProposalCallback& pc)
-            : m_energy(energy), m_pc(pc), m_labels(energy->numNodes(), 0), m_iter(0), m_hocr(false) { }
-        FusionMove(const MultilabelEnergy* energy, const ProposalCallback& pc, const LabelVec& current)
-            : m_energy(energy), m_pc(pc), m_labels(current), m_iter(0), m_hocr(false) { }
+            : m_energy(energy)
+            , m_pc(pc)
+            , m_labels(energy->numNodes(), 0)
+            , m_iter(0)
+            , m_method(Method::FGBZ) 
+        { }
+
+        FusionMove(const MultilabelEnergy* energy,
+                   const ProposalCallback& pc,
+                   const LabelVec& current)
+            : m_energy(energy)
+            , m_pc(pc)
+            , m_labels(current)
+            , m_iter(0)
+            , m_method(Method::FGBZ) 
+        { }
 
         void Solve(int niters);
         Label GetLabel(NodeId i) const { return m_labels[i]; }
-        void SetHOCR(bool b) { m_hocr = b; }
+        void SetMethod(Method m) { m_method = m; }
 
     protected:
         template <typename HO>
@@ -56,7 +70,7 @@ class FusionMove {
         ProposalCallback m_pc;
         LabelVec m_labels;
         int m_iter;
-        bool m_hocr;
+        Method m_method;
 };
 
 template <int MaxDegree>
@@ -67,34 +81,57 @@ void FusionMove<MaxDegree>::Solve(int niters) {
 
 template <int MaxDegree>
 void FusionMove<MaxDegree>::FusionStep() {
-    if (m_hocr) {
-        PBF<REAL, MaxDegree> pbf;
-        LabelVec proposed(m_labels.size());
-        m_pc(m_iter, m_labels, proposed);
-        SetupFusionEnergy(proposed, pbf);
-        PBF<REAL, 2> qr;
-        pbf.toQuadratic(qr);
-        pbf.clear();
-        int numvars = qr.maxID();
-        QPBO<REAL> qpbo(numvars, numvars*4);
-        convert(qpbo, qr);
-        qpbo.AddNode(m_labels.size());
-        qr.clear();
-        qpbo.MergeParallelEdges();
-        qpbo.Solve();
-        qpbo.ComputeWeakPersistencies();
-        GetFusedImage(proposed, qpbo);
-    } else {
-        HigherOrderEnergy<REAL, MaxDegree> hoe;
-        QPBO<REAL> qr(m_labels.size(), 0);
-        LabelVec proposed(m_labels.size());
-        m_pc(m_iter, m_labels, proposed);
-        SetupFusionEnergy(proposed, hoe);
-        hoe.ToQuadratic(qr);
-        qr.MergeParallelEdges();
-        qr.Solve();
-        qr.ComputeWeakPersistencies();
-        GetFusedImage(proposed, qr);
+    switch (m_method) {
+        case Method::FGBZ: 
+        {
+            HigherOrderEnergy<REAL, MaxDegree> hoe;
+            QPBO<REAL> qr(m_labels.size(), 0);
+            LabelVec proposed(m_labels.size());
+            m_pc(m_iter, m_labels, proposed);
+            SetupFusionEnergy(proposed, hoe);
+            hoe.ToQuadratic(qr);
+            qr.MergeParallelEdges();
+            qr.Solve();
+            qr.ComputeWeakPersistencies();
+            GetFusedImage(proposed, qr);
+            break;
+        }
+        case Method::HOCR:
+        {
+            PBF<REAL, MaxDegree> pbf;
+            LabelVec proposed(m_labels.size());
+            m_pc(m_iter, m_labels, proposed);
+            SetupFusionEnergy(proposed, pbf);
+            PBF<REAL, 2> qr;
+            pbf.toQuadratic(qr);
+            pbf.clear();
+            int numvars = qr.maxID();
+            QPBO<REAL> qpbo(numvars, numvars*4);
+            convert(qpbo, qr);
+            qpbo.AddNode(m_labels.size());
+            qr.clear();
+            qpbo.MergeParallelEdges();
+            qpbo.Solve();
+            qpbo.ComputeWeakPersistencies();
+            GetFusedImage(proposed, qpbo);
+            break;
+        }
+        case Method::GRD:
+        {
+            Petter::PseudoBoolean<REAL> pb;
+            LabelVec proposed(m_labels.size());
+            m_pc(m_iter, m_labels, proposed);
+            SetupFusionEnergy(proposed, pb);
+            std::vector<Petter::label> x(m_labels.size());
+            int labeled;
+            pb.minimize(x, labeled, Petter::GRD_heur);
+            for (size_t i = 0; i < m_labels.size(); ++i) {
+                if (x[i] == 1) {
+                    m_labels[i] = proposed[i];
+                }
+            }
+            break;
+        }
     }
     m_iter++;
 }
@@ -113,8 +150,15 @@ template <int MaxDegree>
 template <typename HO>
 void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe) const {
     AddVars(hoe,m_energy->numNodes());
-    for (NodeId i = 0; i < m_energy->numNodes(); ++i)
-        hoe.AddUnaryTerm(i, m_energy->unary(i, m_labels[i]), m_energy->unary(i, proposed[i]));
+    for (NodeId i = 0; i < m_energy->numNodes(); ++i) {
+        AddUnaryTerm(
+                hoe, 
+                i, 
+                m_energy->unary(i, proposed[i])
+                - m_energy->unary(i, m_labels[i])
+                );
+        AddConstantTerm(hoe, m_energy->unary(i, m_labels[i]));
+    }
 
     std::vector<REAL> energy_table;
     for (const auto& cp : m_energy->cliques()) {
