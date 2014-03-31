@@ -105,13 +105,13 @@ void AddClique(Petter::PseudoBoolean<PB_REAL>& opt, int d, const REAL* coeffs, c
     else if (d == 1) {
         opt.add_clique(vars[0], coeffs[0], coeffs[1]);
     } else if (d == 2) {
-        opt.add_clique(vars[0], vars[1], coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+        opt.add_clique(vars[1], vars[0], coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
     } else if (d == 3) {
         std::vector<PB_REAL> vec_coeffs(coeffs, coeffs+(1 << d));
-        opt.add_clique(vars[0], vars[1], vars[2], vec_coeffs);
+        opt.add_clique(vars[2], vars[1], vars[0], vec_coeffs);
     } else if (d == 4) {
         std::vector<PB_REAL> vec_coeffs(coeffs, coeffs+(1 << d));
-        opt.add_clique(vars[0], vars[1], vars[2], vars[3], vec_coeffs);
+        opt.add_clique(vars[3], vars[2], vars[1], vars[0], vec_coeffs);
     }
 }
 
