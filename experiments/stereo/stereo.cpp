@@ -182,6 +182,12 @@ int main(int argc, char **argv) {
         fusion.SetMethod(FusionMove<4>::Method::HOCR);
         Optimize(fusion, energyFunction, proposals, image, current, 
                 iterations, stats);
+    } else if (method == std::string("grd")) {
+        FusionMove<4>::ProposalCallback pc(AlphaProposal);
+        FusionMove<4> fusion(&energyFunction, pc, current);
+        fusion.SetMethod(FusionMove<4>::Method::GRD);
+        Optimize(fusion, energyFunction, proposals, image, current, 
+                iterations, stats);
     } else if (method == std::string("spd-alpha")) {
         SoSPD dgfm(&energyFunction);
         dgfm.SetAlphaExpansion();

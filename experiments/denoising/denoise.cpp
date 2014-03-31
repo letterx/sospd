@@ -151,6 +151,11 @@ int main(int argc, char **argv) {
         FusionMove<4> fusion(&energyFunction, pc, current);
         fusion.SetMethod(FusionMove<4>::Method::HOCR);
         Optimize(fusion, energyFunction, image, current, iterations, stats);
+    } else if (method == std::string("grd")) {
+        FusionMove<4>::ProposalCallback pc(FusionProposal);
+        FusionMove<4> fusion(&energyFunction, pc, current);
+        fusion.SetMethod(FusionMove<4>::Method::GRD);
+        Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("reduction-alpha")) {
         FusionMove<4>::ProposalCallback pc(AlphaProposal);
         FusionMove<4> fusion(&energyFunction, pc, current);
@@ -163,6 +168,11 @@ int main(int argc, char **argv) {
         FusionMove<4>::ProposalCallback pc = gradCallback;
         FusionMove<4> fusion(&energyFunction, pc, current);
         fusion.SetMethod(FusionMove<4>::Method::HOCR);
+        Optimize(fusion, energyFunction, image, current, iterations, stats);
+    } else if (method == std::string("grd-grad")) {
+        FusionMove<4>::ProposalCallback pc = gradCallback;
+        FusionMove<4> fusion(&energyFunction, pc, current);
+        fusion.SetMethod(FusionMove<4>::Method::GRD);
         Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
         SoSPD dgfm(&energyFunction);
