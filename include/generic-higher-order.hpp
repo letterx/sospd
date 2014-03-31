@@ -4,6 +4,8 @@
 #include "higher-order-energy.hpp"
 #include "HOCR.h"
 #include "PseudoBoolean.h"
+#include "submodular-ibfs.hpp"
+#include "submodular-functions.hpp"
 #include <string>
 
 enum class OptType {
@@ -35,6 +37,9 @@ inline std::string ToString(OptType ot) {
     }
 }
 
+//
+// AddVars
+//
 template <typename Optimizer>
 void AddVars(Optimizer& opt, size_t numVars) {
     opt.AddVars(numVars);
@@ -45,12 +50,20 @@ void AddVars(PBF<REAL, D>& opt, size_t numVars) {
     // noop
 }
 
+template <>
+void AddVars(SubmodularIBFS& opt, size_t numVars) {
+    opt.AddNode(numVars);
+}
+
 
 template <typename Optimizer, typename Energy>
 void AddConstantTerm(Optimizer& opt, Energy r) {
     // noop
 }
 
+//
+// AddUnaryTerm
+//
 template <typename Optimizer, typename Energy>
 void AddUnaryTerm(Optimizer& opt, int v, Energy coeff) {
     opt.AddUnaryTerm(v, coeff);
@@ -62,7 +75,9 @@ void AddUnaryTerm(PBF<REAL, D>& opt, int v, REAL coeff) {
 }
 
 
-
+//
+// AddClique
+//
 template <typename Optimizer, typename Energy>
 void AddClique(Optimizer& opt, int d, const Energy *coeffs, const int *vars) {
     std::vector<int> vec_vars(vars, vars+d);
@@ -73,6 +88,14 @@ void AddClique(Optimizer& opt, int d, const Energy *coeffs, const int *vars) {
 template <typename REAL, int D>
 void AddClique(PBF<REAL, D>& opt, int d, const REAL *coeffs, const int *vars) {
     opt.AddHigherTerm(d, const_cast<int*>(vars), const_cast<REAL*>(coeffs));
+}
+
+template <>
+void AddClique(SubmodularIBFS& opt, int d, const REAL* coeffs, const int* vars) {
+    auto varVec = std::vector<int>{vars, vars+d};
+    auto energyTable = std::vector<REAL>{coeffs, coeffs+(1<<d)};
+    SubmodularUpperBound(d, energyTable);
+    opt.AddClique(varVec, energyTable);
 }
 
 template <typename Opt, typename QR>

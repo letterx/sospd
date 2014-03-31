@@ -32,7 +32,7 @@
 template <int MaxDegree>
 class FusionMove {
     public:
-        enum class Method { FGBZ, HOCR, GRD };
+        enum class Method { FGBZ, HOCR, GRD, SOS_UB };
         typedef MultilabelEnergy::NodeId NodeId;
         typedef MultilabelEnergy::Label Label;
         typedef std::vector<Label> LabelVec;
@@ -131,6 +131,18 @@ void FusionMove<MaxDegree>::FusionStep() {
                 }
             }
             break;
+        }
+        case Method::SOS_UB:
+        {
+            SubmodularIBFS ibfs;
+            LabelVec proposed(m_labels.size());
+            m_pc(m_iter, m_labels, proposed);
+            SetupFusionEnergy(proposed, ibfs);
+            ibfs.Solve();
+            for (size_t i = 0; i < m_labels.size(); ++i) {
+                if (ibfs.GetLabel(i) == 1)
+                    m_labels[i] = proposed[i];
+            }
         }
     }
     m_iter++;
