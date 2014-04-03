@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
             ->default_value(std::string("spd-alpha")),
          "Optimization method")
         ("lower-bound",
-         po::value<bool>(&spdLowerBound)->default_value(true),
+         po::value<bool>(&spdLowerBound)->default_value(false),
          "Use lower bound for SPD3")
         ("kappa", 
          po::value<float>(&StereoClique::kappa)->default_value(0.001),
