@@ -338,8 +338,24 @@ void GradientProposal(int niter, const std::vector<Label>& current,
     for (size_t i = 0; i < current.size(); ++i)
         grad[i] += FoEUnaryGrad(orig[i], current[i], sigma);
     double scale = eta*7/double(7+niter); 
+    /*
+     *double gradNorm2 = 0.0;
+     *double gradNorm1 = 0.0;
+     *for (double g : grad) {
+     *    gradNorm2 += g*g;
+     *    gradNorm1 += std::fabs(g);
+     *}
+     *std::cout << "Scale: " << scale << "\tNorm2: " << gradNorm2 << "\tNorm1: " 
+     *    << gradNorm1 << "\tAvg grad: " << gradNorm1 / grad.size() << "\n";
+     */
     for (size_t i = 0; i < current.size(); ++i) {
         int newLabel = current[i] - Label(round(scale*grad[i]));
+        if (newLabel == int(current[i])) { 
+            // No point proposing the current label, so move 1 in direction of
+            // gradient
+            if (grad[i] > 0) newLabel -= 1;
+            else newLabel += 1;
+        }
         if (newLabel > 255) newLabel = 255;
         if (newLabel < 0) newLabel = 0;
         proposed[i] = newLabel;
