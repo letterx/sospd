@@ -197,7 +197,7 @@ class SubmodularIBFS {
             }
             int SourceIdx() const { return ibfs->m_cliques[*cIter].GetIndex(source); }
             int TargetIdx() const { return cliqueIdx; }
-            CliqueId CliqueId() const { return *cIter; }
+            CliqueId cliqueId() const { return *cIter; }
             ArcIterator Reverse() const {
                 auto newSource = Target();
                 auto newCIter = std::find(ibfs->m_neighbors[newSource].begin(), ibfs->m_neighbors[newSource].end(), *cIter);

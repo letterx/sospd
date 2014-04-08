@@ -460,18 +460,18 @@ void SubmodularIBFS::MakeOrphan(NodeId i) {
 
 
 REAL SubmodularIBFS::ResCap(const ArcIterator& arc, bool forwardArc) {
-    ASSERT(arc.CliqueId() >= 0 && arc.CliqueId() < static_cast<int>(m_cliques.size()));
+    ASSERT(arc.cliqueId() >= 0 && arc.cliqueId() < static_cast<int>(m_cliques.size()));
     if (forwardArc)
-        return m_cliques[arc.CliqueId()].ExchangeCapacity(arc.SourceIdx(), arc.TargetIdx());
+        return m_cliques[arc.cliqueId()].ExchangeCapacity(arc.SourceIdx(), arc.TargetIdx());
     else
-        return m_cliques[arc.CliqueId()].ExchangeCapacity(arc.TargetIdx(), arc.SourceIdx());
+        return m_cliques[arc.cliqueId()].ExchangeCapacity(arc.TargetIdx(), arc.SourceIdx());
 }
 
 bool SubmodularIBFS::NonzeroCap(const ArcIterator& arc, bool forwardArc) {
     if (forwardArc)
-        return m_cliques[arc.CliqueId()].NonzeroCapacity(arc.SourceIdx(), arc.TargetIdx());
+        return m_cliques[arc.cliqueId()].NonzeroCapacity(arc.SourceIdx(), arc.TargetIdx());
     else
-        return m_cliques[arc.CliqueId()].NonzeroCapacity(arc.TargetIdx(), arc.SourceIdx());
+        return m_cliques[arc.cliqueId()].NonzeroCapacity(arc.TargetIdx(), arc.SourceIdx());
 }
 
 void SubmodularIBFS::Push(ArcIterator& arc, bool forwardArc, REAL delta) {
@@ -479,7 +479,7 @@ void SubmodularIBFS::Push(ArcIterator& arc, bool forwardArc, REAL delta) {
     //ASSERT(delta > -1e-7);//Chen
     m_num_clique_pushes++;
     //std::cout << "Pushing on clique arc (" << arc.i << ", " << arc.j << ") -- delta = " << delta << std::endl;
-    auto& c = m_cliques[arc.CliqueId()];
+    auto& c = m_cliques[arc.cliqueId()];
     if (forwardArc)
         c.Push(arc.SourceIdx(), arc.TargetIdx(), delta);
     else
@@ -489,7 +489,7 @@ void SubmodularIBFS::Push(ArcIterator& arc, bool forwardArc, REAL delta) {
         if (m_nodes[n].state == NodeState::N)
             continue;
         auto& parent_arc = m_nodes[n].parent_arc;
-        if (parent_arc != ArcsEnd(n) && parent_arc.CliqueId() == arc.CliqueId() && !NonzeroCap(parent_arc, m_nodes[n].state == NodeState::T)) {
+        if (parent_arc != ArcsEnd(n) && parent_arc.cliqueId() == arc.cliqueId() && !NonzeroCap(parent_arc, m_nodes[n].state == NodeState::T)) {
             MakeOrphan(n);
         }
     }

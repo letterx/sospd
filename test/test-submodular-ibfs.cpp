@@ -180,7 +180,7 @@ void CheckCut(SubmodularIBFS& sf) {
                 if (sf.ResCap(arc, true) != 0)
                     std::cout << "Bad Arc: " << arc.Source() << ", " 
                         << arc.Target() << "\t"
-                        << "Clique: " << arc.CliqueId() << "\n";
+                        << "Clique: " << arc.cliqueId() << "\n";
             }
         }
 
