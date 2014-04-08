@@ -301,8 +301,9 @@ void SubmodularIBFS::Augment(ArcIterator& arc) {
     }
     ASSERT(m_nodes[current].parent == t);
     bottleneck = std::min(bottleneck, m_c_it[current] - m_phi_it[current]);
-
     ASSERT(bottleneck > 0);
+
+    // Found the bottleneck, now do pushes on the arcs in the path
     Push(arc, m_forward_search, bottleneck);
     current = i;
     parent = m_nodes[current].parent;
@@ -375,6 +376,8 @@ void SubmodularIBFS::Adopt() {
                 n.state = NodeState::S;
                 AddToLayer(i);
             }
+            // FIXME(afix) Should really assert that n.dis > old_dis
+            // but current-arc heuristic isn't watertight at the moment...
             if (n.dis > old_dist) {
                 for (auto arc = ArcsBegin(i); arc != ArcsEnd(i); ++arc) {
                     if (m_nodes[arc.Target()].parent == i)
@@ -426,6 +429,8 @@ void SubmodularIBFS::Adopt() {
                 n.state = NodeState::T;
                 AddToLayer(i);
             }
+            // FIXME(afix) Should really assert that n.dis > old_dis
+            // but current-arc heuristic isn't watertight at the moment...
             if (n.dis > old_dist) {
                 for (auto arc = ArcsBegin(i); arc != ArcsEnd(i); ++arc) {
                     if (m_nodes[arc.Target()].parent == i)
@@ -442,6 +447,8 @@ void SubmodularIBFS::Adopt() {
 
 void SubmodularIBFS::MakeOrphan(NodeId i) {
     Node& n = m_nodes[i];
+    if (n.state != NodeState::S && n.state != NodeState::T)
+        return;
     if (n.state == NodeState::S) {
         n.state = NodeState::S_orphan;
         m_source_orphans.push_back(n);
@@ -453,14 +460,11 @@ void SubmodularIBFS::MakeOrphan(NodeId i) {
 
 
 REAL SubmodularIBFS::ResCap(const ArcIterator& arc, bool forwardArc) {
-    if(arc.CliqueId() >= 0 && arc.CliqueId() < static_cast<int>(m_cliques.size())) {
-        if (forwardArc)
-            return m_cliques[arc.CliqueId()].ExchangeCapacity(arc.SourceIdx(), arc.TargetIdx());
-        else
-            return m_cliques[arc.CliqueId()].ExchangeCapacity(arc.TargetIdx(), arc.SourceIdx());
-    } else {
-        ASSERT(false);
-    }
+    ASSERT(arc.CliqueId() >= 0 && arc.CliqueId() < static_cast<int>(m_cliques.size()));
+    if (forwardArc)
+        return m_cliques[arc.CliqueId()].ExchangeCapacity(arc.SourceIdx(), arc.TargetIdx());
+    else
+        return m_cliques[arc.CliqueId()].ExchangeCapacity(arc.TargetIdx(), arc.SourceIdx());
 }
 
 bool SubmodularIBFS::NonzeroCap(const ArcIterator& arc, bool forwardArc) {
@@ -485,7 +489,7 @@ void SubmodularIBFS::Push(ArcIterator& arc, bool forwardArc, REAL delta) {
         if (m_nodes[n].state == NodeState::N)
             continue;
         auto& parent_arc = m_nodes[n].parent_arc;
-        if (parent_arc.CliqueId() == arc.CliqueId() && !NonzeroCap(parent_arc, m_nodes[n].state == NodeState::T)) {
+        if (parent_arc != ArcsEnd(n) && parent_arc.CliqueId() == arc.CliqueId() && !NonzeroCap(parent_arc, m_nodes[n].state == NodeState::T)) {
             MakeOrphan(n);
         }
     }
@@ -736,9 +740,13 @@ void SubmodularIBFS::AddToLayer(NodeId i) {
     auto& node = m_nodes[i];
     int dis = node.dis;
     if (node.state == NodeState::S) {
-        m_source_layers[dis].push_front(node);
+        m_source_layers[dis].push_back(node);
+        if (m_forward_search && node.dis == m_source_tree_d)
+            m_search_node_end = m_source_layers[m_source_tree_d].end();
     } else if (node.state == NodeState::T) {
-        m_sink_layers[dis].push_front(node);
+        m_sink_layers[dis].push_back(node);
+        if (!m_forward_search && node.dis == m_sink_tree_d)
+            m_search_node_end = m_sink_layers[m_sink_tree_d].end();
     } else {
         ASSERT(false);
     }

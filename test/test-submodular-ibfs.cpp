@@ -163,8 +163,12 @@ void CheckCut(SubmodularIBFS& sf) {
         int label = sf.GetLabel(i);
         if (label == 0) {
             BOOST_CHECK_EQUAL(phi_si[i], c_si[i]);
+            if (phi_si[i] != c_si[i])
+                std::cout << "Bad source arc to " << i << "\n";
         } else {
             BOOST_CHECK_EQUAL(phi_it[i], c_it[i]);
+            if (phi_it[i] != c_it[i])
+                std::cout << "Bad source arc to " << i << "\n";
         }
         for (auto arc = sf.ArcsBegin(i); arc != sf.ArcsEnd(i); ++arc) {
             auto j = arc.Target();
@@ -174,7 +178,9 @@ void CheckCut(SubmodularIBFS& sf) {
             if (label == 1 && label_j == 0) {
                 BOOST_CHECK_EQUAL(sf.ResCap(arc, true), 0);
                 if (sf.ResCap(arc, true) != 0)
-                    std::cout << "Bad Arc: " << arc.Source() << ", " << arc.Target() << "\n";
+                    std::cout << "Bad Arc: " << arc.Source() << ", " 
+                        << arc.Target() << "\t"
+                        << "Clique: " << arc.CliqueId() << "\n";
             }
         }
 
@@ -237,9 +243,9 @@ BOOST_AUTO_TEST_CASE(identicalToHigherOrder) {
     SubmodularIBFS sf;
     HigherOrderEnergy<REAL, 4> ho;
 
-    const size_t n = 2000;
+    const size_t n = 160000;
+    const size_t m = 160000;
     const size_t k = 4;
-    const size_t m = 2000;
     const REAL clique_range = 100;
     const REAL unary_mean = 800;
     const REAL unary_var = 1600;

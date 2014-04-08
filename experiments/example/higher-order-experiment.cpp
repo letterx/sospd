@@ -45,13 +45,11 @@ int main(int argc, char **argv) {
     size_t ones = 0;
     for (NodeId i = 0; i < n; ++i) {
         int label = ibfs.GetLabel(i);
-        /*
-         *if (label != qr.GetLabel(i)) {
-         *    std::cout << "WARNING: Different labels at pixel " << i << "**";
-         *    std::cout << "\t" << qr.GetLabel(i) 
-         *        << "\t" << label << "\t" << "\n";
-         *}
-         */
+        if (label != qr.GetLabel(i)) {
+            std::cout << "WARNING: Different labels at pixel " << i << "**";
+            std::cout << "\t" << qr.GetLabel(i) 
+                << "\t" << label << "\t" << "\n";
+        }
         if (label >= 0)
             labeled++;
         if (label == 1)
