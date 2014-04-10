@@ -87,7 +87,9 @@ void AddClique(Optimizer& opt, int d, const Energy *coeffs, const int *vars) {
 
 template <typename REAL, int D>
 void AddClique(PBF<REAL, D>& opt, int d, const REAL *coeffs, const int *vars) {
-    opt.AddHigherTerm(d, const_cast<int*>(vars), const_cast<REAL*>(coeffs));
+    std::vector<int> vec_vars(vars, vars+d);
+    std::reverse(vec_vars.begin(), vec_vars.end());
+    opt.AddHigherTerm(d, vec_vars.data(), const_cast<REAL*>(coeffs));
 }
 
 template <>
