@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
     std::cout << "Same label:       " << same << "\n";
     std::cout << "Percent same:     " << double(same)/double(numPixels) << "\n";
     std::cout << "Plus/minus 1:     " << pm_1 << "\n";
+    std::cout << "Percent in p/m 4: " << double(pm_1)/double(numPixels) << "\n";
     std::cout << "Plus/minus 4:     " << pm_4 << "\n";
     std::cout << "Percent in p/m 4: " << double(pm_4)/double(numPixels) << "\n";
     std::cout << "Sum squared diff: " << sum_squared_diff << "\n";

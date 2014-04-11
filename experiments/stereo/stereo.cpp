@@ -168,6 +168,18 @@ int main(int argc, char **argv) {
     std::vector<Label> current(width*height, 0);
     std::cout << "Setting up energy...\n";
     MultilabelEnergy energyFunction = SetupEnergy(proposals, unaries);
+    for (int i = 0; i < int(current.size()); ++i) {
+        REAL minUnary = std::numeric_limits<REAL>::max();
+        Label minLabel = 0;
+        for (int l = 0; l < nproposals; ++l) {
+            if (energyFunction.unary(i, l) < minUnary) {
+                minUnary = energyFunction.unary(i, l);
+                minLabel = l;
+            }
+        }
+        current[i] = minLabel;
+    }
+
 
     // Optimze, depending on chosen method
     std::cout << "Optimizing...\n";
