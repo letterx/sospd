@@ -350,12 +350,6 @@ void GradientProposal(int niter, const std::vector<Label>& current,
      */
     for (size_t i = 0; i < current.size(); ++i) {
         int newLabel = current[i] - Label(round(scale*grad[i]));
-        if (newLabel == int(current[i])) { 
-            // No point proposing the current label, so move 1 in direction of
-            // gradient
-            if (grad[i] > 0) newLabel -= 1;
-            else newLabel += 1;
-        }
         if (newLabel > 255) newLabel = 255;
         if (newLabel < 0) newLabel = 0;
         proposed[i] = newLabel;
