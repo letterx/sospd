@@ -20,7 +20,7 @@
 #include "sospd.hpp"
 
 typedef MultilabelEnergy::Label Label;
-typedef MultilabelEnergy::NodeId NodeId;
+typedef MultilabelEnergy::VarId VarId;
 
 struct IterationStat {
     int iter;
@@ -40,14 +40,14 @@ class StereoClique : public Clique {
         }
 
         virtual REAL energy(const Label buf[]) const override;
-        virtual const NodeId* nodes() const override { return m_nodes; }
+        virtual const VarId* nodes() const override { return m_nodes; }
         virtual size_t size() const override { return 3; }
 
         static float kappa;
         static float alpha;
         static float scale;
     protected:
-        NodeId m_nodes[3];
+        VarId m_nodes[3];
         const std::vector<cv::Mat>& m_proposals;
 };
 
@@ -347,7 +347,7 @@ MultilabelEnergy SetupEnergy(const std::vector<cv::Mat>& proposals,
     std::vector<REAL> unaryBuf(nproposals);
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
-            NodeId n = i*width + j;
+            VarId n = i*width + j;
             for (int l = 0; l < nproposals; ++l)
                 unaryBuf[l] = REAL(std::round(unary[l].at<float>(i, j)));
             energy.addUnaryTerm(n, unaryBuf);

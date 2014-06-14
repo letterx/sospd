@@ -33,7 +33,7 @@ template <int MaxDegree>
 class FusionMove {
     public:
         enum class Method { FGBZ, HOCR, GRD, SOS_UB };
-        typedef MultilabelEnergy::NodeId NodeId;
+        typedef MultilabelEnergy::VarId VarId;
         typedef MultilabelEnergy::Label Label;
         typedef std::vector<Label> LabelVec;
         typedef std::function<void(int, const LabelVec&, LabelVec&)> ProposalCallback;
@@ -56,7 +56,7 @@ class FusionMove {
         { }
 
         void Solve(int niters);
-        Label GetLabel(NodeId i) const { return m_labels[i]; }
+        Label GetLabel(VarId i) const { return m_labels[i]; }
         void SetMethod(Method m) { m_method = m; }
 
     protected:
@@ -162,7 +162,7 @@ template <int MaxDegree>
 template <typename HO>
 void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe) const {
     AddVars(hoe,m_energy->numNodes());
-    for (NodeId i = 0; i < m_energy->numNodes(); ++i) {
+    for (VarId i = 0; i < m_energy->numNodes(); ++i) {
         AddUnaryTerm(
                 hoe, 
                 i, 
@@ -175,7 +175,7 @@ void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe)
     std::vector<REAL> energy_table;
     for (const auto& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        NodeId size = c.size();
+        VarId size = c.size();
         ASSERT(size > 1);
 
         uint32_t numAssignments = 1 << size;
@@ -185,7 +185,7 @@ void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe)
         // corresponding labeling
         std::vector<Label> cliqueLabels(size);
         for (uint32_t assignment = 0; assignment < numAssignments; ++assignment) {
-            for (NodeId i = 0; i < size; ++i) {
+            for (VarId i = 0; i < size; ++i) {
                 if (assignment & (1 << i)) { 
                     cliqueLabels[i] = proposed[c.nodes()[i]];
                 } else {
@@ -194,7 +194,7 @@ void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe)
             }
             energy_table[assignment] = c.energy(cliqueLabels.data());
         }
-        std::vector<NodeId> nodes(c.nodes(), c.nodes() + c.size());
+        std::vector<VarId> nodes(c.nodes(), c.nodes() + c.size());
         AddClique(hoe, int(c.size()), energy_table.data(), nodes.data());
     }
 }

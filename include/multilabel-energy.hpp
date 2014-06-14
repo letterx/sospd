@@ -20,38 +20,43 @@ class Clique;
  */
 class MultilabelEnergy { 
     public:
-        typedef int NodeId;
+        typedef int VarId;
         typedef size_t Label;
         typedef std::unique_ptr<Clique> CliquePtr;
 
-        MultilabelEnergy() = delete;
+        /** Construct an empty energy function with labels 0,...,max_label-1
+         */
         MultilabelEnergy(Label max_label);
 
-        NodeId addNode(int i = 1);
+
+        VarId addNode(int i = 1);
         void addConstantTerm(REAL c);
-        void addUnaryTerm(NodeId i, const std::vector<REAL>& coeffs);
+        void addUnaryTerm(VarId i, const std::vector<REAL>& coeffs);
         // FIXME(afix) should instead pass CliquePtr
         void addClique(Clique* c);
 
-        NodeId numNodes() const { return m_numNodes; }
+        VarId numNodes() const { return m_numNodes; }
         size_t numCliques() const { return m_cliques.size(); }
         Label numLabels() const { return m_maxLabel; }
         REAL computeEnergy(const std::vector<Label>& labels) const;
         const std::vector<CliquePtr>& cliques() const { return m_cliques; }
-        REAL unary(NodeId i, Label l) const { return m_unary[i][l]; }
-        REAL& unary(NodeId i, Label l) { return m_unary[i][l]; }
+        REAL unary(VarId i, Label l) const { return m_unary[i][l]; }
+        REAL& unary(VarId i, Label l) { return m_unary[i][l]; }
 
     protected:
         const Label m_maxLabel;
-        NodeId m_numNodes;
+        VarId m_numNodes;
         REAL m_constantTerm;
         std::vector<std::vector<REAL>> m_unary;
         std::vector<CliquePtr> m_cliques;
+        
+    private:
+        MultilabelEnergy() = delete;
 };
 
 class Clique {
     public:   
-        typedef MultilabelEnergy::NodeId NodeId;
+        typedef MultilabelEnergy::VarId VarId;
         typedef MultilabelEnergy::Label Label;
         Clique() { }
         virtual ~Clique() = default;
@@ -60,7 +65,7 @@ class Clique {
         // corresponding to the nodes.
         // Returns the energy of the clique at that labeling
         virtual REAL energy(const Label* labels) const = 0;
-        virtual const NodeId* nodes() const = 0;
+        virtual const VarId* nodes() const = 0;
         virtual size_t size() const = 0;
 
     private:
@@ -74,7 +79,7 @@ class Clique {
 template <int Degree>
 class PottsClique : public Clique {
     public:
-        PottsClique(const std::vector<NodeId>& nodes, REAL same_cost, 
+        PottsClique(const std::vector<VarId>& nodes, REAL same_cost, 
                 REAL diff_cost)
             : m_sameCost(same_cost),
             m_diffCost(diff_cost)
@@ -92,12 +97,12 @@ class PottsClique : public Clique {
             }
             return m_sameCost;
         }
-        virtual const NodeId* nodes() const override {
+        virtual const VarId* nodes() const override {
             return m_nodes;
         }
         virtual size_t size() const override { return Degree; }
     private:
-        NodeId m_nodes[Degree];
+        VarId m_nodes[Degree];
         REAL m_sameCost;
         REAL m_diffCost;
 };
@@ -113,8 +118,8 @@ inline MultilabelEnergy::MultilabelEnergy(Label max_label)
     m_cliques()
 { }
 
-inline MultilabelEnergy::NodeId MultilabelEnergy::addNode(int i) {
-    NodeId ret = m_numNodes;
+inline MultilabelEnergy::VarId MultilabelEnergy::addNode(int i) {
+    VarId ret = m_numNodes;
     for (int j = 0; j < i; ++j) {
         m_unary.push_back(std::vector<REAL>(m_maxLabel, 0));
     }
@@ -126,7 +131,7 @@ inline void MultilabelEnergy::addConstantTerm(REAL c) {
     m_constantTerm++;
 }
 
-inline void MultilabelEnergy::addUnaryTerm(NodeId i,
+inline void MultilabelEnergy::addUnaryTerm(VarId i,
         const std::vector<REAL>& coeffs) {
     ASSERT(i < m_numNodes);
     ASSERT(Label(coeffs.size()) == m_maxLabel);
@@ -140,18 +145,18 @@ inline void MultilabelEnergy::addClique(Clique* c) {
 
 inline REAL 
 MultilabelEnergy::computeEnergy(const std::vector<Label>& labels) const {
-    ASSERT(NodeId(labels.size()) == m_numNodes);
+    ASSERT(VarId(labels.size()) == m_numNodes);
     REAL energy = 0;
     std::vector<Label> label_buf;
     for (const CliquePtr& cp : m_cliques) {
         int k = cp->size();
         label_buf.resize(k);
-        const NodeId* nodes = cp->nodes();
+        const VarId* nodes = cp->nodes();
         for (int i = 0; i < k; ++i)
             label_buf[i] = labels[nodes[i]];
         energy += cp->energy(label_buf.data());
     }
-    for (NodeId i = 0; i < m_numNodes; ++i)
+    for (VarId i = 0; i < m_numNodes; ++i)
         energy += m_unary[i][labels[i]];
     return energy;
 }

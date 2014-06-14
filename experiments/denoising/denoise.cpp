@@ -27,7 +27,7 @@
 #include "sospd.hpp"
 
 typedef MultilabelEnergy::Label Label;
-typedef MultilabelEnergy::NodeId NodeId;
+typedef MultilabelEnergy::VarId VarId;
 
 double sigma = 20.0;
 REAL threshold = 100.0 * 60;
@@ -379,7 +379,7 @@ MultilabelEnergy SetupEnergy(const std::vector<Label>& image) {
     std::vector<REAL> unary(256);
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
-            NodeId n = i*width + j;
+            VarId n = i*width + j;
             for (int l = 0; l < 256; ++l)
                 unary[l] = FoEUnaryEnergy(image[n], l, sigma);
             energy.addUnaryTerm(n, unary);

@@ -20,7 +20,7 @@
  */
 class SoSPD {
     public:
-        typedef MultilabelEnergy::NodeId NodeId;
+        typedef MultilabelEnergy::VarId VarId;
         typedef MultilabelEnergy::Label Label;
 
         /** Proposal callbacks take as input the iteration number and current
@@ -52,7 +52,7 @@ class SoSPD {
         void Solve(int niters = std::numeric_limits<int>::max());
 
         /** Return label of a node i, returns -1 if Solve has not been called.*/
-        int GetLabel(NodeId i) const;
+        int GetLabel(VarId i) const;
 
         /** Give hint that energy is expansion submodular. Enables optimizations
          * because we don't need to find submodular upper/lower bounds for the
@@ -93,7 +93,7 @@ class SoSPD {
         /** Return lower bound on optimum, determined by current dual */
         double LowerBound();
 
-        REAL dualVariable(int alpha, NodeId i, Label l) const;
+        REAL dualVariable(int alpha, VarId i, Label l) const;
 
     private:
         typedef MultilabelEnergy::CliquePtr CliquePtr;
@@ -101,8 +101,8 @@ class SoSPD {
         typedef std::vector<std::pair<size_t, size_t>> NodeNeighborList;
         typedef std::vector<NodeNeighborList> NodeCliqueList;
 
-        REAL ComputeHeight(NodeId, Label);
-        REAL ComputeHeightDiff(NodeId i, Label l1, Label l2) const;
+        REAL ComputeHeight(VarId, Label);
+        REAL ComputeHeightDiff(VarId i, Label l1, Label l2) const;
         void SetupGraph(SubmodularIBFS& crf);
         // TODO(afix): redo this
         void SetupAlphaEnergy(SubmodularIBFS& crf);
@@ -117,13 +117,13 @@ class SoSPD {
         bool CheckHeightInvariant();
         bool CheckLabelInvariant();
         bool CheckActiveInvariant();
-        REAL& Height(NodeId i, Label l) { return m_heights[i*m_num_labels+l]; }
+        REAL& Height(VarId i, Label l) { return m_heights[i*m_num_labels+l]; }
 
-        REAL& dualVariable(int alpha, NodeId i, Label l);
+        REAL& dualVariable(int alpha, VarId i, Label l);
         REAL dualVariable(const LambdaAlpha& lambdaAlpha, 
-                NodeId i, Label l) const;
+                VarId i, Label l) const;
         REAL& dualVariable(LambdaAlpha& lambdaAlpha, 
-                NodeId i, Label l);
+                VarId i, Label l);
         LambdaAlpha& lambdaAlpha(int alpha);
         const LambdaAlpha& lambdaAlpha(int alpha) const;
 

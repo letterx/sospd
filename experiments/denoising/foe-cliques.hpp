@@ -30,11 +30,11 @@ class FoEEnergy : public Clique {
         }
 
         virtual REAL energy(const Label buf[]) const override;
-        virtual const NodeId* nodes() const override { return m_nodes; }
+        virtual const VarId* nodes() const override { return m_nodes; }
         virtual size_t size() const override { return 4; }
 
     protected:
-        NodeId m_nodes[4];
+        VarId m_nodes[4];
 };
 
 /*

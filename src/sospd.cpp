@@ -15,13 +15,13 @@ SoSPD::SoSPD(const MultilabelEnergy* energy)
     m_pc([&](int, const std::vector<Label>&, std::vector<Label>&) { HeightAlphaProposal(); })
 { }
 
-int SoSPD::GetLabel(NodeId i) const {
+int SoSPD::GetLabel(VarId i) const {
     return m_labels[i];
 }
 
 void SoSPD::InitialLabeling() {
-    const NodeId n = m_energy->numNodes();
-    for (NodeId i = 0; i < n; ++i) {
+    const VarId n = m_energy->numNodes();
+    for (VarId i = 0; i < n; ++i) {
         REAL best_cost = std::numeric_limits<REAL>::max();
         for (size_t l = 0; l < m_num_labels; ++l) {
             if (m_energy->unary(i, l) < best_cost) {
@@ -35,7 +35,7 @@ void SoSPD::InitialLabeling() {
 void SoSPD::InitialDual() {
     // Initialize heights
     m_heights = std::vector<REAL>(m_energy->numNodes()*m_num_labels, 0);
-    for (NodeId i = 0; i < m_energy->numNodes(); ++i)
+    for (VarId i = 0; i < m_energy->numNodes(); ++i)
         for (Label l = 0; l < m_num_labels; ++l)
             Height(i, l) = m_energy->unary(i, l);
 
@@ -43,7 +43,7 @@ void SoSPD::InitialDual() {
     Label labelBuf[32];
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-		const NodeId* nodes = c.nodes();
+		const VarId* nodes = c.nodes();
 		int k = c.size();
         ASSERT(k < 32);
 		for (int i = 0; i < k; ++i) {
@@ -75,7 +75,7 @@ void SoSPD::InitialNodeCliqueList() {
     int clique_index = 0;
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const NodeId* nodes = c.nodes();
+        const VarId* nodes = c.nodes();
         const size_t k = c.size();
         for (size_t i = 0; i < k; ++i) {
             m_node_clique_list[nodes[i]].push_back(std::make_pair(clique_index, i));
@@ -175,7 +175,7 @@ void SoSPD::PreEditDual(SubmodularIBFS& crf) {
     }
 }
 
-REAL SoSPD::ComputeHeight(NodeId i, Label x) {
+REAL SoSPD::ComputeHeight(VarId i, Label x) {
     REAL ret = m_energy->unary(i, x);
     for (const auto& p : m_node_clique_list[i]) {
         ret += dualVariable(p.first, p.second, x);
@@ -183,7 +183,7 @@ REAL SoSPD::ComputeHeight(NodeId i, Label x) {
     return ret;
 }
 
-REAL SoSPD::ComputeHeightDiff(NodeId i, Label l1, Label l2) const {
+REAL SoSPD::ComputeHeightDiff(VarId i, Label l1, Label l2) const {
     REAL ret = m_energy->unary(i, l1) - m_energy->unary(i, l2);
     for (const auto& p : m_node_clique_list[i]) {
         ret += dualVariable(p.first, p.second, l1) 
@@ -231,8 +231,8 @@ bool SoSPD::UpdatePrimalDual(SubmodularIBFS& crf) {
     bool ret = false;
     SetupAlphaEnergy(crf);
     crf.Solve();
-    NodeId n = m_labels.size();
-    for (NodeId i = 0; i < n; ++i) {
+    VarId n = m_labels.size();
+    for (VarId i = 0; i < n; ++i) {
         int crf_label = crf.GetLabel(i);
         if (crf_label == 1) {
             Label alpha = m_fusion_labels[i];
@@ -260,7 +260,7 @@ void SoSPD::PostEditDual() {
     int clique_index = 0;
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const NodeId* nodes = c.nodes();
+        const VarId* nodes = c.nodes();
         int k = c.size();
         ASSERT(k < 32);
 		for (int i = 0; i < k; ++i) {
@@ -398,7 +398,7 @@ bool SoSPD::CheckLabelInvariant() {
     Label labelBuf[32];
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const NodeId* nodes = c.nodes();
+        const VarId* nodes = c.nodes();
         const size_t k = c.size();
         ASSERT(k < 32);
         for (size_t i = 0; i < k; ++i) {
@@ -424,13 +424,13 @@ bool SoSPD::CheckActiveInvariant() {
     size_t clique_index = 0;
     for (const CliquePtr& cp : m_energy->cliques()) {
         const Clique& c = *cp;
-        const NodeId* nodes = c.nodes();
+        const VarId* nodes = c.nodes();
         const size_t k = c.size();
         for (size_t i = 0; i < k; ++i) {
             
             if (dualVariable(clique_index, i, m_labels[nodes[i]]) < 0) {
                 std::cout << "CliqueId: " << clique_index << std::endl;
-                std::cout << "NodeId (w.r.t. Clique): " << i << std::endl;
+                std::cout << "VarId (w.r.t. Clique): " << i << std::endl;
                 std::cout << "Dual Value: " 
                     << dualVariable(clique_index, i, m_labels[nodes[i]]) 
                     << std::endl;
@@ -442,21 +442,21 @@ bool SoSPD::CheckActiveInvariant() {
     return true;
 }
 
-REAL SoSPD::dualVariable(int alpha, NodeId i, Label l) const {
+REAL SoSPD::dualVariable(int alpha, VarId i, Label l) const {
     return m_dual[alpha][i*m_num_labels+l];
 }
 
-REAL& SoSPD::dualVariable(int alpha, NodeId i, Label l) {
+REAL& SoSPD::dualVariable(int alpha, VarId i, Label l) {
     return m_dual[alpha][i*m_num_labels+l];
 }
 
 REAL SoSPD::dualVariable(const LambdaAlpha& lambdaAlpha, 
-        NodeId i, Label l) const {
+        VarId i, Label l) const {
     return lambdaAlpha[i*m_num_labels+l];
 }
 
 REAL& SoSPD::dualVariable(LambdaAlpha& lambdaAlpha, 
-        NodeId i, Label l) {
+        VarId i, Label l) {
     return lambdaAlpha[i*m_num_labels+l];
 }
 
@@ -527,7 +527,7 @@ double SoSPD::LowerBound() {
         clique_index++;
     }
     REAL dual_objective = 0;
-    for (NodeId i = 0; i < m_energy->numNodes(); ++i) {
+    for (VarId i = 0; i < m_energy->numNodes(); ++i) {
         REAL min_height = std::numeric_limits<REAL>::max();
         for (Label l = 0; l < m_num_labels; ++l)
             min_height = std::min(min_height, Height(i, l));
