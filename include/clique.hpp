@@ -17,12 +17,6 @@ class Clique {
         virtual REAL energy(const Label* labels) const = 0;
         virtual const NodeId* nodes() const = 0;
         virtual size_t size() const = 0;
-        virtual double rho() const {
-            return std::numeric_limits<double>::infinity(); 
-        }
-        virtual REAL fMax() const { 
-            return std::numeric_limits<REAL>::max(); 
-        }
 
     private:
         // Remove move and copy operators to prevent slicing of base classes
@@ -49,7 +43,6 @@ class MultilabelEnergy {
         NodeId numNodes() const { return m_numNodes; }
         size_t numCliques() const { return m_cliques.size(); }
         Label numLabels() const { return m_maxLabel; }
-        double rho() const;
         REAL computeEnergy(const std::vector<Label>& labels) const;
         const std::vector<CliquePtr>& cliques() const { return m_cliques; }
         REAL unary(NodeId i, Label l) const { return m_unary[i][l]; }
@@ -88,46 +81,12 @@ class PottsClique : public Clique {
             return m_nodes;
         }
         virtual size_t size() const override { return Degree; }
-        virtual double rho() const override {
-            double f_max = m_diffCost;
-            double f_min;
-            if (m_sameCost == 0)
-                f_min = m_diffCost;
-            else
-                f_min = m_sameCost;
-            return f_max / f_min;
-        }
     private:
         NodeId m_nodes[Degree];
         REAL m_sameCost;
         REAL m_diffCost;
 };
 
-/*
-class SeparableClique : public Clique {
-    public:
-        typedef uint32_t Assgn;
-        typedef std::vector<std::vector<REAL>> EnergyTable;
-
-        SeparableClique(const std::vector<NodeId>& nodes, const EnergyTable& energy_table)
-            : Clique(nodes),
-            m_energy_table(energy_table) { }
-
-        virtual REAL Energy(const std::vector<Label>& labels) const override {
-            ASSERT(labels.size() == this->m_nodes.size());
-            const Label num_labels = m_energy_table.size();
-            std::vector<Assgn> per_label(num_labels, 0);
-            for (size_t i = 0; i < labels.size(); ++i)
-                per_label[labels[i]] |= 1 << i;
-            REAL e = 0;
-            for (Label l = 0; l < num_labels; ++l)
-                e += m_energy_table[l][per_label[l]];
-            return e;
-        }
-    private:
-        EnergyTable m_energy_table;
-};
-*/
 
 /********* Multilabel Implementation ***************/
 
@@ -162,13 +121,6 @@ inline void MultilabelEnergy::addUnaryTerm(NodeId i,
 
 inline void MultilabelEnergy::addClique(Clique* c) {
     m_cliques.push_back(CliquePtr(c));
-}
-
-inline double MultilabelEnergy::rho() const {
-    double rho = 0;
-    for (const CliquePtr& cp : m_cliques)
-        rho = std::max(rho, cp->rho());
-    return rho;
 }
 
 inline REAL 

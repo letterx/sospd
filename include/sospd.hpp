@@ -116,7 +116,6 @@ class SoSPD {
         void DualFit();
         bool CheckHeightInvariant();
         bool CheckLabelInvariant();
-        bool CheckDualBoundInvariant();
         bool CheckActiveInvariant();
         REAL& Height(NodeId i, Label l) { return m_heights[i*m_num_labels+l]; }
 

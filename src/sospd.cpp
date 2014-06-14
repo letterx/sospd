@@ -343,7 +343,6 @@ void SoSPD::Solve(int niters) {
 	#endif
 	#ifdef CHECK_INVARIANTS
         ASSERT(CheckLabelInvariant());
-        ASSERT(CheckDualBoundInvariant());
         ASSERT(CheckActiveInvariant());
 	#endif
 	bool labelChanged = true;
@@ -354,14 +353,12 @@ void SoSPD::Solve(int niters) {
 	    PreEditDual(m_ibfs);
 		#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());
-            ASSERT(CheckDualBoundInvariant());
             ASSERT(CheckActiveInvariant());
 	    #endif
         UpdatePrimalDual(m_ibfs);
 		PostEditDual();
 		#ifdef CHECK_INVARIANTS
             ASSERT(CheckLabelInvariant());
-            ASSERT(CheckDualBoundInvariant());
             ASSERT(CheckActiveInvariant());
 	    #endif
         this_iter++;
@@ -417,29 +414,6 @@ bool SoSPD::CheckLabelInvariant() {
             std::cout << "Energy: " << energy << std::endl;
             std::cout << "DualSum: " << sum << std::endl;
             return false;
-        }
-        clique_index++;
-    }
-    return true;
-}
-
-bool SoSPD::CheckDualBoundInvariant() {
-    size_t clique_index = 0;
-    for (const CliquePtr& cp : m_energy->cliques()) {
-        const Clique& c = *cp;
-        REAL energyBound = c.fMax();
-        for (size_t i = 0; i < c.size(); ++i) {
-            for (size_t j = 0; j < m_num_labels; ++j) {
-                if (dualVariable(clique_index, i, j) > energyBound) {
-                    std::cout << "CliqueId: " << clique_index << std::endl;
-                    std::cout << "NodeId (w.r.t. Clique): " << i << std::endl;
-                    std::cout << "Label: " << j << std::endl;
-                    std::cout << "Dual Value: " 
-                        << dualVariable(clique_index, i, j) << std::endl;
-                    std::cout << "Energy Bound: " << energyBound << std::endl;
-                    return false;
-                }
-            }
         }
         clique_index++;
     }
