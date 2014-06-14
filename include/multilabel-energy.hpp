@@ -50,14 +50,21 @@ class MultilabelEnergy {
         /** Add a clique function to the energy
          *
          * Because Clique is polymorphic, these must be constructed on the 
-         * heap, MultilabelEnergy takes ownership (via unique_ptr).
+         * heap. MultilabelEnergy takes ownership (via unique_ptr).
          */
         void addClique(CliquePtr c);
+
+        /** Compute the energy of a given labeling
+         *
+         * \param labels is a vector of length numVars() where each entry is
+         * in 0,...,numLabels()-1. 
+         */
+        REAL computeEnergy(const std::vector<Label>& labels) const;
 
         VarId numVars() const { return m_numVars; }
         size_t numCliques() const { return m_cliques.size(); }
         Label numLabels() const { return m_maxLabel; }
-        REAL computeEnergy(const std::vector<Label>& labels) const;
+
         const std::vector<CliquePtr>& cliques() const { return m_cliques; }
         REAL unary(VarId i, Label l) const { return m_unary[i][l]; }
         REAL& unary(VarId i, Label l) { return m_unary[i][l]; }
@@ -73,6 +80,13 @@ class MultilabelEnergy {
         MultilabelEnergy() = delete;
 };
 
+/** Abstract Base Class for defining a clique function for use with 
+ * MultilabelEnergy
+ *
+ * Users inherit from this class, implementing the pure-virtual methods.
+ *
+ * Non-copyable and non-movable to prevent slicing of derived class data.
+ */
 class Clique {
     public:   
         typedef MultilabelEnergy::VarId VarId;
@@ -80,11 +94,21 @@ class Clique {
         Clique() { }
         virtual ~Clique() = default;
 
-        // labels must be an array of length this->size() with the labels
-        // corresponding to the nodes.
-        // Returns the energy of the clique at that labeling
+        /** Return the energy of the clique function at a given labeling
+         *
+         * \param labels An array of length size(), whose entries are the 
+         * variables \f$x_i\f$ for the desired labeling.
+         */
         virtual REAL energy(const Label* labels) const = 0;
+
+        /** Return an array containing the variables contained in the clique
+         *
+         * Returned pointer must point to an array of length size()
+         */
         virtual const VarId* nodes() const = 0;
+
+        /** Return the number of variables in the clique.
+         */
         virtual size_t size() const = 0;
 
     private:
@@ -95,9 +119,22 @@ class Clique {
         Clique& operator=(const Clique&) = delete;
 };
 
+
+/** An example clique defining a \f$P^n\f$ Potts model clique.
+ *
+ * This energy function has \f$f_C(x_C)\f$ equal to same_cost if all variables
+ * have the same label, and diff_cost if any labels are different.
+ *
+ * Additionally demonstrates how a user may use MultilabelEnergy for their own 
+ * functions by deriving from Clique.
+ *
+ * Template parameter Degree is the number of nodes in the clique.
+ */
 template <int Degree>
 class PottsClique : public Clique {
     public:
+        /** Construct a PottsClique on a set of variables.
+         */
         PottsClique(const std::vector<VarId>& nodes, REAL same_cost, 
                 REAL diff_cost)
             : m_sameCost(same_cost),
@@ -108,6 +145,8 @@ class PottsClique : public Clique {
                 m_nodes[i] = nodes[i];
         }
 
+        /** Return the potts energy for a given labeling
+         */
         virtual REAL energy(const Label* labels) const override {
             const Label l = labels[0];
             for (int i = 1; i < Degree; ++i) {
