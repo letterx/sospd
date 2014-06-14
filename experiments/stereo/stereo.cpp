@@ -327,7 +327,7 @@ void AlphaProposal(int niter, const std::vector<Label>& current,
 MultilabelEnergy SetupEnergy(const std::vector<cv::Mat>& proposals, 
         const std::vector<cv::Mat>& unary) {
     MultilabelEnergy energy(nproposals);
-    energy.addNode(width*height);
+    energy.addVar(width*height);
     
     // For each 1x3 patch, add in a StereoClique
     for (int i = 0; i < height; ++i) {

@@ -28,8 +28,7 @@ class MultilabelEnergy {
          */
         MultilabelEnergy(Label max_label);
 
-
-        VarId addNode(int i = 1);
+        VarId addVar(int i = 1);
         void addConstantTerm(REAL c);
         void addUnaryTerm(VarId i, const std::vector<REAL>& coeffs);
         // FIXME(afix) should instead pass CliquePtr
@@ -118,7 +117,7 @@ inline MultilabelEnergy::MultilabelEnergy(Label max_label)
     m_cliques()
 { }
 
-inline MultilabelEnergy::VarId MultilabelEnergy::addNode(int i) {
+inline MultilabelEnergy::VarId MultilabelEnergy::addVar(int i) {
     VarId ret = m_numNodes;
     for (int j = 0; j < i; ++j) {
         m_unary.push_back(std::vector<REAL>(m_maxLabel, 0));

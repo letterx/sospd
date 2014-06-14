@@ -361,7 +361,7 @@ void GradientProposal(int niter, const std::vector<Label>& current,
     
 MultilabelEnergy SetupEnergy(const std::vector<Label>& image) {
     MultilabelEnergy energy(256);
-    energy.addNode(width*height);
+    energy.addVar(width*height);
     
     // For each 2x2 patch, add in a Field of Experts clique
     for (int i = 0; i < height - 1; ++i) {
