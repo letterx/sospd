@@ -46,10 +46,15 @@ class MultilabelEnergy {
          * length max_label
          */
         void addUnaryTerm(VarId i, const std::vector<REAL>& coeffs);
-        // FIXME(afix) should instead pass CliquePtr
+
+        /** Add a clique function to the energy
+         *
+         * Because Clique is polymorphic, these must be constructed on the 
+         * heap, MultilabelEnergy takes ownership (via unique_ptr).
+         */
         void addClique(CliquePtr c);
 
-        VarId numNodes() const { return m_numNodes; }
+        VarId numVars() const { return m_numVars; }
         size_t numCliques() const { return m_cliques.size(); }
         Label numLabels() const { return m_maxLabel; }
         REAL computeEnergy(const std::vector<Label>& labels) const;
@@ -59,7 +64,7 @@ class MultilabelEnergy {
 
     protected:
         const Label m_maxLabel;
-        VarId m_numNodes;
+        VarId m_numVars;
         REAL m_constantTerm;
         std::vector<std::vector<REAL>> m_unary;
         std::vector<CliquePtr> m_cliques;
@@ -126,18 +131,18 @@ class PottsClique : public Clique {
 
 inline MultilabelEnergy::MultilabelEnergy(Label max_label)
     : m_maxLabel(max_label),
-    m_numNodes(0),
+    m_numVars(0),
     m_constantTerm(0),
     m_unary(),
     m_cliques()
 { }
 
 inline MultilabelEnergy::VarId MultilabelEnergy::addVar(int i) {
-    VarId ret = m_numNodes;
+    VarId ret = m_numVars;
     for (int j = 0; j < i; ++j) {
         m_unary.push_back(std::vector<REAL>(m_maxLabel, 0));
     }
-    m_numNodes += i;
+    m_numVars += i;
     return ret;
 }
 
@@ -147,7 +152,7 @@ inline void MultilabelEnergy::addConstantTerm(REAL c) {
 
 inline void MultilabelEnergy::addUnaryTerm(VarId i,
         const std::vector<REAL>& coeffs) {
-    ASSERT(i < m_numNodes);
+    ASSERT(i < m_numVars);
     ASSERT(Label(coeffs.size()) == m_maxLabel);
     for (Label l = 0; l < coeffs.size(); ++l)
         m_unary[i][l] += coeffs[l];
@@ -159,7 +164,7 @@ inline void MultilabelEnergy::addClique(CliquePtr c) {
 
 inline REAL 
 MultilabelEnergy::computeEnergy(const std::vector<Label>& labels) const {
-    ASSERT(VarId(labels.size()) == m_numNodes);
+    ASSERT(VarId(labels.size()) == m_numVars);
     REAL energy = 0;
     std::vector<Label> label_buf;
     for (const CliquePtr& cp : m_cliques) {
@@ -170,7 +175,7 @@ MultilabelEnergy::computeEnergy(const std::vector<Label>& labels) const {
             label_buf[i] = labels[nodes[i]];
         energy += cp->energy(label_buf.data());
     }
-    for (VarId i = 0; i < m_numNodes; ++i)
+    for (VarId i = 0; i < m_numVars; ++i)
         energy += m_unary[i][labels[i]];
     return energy;
 }

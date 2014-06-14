@@ -40,7 +40,7 @@ class FusionMove {
         FusionMove(const MultilabelEnergy* energy, const ProposalCallback& pc)
             : m_energy(energy)
             , m_pc(pc)
-            , m_labels(energy->numNodes(), 0)
+            , m_labels(energy->numVars(), 0)
             , m_iter(0)
             , m_method(Method::FGBZ) 
         { }
@@ -161,8 +161,8 @@ void FusionMove<MaxDegree>::GetFusedImage(const LabelVec& proposed, QPBO<REAL>& 
 template <int MaxDegree>
 template <typename HO>
 void FusionMove<MaxDegree>::SetupFusionEnergy(const LabelVec& proposed, HO& hoe) const {
-    AddVars(hoe,m_energy->numNodes());
-    for (VarId i = 0; i < m_energy->numNodes(); ++i) {
+    AddVars(hoe,m_energy->numVars());
+    for (VarId i = 0; i < m_energy->numVars(); ++i) {
         AddUnaryTerm(
                 hoe, 
                 i, 

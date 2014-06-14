@@ -5,8 +5,8 @@ SoSPD::SoSPD(const MultilabelEnergy* energy)
     : m_energy(energy),
     m_ibfs(),
     m_num_labels(energy->numLabels()),
-    m_labels(energy->numNodes(), 0),
-    m_fusion_labels(energy->numNodes(), 0),
+    m_labels(energy->numVars(), 0),
+    m_fusion_labels(energy->numVars(), 0),
     m_dual(),
     m_heights(),
     m_expansion_submodular(false),
@@ -20,7 +20,7 @@ int SoSPD::GetLabel(VarId i) const {
 }
 
 void SoSPD::InitialLabeling() {
-    const VarId n = m_energy->numNodes();
+    const VarId n = m_energy->numVars();
     for (VarId i = 0; i < n; ++i) {
         REAL best_cost = std::numeric_limits<REAL>::max();
         for (size_t l = 0; l < m_num_labels; ++l) {
@@ -34,8 +34,8 @@ void SoSPD::InitialLabeling() {
 
 void SoSPD::InitialDual() {
     // Initialize heights
-    m_heights = std::vector<REAL>(m_energy->numNodes()*m_num_labels, 0);
-    for (VarId i = 0; i < m_energy->numNodes(); ++i)
+    m_heights = std::vector<REAL>(m_energy->numVars()*m_num_labels, 0);
+    for (VarId i = 0; i < m_energy->numVars(); ++i)
         for (Label l = 0; l < m_num_labels; ++l)
             Height(i, l) = m_energy->unary(i, l);
 
@@ -527,7 +527,7 @@ double SoSPD::LowerBound() {
         clique_index++;
     }
     REAL dual_objective = 0;
-    for (VarId i = 0; i < m_energy->numNodes(); ++i) {
+    for (VarId i = 0; i < m_energy->numVars(); ++i) {
         REAL min_height = std::numeric_limits<REAL>::max();
         for (Label l = 0; l < m_num_labels; ++l)
             min_height = std::min(min_height, Height(i, l));
