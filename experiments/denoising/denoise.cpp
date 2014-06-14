@@ -20,7 +20,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <boost/program_options.hpp>
-#include "clique.hpp"
+#include "multilabel-energy.hpp"
 #include "foe-cliques.hpp"
 #include "higher-order-energy.hpp"
 #include "fusion-move.hpp"

@@ -5,4 +5,12 @@ Exception safety?
 Exception hierarchy, fix assertions to be consistent.
 Change how Clique is defined... is polymorphism really correct here?
 Figure out design for more structured energy functions than black-box
+    Need user-specified transformation from multilabel energy to a binary
+    expansion clique
+    Need more templating to allow user-specified submodular cliques for
+    SubmodularIBFS
+Uses of ArcIterator:
+    Finding first non-zero out-arc
+    Iterating over chain of parents
+    Find first arc satisfying predicate
 Boilerplate on each file

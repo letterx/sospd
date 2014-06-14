@@ -1,5 +1,5 @@
 #include "sospd.hpp"
-#include "clique.hpp"
+#include "multilabel-energy.hpp"
 
 SoSPD::SoSPD(const MultilabelEnergy* energy)
     : m_energy(energy),

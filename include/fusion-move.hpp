@@ -25,7 +25,7 @@
 #include <vector>
 #include "higher-order-energy.hpp"
 #include "HOCR.h"
-#include "clique.hpp"
+#include "multilabel-energy.hpp"
 #include "qpbo.hpp"
 #include "generic-higher-order.hpp"
 

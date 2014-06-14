@@ -10,7 +10,7 @@
  * the Field of Experts energy used for the denoising algorithm
  */
 
-#include "clique.hpp"
+#include "multilabel-energy.hpp"
 #include <math.h>
 #include <iostream>
 

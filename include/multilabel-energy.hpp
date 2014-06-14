@@ -38,6 +38,7 @@ class MultilabelEnergy {
         NodeId addNode(int i = 1);
         void addConstantTerm(REAL c);
         void addUnaryTerm(NodeId i, const std::vector<REAL>& coeffs);
+        // FIXME(afix) should instead pass CliquePtr
         void addClique(Clique* c);
 
         NodeId numNodes() const { return m_numNodes; }
@@ -49,7 +50,7 @@ class MultilabelEnergy {
         REAL& unary(NodeId i, Label l) { return m_unary[i][l]; }
 
     protected:
-        Label m_maxLabel;
+        const Label m_maxLabel;
         NodeId m_numNodes;
         REAL m_constantTerm;
         std::vector<std::vector<REAL>> m_unary;

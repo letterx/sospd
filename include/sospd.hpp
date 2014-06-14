@@ -9,7 +9,7 @@
 #include <vector>
 #include <functional>
 
-#include "clique.hpp"
+#include "multilabel-energy.hpp"
 #include "submodular-ibfs.hpp"
 #include "submodular-functions.hpp"
 
