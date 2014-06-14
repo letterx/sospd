@@ -484,7 +484,6 @@ void SubmodularIBFS::Push(ArcIterator& arc, bool forwardArc, REAL delta) {
         c.Push(arc.SourceIdx(), arc.TargetIdx(), delta);
     else
         c.Push(arc.TargetIdx(), arc.SourceIdx(), delta);
-    c.Time()++;
     for (NodeId n : c.Nodes()) {
         if (m_nodes[n].state == NodeState::N)
             continue;
@@ -733,7 +732,6 @@ void SubmodularIBFS::IBFSEnergyTableClique::ResetAlpha() {
     for (Assignment a = 0; a < num_assignments; ++a) {
         m_alpha_energy[a] = m_energy[a];
     }
-    this->Time()++;
 }
 
 void SubmodularIBFS::AddToLayer(NodeId i) {

@@ -5,9 +5,6 @@
  * Sum-of-submodular Primal Dual algorithm for multilabel problems
  */
 
-//#define PROGRESS_DISPLAY
-//#define CHECK_INVARIANTS
-
 #include "energy-common.hpp"
 #include <vector>
 #include <functional>

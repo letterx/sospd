@@ -1,0 +1,8 @@
+Comments on submodular-ibfs.hpp,cpp
+Simplify ArcIterator by using Boost.iterator
+Template out definition of REAL, Label for SubmodularIBFS and SoSPD
+Exception safety?
+Exception hierarchy, fix assertions to be consistent.
+Change how Clique is defined... is polymorphism really correct here?
+Figure out design for more structured energy functions than black-box
+Boilerplate on each file

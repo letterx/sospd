@@ -66,11 +66,10 @@ class SubmodularIBFS {
         class Clique {
             public:
             typedef std::vector<NodeId> NodeVec;
-            Clique() : m_nodes(), m_alpha_Ci(), m_time(0) { }
+            Clique() : m_nodes(), m_alpha_Ci() { }
             Clique(const std::vector<NodeId>& nodes)
                 : m_nodes(nodes),
-                m_alpha_Ci(nodes.size(), 0),
-                m_time(0)
+                m_alpha_Ci(nodes.size(), 0)
             { }
             ~Clique() = default;
 
@@ -102,13 +101,10 @@ class SubmodularIBFS {
                 }
                 return e;
             }
-            int64_t& Time() { return m_time; }
-            int64_t Time() const { return m_time; }
 
             protected:
             NodeVec m_nodes; // The list of nodes in the clique
             std::vector<REAL> m_alpha_Ci; // The reparameterization variables for this clique
-            int64_t m_time;
 
         };
         /*
