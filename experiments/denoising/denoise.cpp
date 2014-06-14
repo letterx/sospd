@@ -372,7 +372,7 @@ MultilabelEnergy SetupEnergy(const std::vector<Label>& image) {
             nodes[bufIdx++] = (i+1)*width + j;
             nodes[bufIdx++] = i*width + j+1;
             nodes[bufIdx++] = (i+1)*width + j+1;
-            energy.addClique(new FoEEnergy(nodes));
+            energy.addClique(MultilabelEnergy::CliquePtr(new FoEEnergy(nodes)));
         }
     }
     // Add the unary terms

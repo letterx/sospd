@@ -28,11 +28,26 @@ class MultilabelEnergy {
          */
         MultilabelEnergy(Label max_label);
 
+        /** Add variables to the MRF. Default to add a single variable
+         *
+         * \param i Number of variables to add
+         * \return VarId of first variable added
+         */
         VarId addVar(int i = 1);
+
+        /** Add a constant term (independent of labeling) to the function
+         */
         void addConstantTerm(REAL c);
+
+        /** Add a unary term (depending on a single variable) to the function
+         *
+         * \param i Variable to add unary term for
+         * \param coeffs Vector of costs for each labeling of x_i. Must be of
+         * length max_label
+         */
         void addUnaryTerm(VarId i, const std::vector<REAL>& coeffs);
         // FIXME(afix) should instead pass CliquePtr
-        void addClique(Clique* c);
+        void addClique(CliquePtr c);
 
         VarId numNodes() const { return m_numNodes; }
         size_t numCliques() const { return m_cliques.size(); }
@@ -138,8 +153,8 @@ inline void MultilabelEnergy::addUnaryTerm(VarId i,
         m_unary[i][l] += coeffs[l];
 }
 
-inline void MultilabelEnergy::addClique(Clique* c) {
-    m_cliques.push_back(CliquePtr(c));
+inline void MultilabelEnergy::addClique(CliquePtr c) {
+    m_cliques.push_back(std::move(c));
 }
 
 inline REAL 

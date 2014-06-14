@@ -333,14 +333,16 @@ MultilabelEnergy SetupEnergy(const std::vector<cv::Mat>& proposals,
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width - 2; ++j) {
             int nodes[3] = { i*width+j, i*width+j+1, i*width+j+2 };
-            energy.addClique(new StereoClique(nodes, proposals));
+            energy.addClique(MultilabelEnergy::CliquePtr(
+                        new StereoClique(nodes, proposals)));
         }
     }
     // For each 3x1 patch, add in a StereoClique
     for (int i = 0; i < height-2; ++i) {
         for (int j = 0; j < width; ++j) {
             int nodes[3] = { i*width+j, (i+1)*width+j, (i+2)*width+j };
-            energy.addClique(new StereoClique(nodes, proposals));
+            energy.addClique(MultilabelEnergy::CliquePtr(
+                        new StereoClique(nodes, proposals)));
         }
     }
     // Add the unary terms
