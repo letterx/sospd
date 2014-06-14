@@ -43,8 +43,8 @@ class FoEEnergy : public Clique {
  */
 REAL FoEUnaryEnergy(unsigned char orig, unsigned char label, double sigma);
 
-void AddFoEGrad(const Clique& clique, const std::vector<Label>& current,
+void AddFoEGrad(const Clique& clique, const std::vector<Clique::Label>& current,
         std::vector<double>& grad);
-double FoEUnaryGrad(Label orig, Label current, double sigma);
+double FoEUnaryGrad(Clique::Label orig, Clique::Label current, double sigma);
 
 #endif

@@ -26,6 +26,9 @@
 #include "fusion-move.hpp"
 #include "sospd.hpp"
 
+typedef MultilabelEnergy::Label Label;
+typedef MultilabelEnergy::NodeId NodeId;
+
 double sigma = 20.0;
 REAL threshold = 100.0 * 60;
 int thresholdIters = 20;

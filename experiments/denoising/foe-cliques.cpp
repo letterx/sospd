@@ -37,9 +37,9 @@ REAL FoEUnaryEnergy(unsigned char orig, unsigned char label, double sigma) {
         return DoubleToREAL * e;
 }
 
-void AddFoEGrad(const Clique& clique, const std::vector<Label>& current,
+void AddFoEGrad(const Clique& clique, const std::vector<Clique::Label>& current,
         std::vector<double>& grad) {
-    Label values[4];
+    Clique::Label values[4];
     for (int i = 0; i < 4; ++i)
         values[i] = current[clique.nodes()[i]];
     for (int i = 0; i < 4; ++i) {
@@ -53,6 +53,6 @@ void AddFoEGrad(const Clique& clique, const std::vector<Label>& current,
     }
 }
 
-double FoEUnaryGrad(Label orig, Label current, double sigma) {
+double FoEUnaryGrad(Clique::Label orig, Clique::Label current, double sigma) {
     return (double(current) - double(orig)) / (sigma*sigma);
 }

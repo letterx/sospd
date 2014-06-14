@@ -1,35 +1,27 @@
 #ifndef _CLIQUE_HPP_
 #define _CLIQUE_HPP_
 
+/** \file multilabel-energy.hpp
+ * Classes for defining multi-label energy functions, i.e., Markov Random 
+ * Fields.
+ */
+
 #include "energy-common.hpp"
 
-typedef int NodeId;
-typedef size_t Label;
+class Clique;
 
-class Clique {
-    public:   
-        Clique() { }
-        virtual ~Clique() = default;
-
-        // labels must be an array of length this->size() with the labels
-        // corresponding to the nodes.
-        // Returns the energy of the clique at that labeling
-        virtual REAL energy(const Label* labels) const = 0;
-        virtual const NodeId* nodes() const = 0;
-        virtual size_t size() const = 0;
-
-    private:
-        // Remove move and copy operators to prevent slicing of base classes
-        Clique(Clique&&) = delete;
-        Clique& operator=(Clique&&) = delete;
-        Clique(const Clique&) = delete;
-        Clique& operator=(const Clique&) = delete;
-};
-
+/** A multilabel energy function, which splits as a sum of clique energies
+ *
+ * MultilabelEnergy keeps track of a function of the form
+ *  \f[ f(x) = \sum_i f_i(x_i) + \sum_C f_C(x_C) \f]
+ * where the variables \f$x_i\f$ come from a label set 1,...,L, and there are
+ * functions \f$f_C\f$ defined over a set of cliques \f$C\f$ which are subsets
+ * of the variables.
+ */
 class MultilabelEnergy { 
     public:
-        typedef ::NodeId NodeId;
-        typedef ::Label Label;
+        typedef int NodeId;
+        typedef size_t Label;
         typedef std::unique_ptr<Clique> CliquePtr;
 
         MultilabelEnergy() = delete;
@@ -55,6 +47,28 @@ class MultilabelEnergy {
         REAL m_constantTerm;
         std::vector<std::vector<REAL>> m_unary;
         std::vector<CliquePtr> m_cliques;
+};
+
+class Clique {
+    public:   
+        typedef MultilabelEnergy::NodeId NodeId;
+        typedef MultilabelEnergy::Label Label;
+        Clique() { }
+        virtual ~Clique() = default;
+
+        // labels must be an array of length this->size() with the labels
+        // corresponding to the nodes.
+        // Returns the energy of the clique at that labeling
+        virtual REAL energy(const Label* labels) const = 0;
+        virtual const NodeId* nodes() const = 0;
+        virtual size_t size() const = 0;
+
+    private:
+        // Remove move and copy operators to prevent slicing of base classes
+        Clique(Clique&&) = delete;
+        Clique& operator=(Clique&&) = delete;
+        Clique(const Clique&) = delete;
+        Clique& operator=(const Clique&) = delete;
 };
 
 template <int Degree>
@@ -99,7 +113,7 @@ inline MultilabelEnergy::MultilabelEnergy(Label max_label)
     m_cliques()
 { }
 
-inline NodeId MultilabelEnergy::addNode(int i) {
+inline MultilabelEnergy::NodeId MultilabelEnergy::addNode(int i) {
     NodeId ret = m_numNodes;
     for (int j = 0; j < i; ++j) {
         m_unary.push_back(std::vector<REAL>(m_maxLabel, 0));

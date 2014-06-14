@@ -19,6 +19,9 @@
 #include "fusion-move.hpp"
 #include "sospd.hpp"
 
+typedef MultilabelEnergy::Label Label;
+typedef MultilabelEnergy::NodeId NodeId;
+
 struct IterationStat {
     int iter;
     REAL startEnergy;
