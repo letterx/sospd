@@ -99,15 +99,11 @@ void SubmodularIBFS::GraphInit()
     // Check to see if we've already initialized, if so: do nothing
     if (s != -1) return;
 
-    auto start = Clock::now();
-
     // super source and sink
     s = m_num_nodes; t = m_num_nodes + 1;
     num_edges = 2 * m_num_nodes; // source sink edges
     m_nodes.push_back(Node(s));
     m_nodes.push_back(Node(t));
-
-    m_graphInitTime += Duration{ Clock::now() - start }.count();
 }
 
 void SubmodularIBFS::IBFSInit()
@@ -260,7 +256,6 @@ void SubmodularIBFS::IBFS() {
     m_totalTime += Duration{ Clock::now() - start }.count();
 
     //std::cout << "Total time:      " << m_totalTime << "\n";
-    //std::cout << "Graph init time: " << m_graphInitTime << "\n";
     //std::cout << "Init time:       " << m_initTime << "\n";
     //std::cout << "Augment time:    " << m_augmentTime << "\n";
     //std::cout << "Adopt time:      " << m_adoptTime << "\n";
@@ -577,11 +572,6 @@ void SubmodularIBFS::IBFSEnergyTableClique::NormalizeEnergy(SubmodularIBFS& sf) 
             if (!(a & (1 << i))) m_energy[a] += marginals[i];
         }
         ASSERT(m_energy[a] >= 0);
-        /* FIXME: the above only works if the energy is actually submodular
-* not epsilon-submodular. To make everything positive even if not,
-* we truncate to zero.
-*/
-        //m_energy[a] = std::max(0, m_energy[a]);
         m_alpha_energy[a] = m_energy[a];
     }
     ComputeMinTightSets();

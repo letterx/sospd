@@ -1,16 +1,21 @@
 #ifndef _SUBMODULAR_IBFS_HPP_
 #define _SUBMODULAR_IBFS_HPP_
 
+/** \file submodular-ibfs.hpp
+ *
+ * Sum-of-submodular flow using Iterated Breadth First Search
+ */
+
 #include "energy-common.hpp"
-#include <list>
 #include <algorithm>
-#include <boost/shared_ptr.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/slist.hpp>
 #include <boost/intrusive/options.hpp>
 
 class IBFSEnergyTableClique;
 
+/** Graph structure and algorithm for sum-of-submodular IBFS 
+ */
 class SubmodularIBFS {
     public:
         typedef int NodeId;
@@ -19,16 +24,20 @@ class SubmodularIBFS {
         enum class NodeState : char {
             S, T, S_orphan, T_orphan, N
         };
-        typedef std::list<NodeId> NodeIdList;
-
 
         SubmodularIBFS();
 
-        // Add n new nodes to the base set V
+        /** Add n new nodes to the base set V
+         *
+         * \return Index of first created node
+         */
         NodeId AddNode(int n = 1);
 
-        // GetLabel returns 1, 0 or -1 if n is in S, not in S, or haven't
-        // computed flow yet, respectively
+        /** Get cut label of node
+         *
+         * \return 1, 0 or -1 if n is in S, not in S, or haven't computed flow 
+         * yet, respectively
+         */
         int GetLabel(NodeId n) const;
 
         // Add a constant to the energy function
@@ -125,12 +134,7 @@ class SubmodularIBFS {
                 { 
                     ASSERT(nodes.size() <= 31); 
                 }
-                IBFSEnergyTableClique(const IBFSEnergyTableClique& c) = default;
-                IBFSEnergyTableClique& operator=(const IBFSEnergyTableClique& c) = default;
-                IBFSEnergyTableClique(IBFSEnergyTableClique&& c) = default;
-                IBFSEnergyTableClique& operator=(IBFSEnergyTableClique&& c) = default;
 
-                // Virtual overrides
                 virtual REAL ComputeEnergy(const std::vector<int>& labels) const;
                 REAL ExchangeCapacity(size_t u_idx, size_t v_idx) const;
                 bool NonzeroCapacity(size_t u_idx, size_t v_idx) const;
@@ -231,6 +235,16 @@ class SubmodularIBFS {
         typedef std::vector<IBFSEnergyTableClique> CliqueVec;
 
     protected:
+        void Push(ArcIterator& arc, bool forwardArc, REAL delta);
+        void Augment(ArcIterator& arc);
+        void Adopt();
+        void MakeOrphan(NodeId i);
+        void RemoveFromLayer(NodeId i);
+        void AddToLayer(NodeId i);
+        void AdvanceSearchNode();
+
+        void IBFSInit();
+
         // Layers store vertices by distance.
         std::vector<NodeQueue> m_source_layers;
         std::vector<NodeQueue> m_sink_layers;
@@ -249,16 +263,6 @@ class SubmodularIBFS {
         NodeId s,t;
         long num_edges;
 
-        void Push(ArcIterator& arc, bool forwardArc, REAL delta);
-        void Augment(ArcIterator& arc);
-        void Adopt();
-        void MakeOrphan(NodeId i);
-        void RemoveFromLayer(NodeId i);
-        void AddToLayer(NodeId i);
-        void AdvanceSearchNode();
-
-        void IBFSInit();
-
 
         REAL m_constant_term;
         NodeId m_num_nodes;
@@ -276,7 +280,6 @@ class SubmodularIBFS {
         size_t m_num_clique_pushes;
 
         double m_totalTime = 0;
-        double m_graphInitTime = 0;
         double m_initTime = 0;
         double m_augmentTime = 0;
         double m_adoptTime = 0;
