@@ -16,7 +16,7 @@ To compile the experiments, OpenCV is required (www.opencv.org)
 
 With CMake, compilation is easy.
 
-cd path/to/sum-of-submodular
+cd path/to/sospd
 mkdir build
 cd build
 cmake ..

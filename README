@@ -1,8 +1,13 @@
-sum-of-submodular
+sospd
 =================
-sum-of-submodular implements algorithms for optimizing a sum of submodular 
-functions. That is
-    f(S) = sum_C f_C(S \cap C)
-where the functions f_C are all submodular, and C are all subsets of a base set
-V. Note that f itself is submodular, but if the f_C have nice structure, we 
-can do better than general submodular optimization.
+sospd implements the Sum-of-Submodular Primal Dual algorithm for general
+multilabel higher-order Markov Random Fields. See the paper
+    "A Primal-Dual Algorithm for Higher-Order Multilabel Markov Random Fields"
+    Alexander Fix, Chen Wang and Ramin Zabih. CVPR 2014.
+
+For installation instructions, see INSTALL.txt
+
+Further documentation can be found by building the doxygen documentation by 
+running:
+    cd doc
+    doxygen
