@@ -1,5 +1,13 @@
 sospd
 =================
+
+Version 0.9
+
+NOTE: This is a preliminary version with the experiments from the papber below. 
+Stay tuned for further improvements, like handling larger cliques with structured
+energy (i.e., depend on the number of nodes taking a label), and not just given
+as a black box.
+
 sospd implements the Sum-of-Submodular Primal Dual algorithm for general
 multilabel higher-order Markov Random Fields. See the paper
     "A Primal-Dual Algorithm for Higher-Order Multilabel Markov Random Fields"
