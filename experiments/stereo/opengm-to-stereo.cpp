@@ -22,14 +22,6 @@
 typedef MultilabelEnergy::Label Label;
 typedef MultilabelEnergy::VarId VarId;
 
-struct IterationStat {
-    int iter;
-    REAL startEnergy;
-    REAL endEnergy;
-    double iterTime;
-    double totalTime;
-};
-
 class StereoClique : public Clique {
     public:
         StereoClique(const int* nodes, 
@@ -74,20 +66,9 @@ REAL StereoClique::energy(const Label buf[]) const {
 
 MultilabelEnergy SetupEnergy(const std::vector<cv::Mat>& proposals,
         const std::vector<cv::Mat>& unaries);
-void AlphaProposal(int niter, const std::vector<Label>& current, 
-        std::vector<Label>& proposed);
 std::vector<cv::Mat> ReadUnaries(const std::string& unaryFilename);
 std::vector<cv::Mat> ReadProposals(const std::string& proposalFilename);
 void ShowImage(const cv::Mat& im);
-
-template <typename Optimizer>
-void Optimize(Optimizer& opt, 
-        const MultilabelEnergy& energyFunction, 
-        const std::vector<cv::Mat>& proposals,
-        cv::Mat& image, 
-        std::vector<Label>& current, 
-        int iterations, 
-        std::vector<IterationStat>& stats);
 
 int width = 0;
 int height = 0;
@@ -97,31 +78,18 @@ int main(int argc, char **argv) {
     namespace po = boost::program_options;
     // Variables set by program options
     std::string basename;
+    std::string opengmFileName;
     std::string unaryFilename;
     std::string proposalFilename;
     std::string outfilename;
-    std::string statsFilename;
-    int iterations;
-    std::string method;
-    bool spdLowerBound;
 
     // Setup and parse options
     po::options_description options("Stereo arguments");
     options.add_options()
         ("help", "Display this help message")
-        ("iters,i", 
-         po::value<int>(&iterations)->default_value(300), 
-         "Maximum number of iterations")
         ("image",
          po::value<std::string>(&basename)->required(),
          "Name of image (without extension)")
-        ("method,m",
-         po::value<std::string>(&method)
-            ->default_value(std::string("spd-alpha")),
-         "Optimization method")
-        ("lower-bound",
-         po::value<bool>(&spdLowerBound)->default_value(false),
-         "Use lower bound for SPD3")
         ("kappa", 
          po::value<float>(&StereoClique::kappa)->default_value(0.001),
          "Truncation for stereo prior")
@@ -131,10 +99,16 @@ int main(int argc, char **argv) {
         ("lambda",
          po::value<float>(&StereoClique::scale)->default_value(20000),
          "Scale for stereo prior")
+        ("output", po::value<std::string>(&outfilename)->required(),
+         "Output file name")
+        ("ogmFile", po::value<std::string>(&opengmFileName)->required(),
+         "Opengm file name")
     ;
 
     po::positional_options_description positionalOpts;
     positionalOpts.add("image", 1);
+    positionalOpts.add("ogmFile", 2);
+    positionalOpts.add("output", 3);
 
     po::variables_map vm;
     try {
@@ -154,10 +128,6 @@ int main(int argc, char **argv) {
 
     unaryFilename = basename + ".unary";
     proposalFilename = basename + ".proposals";
-    outfilename = basename + "-" + method + "-" 
-        + std::to_string(spdLowerBound) + ".pgm";
-    statsFilename = basename + "-" + method + "-" 
-        + std::to_string(spdLowerBound) + ".stats";
 
     // Read stored unaries and proposed moves
     std::cout << "Reading proposals...\n";
@@ -166,163 +136,45 @@ int main(int argc, char **argv) {
     std::vector<cv::Mat> unaries = ReadUnaries(unaryFilename);
     cv::Mat image(height, width, CV_32FC1);
 
-    std::vector<IterationStat> stats;
-
     std::vector<Label> current(width*height, 0);
     std::cout << "Setting up energy...\n";
     MultilabelEnergy energyFunction = SetupEnergy(proposals, unaries);
-    for (int i = 0; i < int(current.size()); ++i) {
-        REAL minUnary = std::numeric_limits<REAL>::max();
-        Label minLabel = 0;
-        for (int l = 0; l < nproposals; ++l) {
-            if (energyFunction.unary(i, l) < minUnary) {
-                minUnary = energyFunction.unary(i, l);
-                minLabel = l;
-            }
+
+    {
+        // Read image from opengm output file
+        std::ifstream ogmFile(opengmFileName);
+        std::string line = "foo";
+        while (line != "%states" && line != "")
+            std::getline(ogmFile, line);
+        if (line == "") {
+            std::cout << "Didn't find states\n";
+            exit(-1);
         }
-        current[i] = minLabel;
-    }
-
-
-    // Optimze, depending on chosen method
-    std::cout << "Optimizing...\n";
-    if (method == std::string("reduction")) {
-        FusionMove<4>::ProposalCallback pc(AlphaProposal);
-        FusionMove<4> fusion(&energyFunction, pc, current);
-        Optimize(fusion, energyFunction, proposals, image, current, 
-                iterations, stats);
-    } else if (method == std::string("hocr")) {
-        FusionMove<4>::ProposalCallback pc(AlphaProposal);
-        FusionMove<4> fusion(&energyFunction, pc, current);
-        fusion.SetMethod(FusionMove<4>::Method::HOCR);
-        Optimize(fusion, energyFunction, proposals, image, current, 
-                iterations, stats);
-    } else if (method == std::string("grd")) {
-        FusionMove<4>::ProposalCallback pc(AlphaProposal);
-        FusionMove<4> fusion(&energyFunction, pc, current);
-        fusion.SetMethod(FusionMove<4>::Method::GRD);
-        Optimize(fusion, energyFunction, proposals, image, current, 
-                iterations, stats);
-    } else if (method == std::string("primal")) {
-        FusionMove<4>::ProposalCallback pc(AlphaProposal);
-        FusionMove<4> fusion(&energyFunction, pc, current);
-        fusion.SetMethod(FusionMove<4>::Method::SOS_UB);
-        Optimize(fusion, energyFunction, proposals, image, current, 
-                iterations, stats);
-    } else if (method == std::string("spd-alpha")) {
-        SoSPD<> dgfm(&energyFunction);
-        dgfm.SetAlphaExpansion();
-        dgfm.SetLowerBound(spdLowerBound);
-        Optimize(dgfm, energyFunction, proposals, image, current, 
-                iterations, stats);
-    } else if (method == std::string("spd-alpha-height")) {
-        SoSPD<> dgfm(&energyFunction);
-        dgfm.SetHeightAlphaExpansion();
-        dgfm.SetLowerBound(spdLowerBound);
-        Optimize(dgfm, energyFunction, proposals, image, current, 
-                iterations, stats);
-    } else {
-        std::cout << "Unrecognized method: " << method << "!\n";
-        exit(-1);
-    }
-
-    // Write out results
-    image.convertTo(image, CV_8U, 1.0, 0);
-    cv::imwrite(outfilename.c_str(), image); 
-
-    std::ofstream statsfile(statsFilename);
-    for (const IterationStat& s : stats) {
-        statsfile << s.iter << "\t";
-        statsfile << s.iterTime << "\t";
-        statsfile << s.totalTime << "\t";
-        statsfile << s.startEnergy << "\t";
-        statsfile << s.endEnergy << "\n";
-    }
-    statsfile.close();
-
-
-    REAL energy  = energyFunction.computeEnergy(current);
-    std::cout << "Final Energy: " << energy << std::endl;
-
-    return 0;
-}
-
-template <typename Optimizer>
-void Optimize(Optimizer& opt, 
-        const MultilabelEnergy& energyFunction, 
-        const std::vector<cv::Mat>& proposals, 
-        cv::Mat& image, 
-        std::vector<Label>& current, 
-        int iterations, 
-        std::vector<IterationStat>& stats) {
-    typedef std::chrono::duration<double> Duration;
-    typedef std::chrono::system_clock Clock;
-
-    // Converge when energy doesn't decrease by more than "threshold" over
-    // "thresholdIters" many iterations
-    REAL threshold = 100;
-    int thresholdIters = 20;
-    // energies keeps track of last [thresholdIters] energy values to know
-    // when we reach convergence
-    std::vector<REAL> energies(thresholdIters);
-
-    REAL lastEnergy = energyFunction.computeEnergy(current);
-    auto startTime = Clock::now();
-    for (int i = 0; i < iterations; ++i) {
-        std::cout << "Iteration " << i+1 
-            << "\tCurrent Energy: " << lastEnergy << std::endl;
-
-        auto iterStartTime = Clock::now();
-        IterationStat s;
-        s.iter = i;
-        s.startEnergy = lastEnergy;
-
-        // check if we've reached convergence
-        if (i > thresholdIters 
-                && energies[i%thresholdIters] - lastEnergy < threshold) {
-            break;
+        std::getline(ogmFile, line);
+        std::stringstream sstream(line);
+        for (int i = 0; i < width*height; ++i) {
+            int label;
+            sstream >> label;
+            sstream.ignore(2);
+            current[i] = label;
         }
-        energies[i%thresholdIters] = lastEnergy;
 
-        // Run one iteration of optimizer
-        opt.Solve(1);
-
-        s.iterTime = Duration{ Clock::now() - iterStartTime }.count();
-        s.totalTime = Duration{ Clock::now() - startTime }.count();
-
-        std::vector<Label> nextLabeling(width*height);
-        for (int i = 0; i < width*height; ++i)
-            nextLabeling[i] = opt.GetLabel(i);
-        REAL energy  = energyFunction.computeEnergy(nextLabeling); 
-
-        // Only keep track of best energy labeling seen so far
-        if (energy < lastEnergy) {
-            lastEnergy = energy;
-            current = nextLabeling;
-        }
-        s.endEnergy = lastEnergy;
-        stats.push_back(s);
-
-        for (int i = 0; i < height; ++i)
-            for (int j = 0; j < width; ++j)
-                image.at<float>(i, j) = 
-                    proposals[current[i*width+j]].at<float>(i, j);
     }
 
     for (int i = 0; i < height; ++i)
         for (int j = 0; j < width; ++j)
             image.at<float>(i, j) = 
                 proposals[current[i*width+j]].at<float>(i, j);
-}
 
-void AlphaProposal(int niter, const std::vector<Label>& current, 
-        std::vector<Label>& proposed) {
-    proposed.resize(height*width);
-    Label alpha = niter % nproposals;
-    for (Label& l : proposed)
-        l = alpha;
-}
+    // Write out results
+    image.convertTo(image, CV_8U, 1.0, 0);
+    cv::imwrite(outfilename.c_str(), image); 
 
+    REAL energy  = energyFunction.computeEnergy(current);
+    std::cout << "Final Energy: " << energy << std::endl;
+
+    return 0;
+}
 
 MultilabelEnergy SetupEnergy(const std::vector<cv::Mat>& proposals, 
         const std::vector<cv::Mat>& unary) {

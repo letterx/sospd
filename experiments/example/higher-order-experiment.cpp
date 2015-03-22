@@ -22,8 +22,7 @@ int main(int argc, char **argv) {
 
     SubmodularIBFS ibfs;
     GenRandom(ibfs, n, k, m, (REAL)100, (REAL)800, (REAL)1600, 0);
-    ibfs.IBFS();
-    ibfs.ComputeMinCut();
+    ibfs.Solve();
 
     Duration ibfsTime = Clock::now() - ibfsStart;
 

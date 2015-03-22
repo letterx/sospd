@@ -118,6 +118,7 @@ void FusionMove<MaxDegree>::FusionStep() {
         }
         case Method::GRD:
         {
+#ifdef WITH_GRD
             Petter::PseudoBoolean<REAL> pb;
             LabelVec proposed(m_labels.size());
             m_pc(m_iter, m_labels, proposed);
@@ -130,6 +131,9 @@ void FusionMove<MaxDegree>::FusionStep() {
                     m_labels[i] = proposed[i];
                 }
             }
+#else
+            ASSERT(false && "GRD not installed!");
+#endif
             break;
         }
         case Method::SOS_UB:

@@ -1,5 +1,5 @@
-#ifndef _CLIQUE_HPP_
-#define _CLIQUE_HPP_
+#ifndef _SOSOPT_CLIQUE_HPP_
+#define _SOSOPT_CLIQUE_HPP_
 
 /** \file multilabel-energy.hpp
  * Classes for defining multi-label energy functions, i.e., Markov Random 
@@ -198,7 +198,16 @@ inline void MultilabelEnergy::addUnaryTerm(VarId i,
 }
 
 inline void MultilabelEnergy::addClique(CliquePtr c) {
-    m_cliques.push_back(std::move(c));
+    if (c->size() == 1) {
+        auto node = *c->nodes();
+        std::vector<REAL> costs(m_maxLabel, 0);
+        for (Label l = 0; l < m_maxLabel; ++l) {
+            costs[l] = c->energy(&l);
+        }
+        addUnaryTerm(node, costs);
+    } else {
+        m_cliques.push_back(std::move(c));
+    }
 }
 
 inline REAL 

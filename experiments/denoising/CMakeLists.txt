@@ -15,6 +15,10 @@ set(libs ${libs} boost_program_options ${OpenCV_LIBS})
 
 target_link_libraries(denoise "sos-opt" ${libs})
 
+if(WITH_GUROBI)
+    target_link_libraries(denoise "${GUROBI_LIBRARY}")
+endif()
+
 ###
 ### Target: add-noise
 ###

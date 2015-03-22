@@ -11,13 +11,41 @@
 
 #include "multilabel-energy.hpp"
 #include "submodular-ibfs.hpp"
+#include "parametric-submodular-ibfs.hpp"
 #include "submodular-functions.hpp"
 
+struct FlowConcept {
+    typedef int NodeId;
+    struct Clique {
+        int Size() const;
+        const std::vector<REAL>& AlphaCi() const;
+        std::vector<REAL>& EnergyTable();
+        const std::vector<REAL>& EnergyTable() const;
+    };
+    struct CliqueVec {
+        Clique& operator[](int n);
+        const Clique& operator[](int n) const;
+    };
+    void AddNode(int n);
+    void AddConstantTerm(REAL c);
+    void AddUnaryTerm(NodeId i, REAL E0, REAL E1);
+    void AddClique(const std::vector<NodeId>& nodes, const std::vector<REAL>& energyTable, bool normalize);
+    void GraphInit();
+    void ClearUnaries();
+    REAL GetConstantTerm();
+    CliqueVec& GetCliques();
+    
+    void Solve();
+    int GetLabel(NodeId i);
+};
+
+struct SubmodularIBFSParams;
 
 /** Optimizer using Sum-of-submodular Primal Dual algorithm. 
  *
  * Implements SoSPD algorithm from Fix, Wang, Zabih in CVPR 14.
  */
+template <typename Flow = SubmodularIBFS>
 class SoSPD {
     public:
         typedef MultilabelEnergy::VarId VarId;
@@ -38,6 +66,7 @@ class SoSPD {
          * \param energy Energy function to optimize.
          */
         explicit SoSPD(const MultilabelEnergy* energy);
+        explicit SoSPD(const MultilabelEnergy* energy, SubmodularIBFSParams& params);
 
         /** Run SoSPD algorithm either to completion, or for a number of steps.
          *
@@ -94,6 +123,7 @@ class SoSPD {
         double LowerBound();
 
         REAL dualVariable(int alpha, VarId i, Label l) const;
+        Flow* GetFlow() { return &m_ibfs; }
 
     private:
         typedef MultilabelEnergy::CliquePtr CliquePtr;
@@ -103,20 +133,17 @@ class SoSPD {
 
         REAL ComputeHeight(VarId, Label);
         REAL ComputeHeightDiff(VarId i, Label l1, Label l2) const;
-        void SetupGraph(SubmodularIBFS& crf);
+        void SetupGraph(Flow& crf);
         // TODO(afix): redo this
-        void SetupAlphaEnergy(SubmodularIBFS& crf);
+        void SetupAlphaEnergy(Flow& crf);
         void InitialLabeling();
         void InitialDual();
         void InitialNodeCliqueList();
         bool InitialFusionLabeling();
-        void PreEditDual(SubmodularIBFS& crf);
-        bool UpdatePrimalDual(SubmodularIBFS& crf);
+        void PreEditDual(Flow& crf);
+        bool UpdatePrimalDual(Flow& crf);
         void PostEditDual();
         void DualFit();
-        bool CheckHeightInvariant();
-        bool CheckLabelInvariant();
-        bool CheckActiveInvariant();
         REAL& Height(VarId i, Label l) { return m_heights[i*m_num_labels+l]; }
 
         REAL& dualVariable(int alpha, VarId i, Label l);
@@ -133,7 +160,7 @@ class SoSPD {
 
         const MultilabelEnergy* m_energy;
         // Unique ptr so we can forward declare?
-        SubmodularIBFS m_ibfs;
+        Flow m_ibfs;
         const size_t m_num_labels;
         std::vector<Label> m_labels;
         /// The proposed labeling in a given iteration

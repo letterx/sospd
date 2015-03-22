@@ -2,13 +2,17 @@
 #define _SUBMODULAR_FUNCTIONS_HPP_
 
 #include "energy-common.hpp"
+#include <iostream>
 #include <vector>
 #include <cstdint>
+#include <cmath>
 
 typedef uint32_t Assgn;
 
-void SubmodularUpperBound(int n, std::vector<REAL>& energyTable);
+typedef void (*UpperBoundFunction)(int, const std::vector<REAL>&, std::vector<REAL>&);
+void SubmodularUpperBound(int n, const std::vector<REAL>& oldEnergy, std::vector<REAL>& normalizedEnergy);
 REAL SubmodularLowerBound(int n, std::vector<REAL>& energyTable, bool early_finish = false);
+void UpperBoundCVPR14(int n, const std::vector<REAL>& origEnergy, std::vector<REAL>& energyTable);
 
 // Takes in a set s (given by bitstring) and returns new energy such that
 // f(t | s) = f(t) for all t. Does not change f(t) for t disjoint from s
@@ -33,6 +37,10 @@ bool CheckSubmodular(int n, const std::vector<REAL>& energyTable);
 bool CheckUpperBoundInvariants(int n, const std::vector<REAL>& energyTable,
         const std::vector<REAL>& upperBound);
 
+double DiffL1(const std::vector<REAL>& e1, const std::vector<REAL>& e2);
+double DiffL2(const std::vector<REAL>& e1, const std::vector<REAL>& e2);
+double DiffLInfty(const std::vector<REAL>& e1, const std::vector<REAL>& e2);
+
 /********************** Implementation *************************/
 
 static inline Assgn NextPerm(Assgn v) {
@@ -42,12 +50,103 @@ static inline Assgn NextPerm(Assgn v) {
     return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(v) + 1));
 }
 
-inline void SubmodularUpperBound(int n, std::vector<REAL>& energyTable) {
+inline void UpperBoundCVPR14(int n, const std::vector<REAL>& origEnergy, std::vector<REAL>& energyTable) {
     ASSERT(n < 32);
     int max_assgn = 1 << n;
+    for (int i = 0; i < max_assgn; ++i)
+        energyTable[i] = origEnergy[i];
+    std::vector<REAL> psi(max_assgn, 0);
+    while (!CheckSubmodular(n, energyTable)) {
+        // Reset psi
+        for (auto& p : psi)
+            p = 0;
+        // Need to iterate over all k bit subsets in decreasing k
+        for (int k = n-2; k >= 0; --k) {
+            // Pattern to iterate over k bit subsets is: start with (1 << k) - 1
+            // which has k bits set, and then increment each time with NextPerm
+            // which gives the next k bit subset, until we get a subset with the 
+            // n-th bit set (which will be >= max_assgn)
+            // We also special case 0, which needs a different bound
+            Assgn bound;
+            if (k == 0) bound = 0;
+            else bound = max_assgn - 1;
+            Assgn s = (1 << k) - 1;
+            do {
+                for (int i = 0; i < n; ++i) {
+                    Assgn s_i = s | (1 << i); // Set s + i
+                    if (s_i == s) continue;
+                    for (int j = i+1; j < n; ++j) {
+                        Assgn s_j = s | (1 << j); // Set s + j
+                        if (s_j == s) continue;
+                        Assgn s_ij = s_i | s_j;
+                        REAL delta_Sij = energyTable[s] + energyTable[s_ij]
+                            - energyTable[s_i] - energyTable[s_j];
+                        if (delta_Sij > 0) {
+                            REAL shift = (delta_Sij + 1) / 2;
+                            //REAL rem = delta_Sij % 2;
+                            psi[s_i] = std::max(psi[s_i], shift);
+                            psi[s_j] = std::max(psi[s_j], shift);
+                        }
+                    }
+                }
+                s = NextPerm(s);
+            } while (s < bound);
+            // Then, add psi[s] to energyTable[s] for every k+1 bit subset s
+            bound = max_assgn - 1;
+            s = (1 << (k+1)) - 1;
+            do {
+                energyTable[s] += psi[s];
+                s = NextPerm(s);
+            } while (s < bound);
+            
+        }
+    }
+}
+
+
+inline void ChenUpperBound(int n, const std::vector<REAL>& origEnergy, std::vector<REAL>& energyTable) {
+    ASSERT(n < 32);
+    int max_assgn = 1 << n;
+    for (int i = 0; i < max_assgn; ++i)
+        energyTable[i] = origEnergy[i];
     std::vector<REAL> oldEnergy(energyTable);
     std::vector<REAL> diffEnergy(max_assgn, 0);
+    int loopIterations = 0;
+    std::vector<REAL> sumEnergy;
     while (!CheckSubmodular(n, energyTable)) {
+        loopIterations++;
+        REAL iterSumEnergy = 0;
+        for (int i = 0; i < max_assgn; ++i)
+            iterSumEnergy += energyTable[i];
+        sumEnergy.push_back(iterSumEnergy);
+
+        if (loopIterations > 1000) {
+            std::cout << "Infinite upper bound loop\n";
+            std::cout << "nVars = " << n << "\n";
+            std::cout << "Energy: [";
+            for (int i = 0; i < max_assgn; ++i)
+                std::cout << origEnergy[i] << ", ";
+            std::cout << "]\n";
+
+            std::cout << "New energy: [";
+            for (int i = 0; i < max_assgn; ++i)
+                std::cout << energyTable[i] << ", ";
+            std::cout << "]\n";
+
+            std::cout << "Zero Values: ";
+            for (int i = 0; i < max_assgn; ++i) {
+                if (origEnergy[i] == 0)
+                    std::cout << i << ", ";
+            }
+            std::cout << "\n";
+
+            std::cout << "Energy values: [";
+            for (auto v : sumEnergy)
+                std::cout << v << ",";
+            std::cout << "]\n";
+            exit(-1);
+        }
+
         SubmodularLowerBound(n, energyTable);
 
         for (int i = 0; i < max_assgn; ++i)
@@ -80,34 +179,6 @@ inline void SubmodularUpperBound(int n, std::vector<REAL>& energyTable) {
         }
         std::copy(energyTable.begin(), energyTable.end(), oldEnergy.begin());
     }
-}
-
-inline void OldSubmodularUpperBound(int n, std::vector<REAL>& energyTable) {
-    ASSERT(n < 32);
-    REAL max_energy = 0;
-    REAL zero_energy = energyTable[0];
-    REAL last_energy = energyTable.back();
-    for (std::size_t i = 0; i < energyTable.size(); ++i) {
-        max_energy = std::max(max_energy, energyTable[i]);
-    }
-    
-    REAL max_diff = SubmodularLowerBound(n, energyTable);
-    //ASSERT(CheckSubmodular(n, energyTable));
-
-    for (REAL& e : energyTable) {
-        e += max_diff;
-    }
-    energyTable[0] = zero_energy;
-    energyTable.back() = last_energy;
-
-    // Truncate singelton sets to max_energy, and then find a new lower-bound
-    // (guaranteed to still upper-bound original function)
-    for (int k = 0; k < n; ++k) {
-        energyTable[1<<k] = std::min(energyTable[1<<k], max_energy);
-    }
-    SubmodularLowerBound(n, energyTable);
-
-    //ASSERT(CheckSubmodular(n, energyTable));
 }
 
 inline REAL SubmodularLowerBound(int n, std::vector<REAL>& energyTable, bool early_finish) {
@@ -204,7 +275,9 @@ inline void Normalize(int n, std::vector<REAL>& energyTable, std::vector<REAL>& 
     Assgn max_assgn = 1 << n;
     ASSERT(max_assgn == energyTable.size());
     ASSERT(n == int(psi.size()));
-    ASSERT(energyTable[0] == 0);
+    auto constTerm = energyTable[0];
+    for (auto& e : energyTable)
+        e -= constTerm;
     Assgn last_assgn = 0;
     Assgn this_assgn = 0;
     for (int i = 0; i < n; ++i) {

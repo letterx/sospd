@@ -6,12 +6,11 @@
 #include "qpbo.hpp"
 
 typedef SubmodularIBFS::NodeId NodeId;
-typedef SubmodularIBFS::CliqueId CliqueId;
 
 /* Sets up a submodular flow problem with a single clique. The clique has 4
 * nodes, and is equal to -1 when all 4 nodes are set to 1, 0 otherwise.
 */
-void SetupMinimalFlow(SubmodularIBFS& sf) {
+static void SetupMinimalFlow(SubmodularIBFS& sf) {
 
     sf.AddNode(4);
 
@@ -22,38 +21,36 @@ void SetupMinimalFlow(SubmodularIBFS& sf) {
     sf.AddClique(nodes, energyTable);
 }
 
-BOOST_AUTO_TEST_SUITE(ibfsSetupTests)
-
-BOOST_AUTO_TEST_CASE(defaultConstructor) {
-    SubmodularIBFS sf;
-
+void TestConstructor(SubmodularIBFS& sf) {
     BOOST_CHECK_EQUAL(sf.GetConstantTerm(), 0);
-    BOOST_CHECK_EQUAL(sf.GetNumNodes(), 0);
-    BOOST_CHECK_EQUAL(sf.GetC_si().size(), 0);
-    BOOST_CHECK_EQUAL(sf.GetC_it().size(), 0);
-    BOOST_CHECK_EQUAL(sf.GetPhi_si().size(), 0);
-    BOOST_CHECK_EQUAL(sf.GetPhi_it().size(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().NumNodes(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().GetC_si().size(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().GetC_it().size(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().GetPhi_si().size(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().GetPhi_it().size(), 0);
     BOOST_CHECK_EQUAL(sf.GetLabels().size(), 0);
-    BOOST_CHECK_EQUAL(sf.GetNumCliques(), 0);
-    BOOST_CHECK_EQUAL(sf.GetCliques().size(), 0);
-    BOOST_CHECK_EQUAL(sf.GetNeighbors().size(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().GetNumCliques(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().GetCliques().size(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().GetNeighbors().size(), 0);
     BOOST_CHECK_EQUAL(sf.ComputeEnergy(), 0);
 }
 
-BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
-    SubmodularIBFS sf;
+void TestMinimalFlowSetup(SubmodularIBFS& sf) {
     SetupMinimalFlow(sf);
 
-    BOOST_CHECK_EQUAL(sf.GetConstantTerm(), -1);
-    BOOST_CHECK_EQUAL(sf.GetC_si().size(), 4);
-    BOOST_CHECK_EQUAL(sf.GetC_it().size(), 4);
-    BOOST_CHECK_EQUAL(sf.GetPhi_si().size(), 4);
-    BOOST_CHECK_EQUAL(sf.GetPhi_it().size(), 4);
+    BOOST_CHECK_EQUAL(sf.GetConstantTerm(), 0);
+    BOOST_CHECK_EQUAL(sf.Graph().GetC_si().size(), 4);
+    BOOST_CHECK_EQUAL(sf.Graph().GetC_it().size(), 4);
+    BOOST_CHECK_EQUAL(sf.Graph().GetPhi_si().size(), 4);
+    BOOST_CHECK_EQUAL(sf.Graph().GetPhi_it().size(), 4);
     BOOST_CHECK_EQUAL(sf.GetLabels().size(), 4);
-    BOOST_CHECK_EQUAL(sf.GetNumCliques(), 1);
-    BOOST_CHECK_EQUAL(sf.GetCliques().size(), 1);
-    BOOST_CHECK_EQUAL(sf.GetNeighbors().size(), 4);
+    BOOST_CHECK_EQUAL(sf.Graph().GetNumCliques(), 1);
+    BOOST_CHECK_EQUAL(sf.Graph().GetCliques().size(), 1);
+    BOOST_CHECK_EQUAL(sf.Graph().GetNeighbors().size(), 4);
     BOOST_CHECK_EQUAL(sf.ComputeEnergy(), 0);
+
+    sf.Graph().ResetFlow();
+    sf.Graph().UpperBoundCliques(SoSGraph::UBfn::cvpr14);
 
     std::vector<int>& labels = sf.GetLabels();
     const uint32_t max_assgn = 1 << 4;
@@ -71,8 +68,7 @@ BOOST_AUTO_TEST_CASE(minimalFlowSetup) {
     }
 }
 
-BOOST_AUTO_TEST_CASE(randomFlowSetup) {
-    SubmodularIBFS sf;
+void TestRandomFlowSetup(SubmodularIBFS& sf) {
     const size_t n = 100;
     const size_t k = 4;
     const size_t m = 100;
@@ -83,21 +79,21 @@ BOOST_AUTO_TEST_CASE(randomFlowSetup) {
 
     GenRandom(sf, n, k, m, clique_range, unary_mean, unary_var, seed);
 
-    BOOST_CHECK_EQUAL(sf.GetC_si().size(), n);
-    BOOST_CHECK_EQUAL(sf.GetC_it().size(), n);
-    BOOST_CHECK_EQUAL(sf.GetPhi_si().size(), n);
-    BOOST_CHECK_EQUAL(sf.GetPhi_it().size(), n);
+    BOOST_CHECK_EQUAL(sf.Graph().GetC_si().size(), n);
+    BOOST_CHECK_EQUAL(sf.Graph().GetC_it().size(), n);
+    BOOST_CHECK_EQUAL(sf.Graph().GetPhi_si().size(), n);
+    BOOST_CHECK_EQUAL(sf.Graph().GetPhi_it().size(), n);
     BOOST_CHECK_EQUAL(sf.GetLabels().size(), n);
-    BOOST_CHECK_EQUAL(sf.GetNumCliques(), m);
-    BOOST_CHECK_EQUAL(sf.GetCliques().size(), m);
-    BOOST_CHECK_EQUAL(sf.GetNeighbors().size(), n);
+    BOOST_CHECK_EQUAL(sf.Graph().GetNumCliques(), m);
+    BOOST_CHECK_EQUAL(sf.Graph().GetCliques().size(), m);
+    BOOST_CHECK_EQUAL(sf.Graph().GetNeighbors().size(), n);
 
 }
 
 /* Check that for a clique c, the energy is always >= 0, and is equal to 0 at
 * the all 0 and all 1 labelings.
 */
-void CheckNormalized(const SubmodularIBFS::Clique& c, std::vector<int>& labels) {
+void CheckNormalized(const SoSGraph::IBFSEnergyTableClique& c, std::vector<int>& labels) {
     const size_t n = c.Nodes().size();
     BOOST_REQUIRE_LT(n, 32);
     const uint32_t max_assgn = 1 << n;
@@ -108,20 +104,19 @@ void CheckNormalized(const SubmodularIBFS::Clique& c, std::vector<int>& labels) 
             else
                 labels[c.Nodes()[i]] = 0;
         }
-        if (assgn == 0)
-            BOOST_CHECK_EQUAL(c.ComputeEnergy(labels), 0);
+        if (assgn == 0 || assgn == max_assgn-1)
+            BOOST_REQUIRE_EQUAL(c.ComputeAlphaEnergy(labels), 0);
         else if (assgn == max_assgn - 1)
-            BOOST_CHECK_EQUAL(c.ComputeEnergy(labels), 0);
+            BOOST_REQUIRE_EQUAL(c.ComputeAlphaEnergy(labels), 0);
         else
-            BOOST_CHECK_GE(c.ComputeEnergy(labels), 0);
+            BOOST_REQUIRE_GE(c.ComputeAlphaEnergy(labels), 0);
     }
 }
 
 /* Check that all source-sink capacities are >= 0, and that cliques
 * are normalized (i.e., are >= 0 for all labelings)
 */
-BOOST_AUTO_TEST_CASE(randomFlowNormalized) {
-    SubmodularIBFS sf;
+void TestRandomFlowNormalized(SubmodularIBFS& sf) {
     const size_t n = 100;
     const size_t k = 4;
     const size_t m = 100;
@@ -131,35 +126,20 @@ BOOST_AUTO_TEST_CASE(randomFlowNormalized) {
     const unsigned int seed = 0;
 
     GenRandom(sf, n, k, m, clique_range, unary_mean, unary_var, seed);
+    sf.Graph().UpperBoundCliques(SoSGraph::UBfn::cvpr14);
 
-    for (size_t i = 0; i < n; ++i) {
-        BOOST_CHECK_GE(sf.GetC_si()[i], 0);
-        BOOST_CHECK_GE(sf.GetC_it()[i], 0);
-        BOOST_CHECK_EQUAL(sf.GetPhi_si()[i], 0);
-        BOOST_CHECK_EQUAL(sf.GetPhi_it()[i], 0);
-    }
-
-    for (const auto& c : sf.GetCliques()) {
+    for (const auto& c : sf.Graph().GetCliques()) {
         BOOST_CHECK_EQUAL(c.Nodes().size(), 4);
         CheckNormalized(c, sf.GetLabels());
     }
 }
 
-BOOST_AUTO_TEST_SUITE_END()
-
-
-
-//BOOST_AUTO_TEST_SUITE(flowInvariants)
-//BOOST_AUTO_TEST_SUITE_END()
-
-
-
-void CheckCut(SubmodularIBFS& sf) {
-    auto& phi_si = sf.GetPhi_si();
-    auto& phi_it = sf.GetPhi_it();
-    auto& c_si = sf.GetC_si();
-    auto& c_it = sf.GetC_it();
-    for (SubmodularIBFS::NodeId i = 0; i < sf.GetNumNodes(); ++i) {
+static void CheckCut(SubmodularIBFS& sf) {
+    auto& phi_si = sf.Graph().GetPhi_si();
+    auto& phi_it = sf.Graph().GetPhi_it();
+    auto& c_si = sf.Graph().GetC_si();
+    auto& c_it = sf.Graph().GetC_it();
+    for (SubmodularIBFS::NodeId i = 0; i < sf.Graph().NumNodes(); ++i) {
         int label = sf.GetLabel(i);
         if (label == 0) {
             BOOST_CHECK_EQUAL(phi_si[i], c_si[i]);
@@ -168,33 +148,41 @@ void CheckCut(SubmodularIBFS& sf) {
         } else {
             BOOST_CHECK_EQUAL(phi_it[i], c_it[i]);
             if (phi_it[i] != c_it[i])
-                std::cout << "Bad source arc to " << i << "\n";
+                std::cout << "Bad sink arc to " << i << "\n";
         }
-        for (auto arc = sf.ArcsBegin(i); arc != sf.ArcsEnd(i); ++arc) {
+        for (auto arc = sf.Graph().ArcsBegin(i); arc != sf.Graph().ArcsEnd(i); ++arc) {
             auto j = arc.Target();
-            if (j >= sf.GetNumNodes())
+            if (j >= sf.Graph().NumNodes())
                 continue;
             int label_j = sf.GetLabel(j);
             if (label == 1 && label_j == 0) {
-                BOOST_CHECK_EQUAL(sf.ResCap(arc, true), 0);
-                if (sf.ResCap(arc, true) != 0)
+                BOOST_CHECK_EQUAL(sf.Graph().ResCap(arc, true), 0);
+                if (sf.Graph().ResCap(arc, true) != 0)
                     std::cout << "Bad Arc: " << arc.Source() << ", " 
                         << arc.Target() << "\t"
                         << "Clique: " << arc.cliqueId() << "\n";
             }
         }
-
+    }
+    for (auto& c : sf.Graph().GetCliques()) {
+        auto reparamEnergy = c.ComputeAlphaEnergy(sf.GetLabels());
+        BOOST_CHECK_EQUAL(reparamEnergy, 0);
+        int assgn = 0;
+        REAL sumPhi = 0;
+        for (size_t i = 0; i < c.Size(); ++i) {
+            if (sf.GetLabel(c.Nodes()[i]) == 1) {
+                sumPhi += c.AlphaCi()[i];
+                assgn |= (1 << i);
+            }
+        }
+        BOOST_CHECK_EQUAL(sumPhi, c.EnergyTable()[assgn]);
     }
 }
-
-
-BOOST_AUTO_TEST_SUITE(ibfsFlowTests)
 
 /* Sanity check to make sure basic flow computation working on a minimally
 * sized graph.
 */
-BOOST_AUTO_TEST_CASE(minimalFlow) {
-    SubmodularIBFS sf;
+void TestMinimalFlow(SubmodularIBFS& sf) {
     SetupMinimalFlow(sf);
 
     sf.Solve();
@@ -208,8 +196,7 @@ BOOST_AUTO_TEST_CASE(minimalFlow) {
     }
 }
 
-BOOST_AUTO_TEST_CASE(makeSureToSearchSource) {
-	SubmodularIBFS crf;
+void TestSearchSource(SubmodularIBFS& crf) {
 	crf.AddNode(3);
 	crf.AddUnaryTerm(0, 12, 6);
 	crf.AddUnaryTerm(1, 8, 8);
@@ -220,6 +207,7 @@ BOOST_AUTO_TEST_CASE(makeSureToSearchSource) {
 	std::vector<REAL> energy(energy_array, energy_array + 8);
 	crf.AddClique(node, energy);
 	crf.Solve();
+    CheckCut(crf);
     BOOST_CHECK_EQUAL(crf.GetLabel(0), 1);
     BOOST_CHECK_EQUAL(crf.GetLabel(1), 1);
     BOOST_CHECK_EQUAL(crf.GetLabel(2), 0);
@@ -239,12 +227,11 @@ BOOST_AUTO_TEST_CASE(makeSureToSearchSource) {
 * same energy function for both SubmodularIBFS and HigherOrderEnergy
 * and then check that they give the same answer.
 */
-BOOST_AUTO_TEST_CASE(identicalToHigherOrder) {
-    SubmodularIBFS sf;
+void TestIdenticalToHigherOrder(SubmodularIBFS& sf) {
     HigherOrderEnergy<REAL, 4> ho;
 
-    const size_t n = 160000;
-    const size_t m = 160000;
+    const size_t n = 16000;
+    const size_t m = 16000;
     const size_t k = 4;
     const REAL clique_range = 100;
     const REAL unary_mean = 800;
@@ -265,6 +252,41 @@ BOOST_AUTO_TEST_CASE(identicalToHigherOrder) {
     for (size_t i = 0; i < n; ++i)
         qr_labels.push_back(qr.GetLabel(i));
 
+    SubmodularIBFS orig;
+    GenRandom(orig, n, k, m, clique_range, unary_mean, unary_var, seed);
+    orig.Graph().ResetFlow();
+    sf.Graph().UpperBoundCliques(SoSGraph::UBfn::cvpr14);
+    for (size_t i = 0; i < n; ++i) {
+        BOOST_REQUIRE_EQUAL(sf.Graph().GetC_si()[i], orig.Graph().GetC_si()[i]);
+        BOOST_REQUIRE_EQUAL(sf.Graph().GetC_it()[i], orig.Graph().GetC_it()[i]);
+    }
+    for (size_t i = 0; i < m; ++i) {
+        auto& c1 = sf.Graph().GetCliques()[i];
+        auto& c2 = orig.Graph().GetCliques()[i];
+        for (int assgn = 0; assgn < (1 << k); ++assgn) {
+            BOOST_REQUIRE_EQUAL(c1.EnergyTable()[assgn], c2.EnergyTable()[assgn]);
+        }
+    }
+
+
+
+    /*
+     *std::cout << "sf(qr_labels): " << sf.ComputeEnergy(qr_labels)*2 << "\n";
+     *std::cout << "orig(qr_labels): " << orig.ComputeEnergy(qr_labels)*2 << "\n";
+     *std::cout << "qr(qr_labels): " << qr.ComputeTwiceEnergy() << "\n";
+     *std::cout << "sf(sf_labels): " << sf.ComputeEnergy()*2 << "\n";
+     *std::cout << "Checking " << n << " variables\n";
+     */
+    int misses = 0;
+    for (size_t i = 0; i < n; ++i) {
+        if (sf.GetLabel(i) != qr.GetLabel(i)) {
+            std::cout << "Different at " << i << "\n";
+            std::cout << sf.GetLabel(i) << " vs " << qr.GetLabel(i) << "\n";
+            misses++;
+            if (misses == 10)
+                break;
+        }
+    }
     // If this test fails, there's a problem in the higher-order code. Email me
     BOOST_CHECK_EQUAL(sf.ComputeEnergy(qr_labels)*2, qr.ComputeTwiceEnergy());
 
@@ -275,4 +297,71 @@ BOOST_AUTO_TEST_CASE(identicalToHigherOrder) {
     }
 }
 
+BOOST_AUTO_TEST_SUITE(TestBidirectional)
+    BOOST_AUTO_TEST_CASE(Constructor) {
+        SubmodularIBFS sf;
+        TestConstructor(sf);
+    }
+    BOOST_AUTO_TEST_CASE(MinimalFlowSetup) {
+        SubmodularIBFS sf;
+        TestMinimalFlowSetup(sf);
+    }
+    BOOST_AUTO_TEST_CASE(RandomFlowSetup) {
+        SubmodularIBFS sf;
+        TestRandomFlowSetup(sf);
+    }
+    BOOST_AUTO_TEST_CASE(RandomFlowNormalized) {
+        SubmodularIBFS sf;
+        TestRandomFlowNormalized(sf);
+    }
+    BOOST_AUTO_TEST_CASE(MinimalFlow) {
+        SubmodularIBFS sf;
+        TestMinimalFlow(sf);
+    }
+    BOOST_AUTO_TEST_CASE(SearchSource) {
+        SubmodularIBFS sf;
+        TestSearchSource(sf);
+    }
+    BOOST_AUTO_TEST_CASE(IdenticalToHigherOrder) {
+        SubmodularIBFS sf;
+        TestIdenticalToHigherOrder(sf);
+    }
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(TestSource)
+    BOOST_AUTO_TEST_CASE(Constructor) {
+        SubmodularIBFSParams params{ SubmodularIBFSParams::FlowAlgorithm::source };
+        SubmodularIBFS sf {params};
+        TestConstructor(sf);
+    }
+    BOOST_AUTO_TEST_CASE(MinimalFlowSetup) {
+        SubmodularIBFSParams params{ SubmodularIBFSParams::FlowAlgorithm::source };
+        SubmodularIBFS sf {params};
+        TestMinimalFlowSetup(sf);
+    }
+    BOOST_AUTO_TEST_CASE(RandomFlowSetup) {
+        SubmodularIBFSParams params{ SubmodularIBFSParams::FlowAlgorithm::source };
+        SubmodularIBFS sf {params};
+        TestRandomFlowSetup(sf);
+    }
+    BOOST_AUTO_TEST_CASE(RandomFlowNormalized) {
+        SubmodularIBFSParams params{ SubmodularIBFSParams::FlowAlgorithm::source };
+        SubmodularIBFS sf {params};
+        TestRandomFlowNormalized(sf);
+    }
+    BOOST_AUTO_TEST_CASE(MinimalFlow) {
+        SubmodularIBFSParams params{ SubmodularIBFSParams::FlowAlgorithm::source };
+        SubmodularIBFS sf {params};
+        TestMinimalFlow(sf);
+    }
+    BOOST_AUTO_TEST_CASE(SearchSource) {
+        SubmodularIBFSParams params{ SubmodularIBFSParams::FlowAlgorithm::source };
+        SubmodularIBFS sf {params};
+        TestSearchSource(sf);
+    }
+    BOOST_AUTO_TEST_CASE(IdenticalToHigherOrder) {
+        SubmodularIBFSParams params{ SubmodularIBFSParams::FlowAlgorithm::source };
+        SubmodularIBFS sf {params};
+        TestIdenticalToHigherOrder(sf);
+    }
 BOOST_AUTO_TEST_SUITE_END()

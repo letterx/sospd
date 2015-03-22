@@ -74,6 +74,7 @@ int main(int argc, char **argv) {
     std::string method;
     bool spdLowerBound;
     double eta = 60;
+    std::string ubFnName;
 
     po::options_description options("Denoising arguments");
     options.add_options()
@@ -86,7 +87,7 @@ int main(int argc, char **argv) {
          po::value<std::string>(&method)
             ->default_value(std::string("spd-grad")),
          "Optimization method")
-        ("lower-bound", po::value<bool>(&spdLowerBound)->default_value(true),
+        ("lower-bound", po::value<bool>(&spdLowerBound)->default_value(false),
          "Use lower bound for SPD3")
         ("eta", po::value<double>(&eta)->default_value(60),
          "Scale for gradient descent steps")
@@ -96,6 +97,8 @@ int main(int argc, char **argv) {
          "Threshold to stop optimization")
         ("time", po::value<double>(&maxTime)->default_value(0),
          "Maximum time to run")
+        ("ubFn", po::value<std::string>(&ubFnName)->default_value("pairwise"),
+         "Upper bound function to use: [pairwise, chen]")
     ;
 
     po::positional_options_description positionalOptions;
@@ -122,6 +125,16 @@ int main(int argc, char **argv) {
     cv::Mat image = cv::imread(infilename.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
     if (!image.data) {
         std::cout << "Could not load image: " << infilename << "\n";
+        exit(-1);
+    }
+
+    SubmodularIBFSParams sosParams;
+    if (ubFnName == "cvpr14" || ubFnName == "") {
+        sosParams.ub = SoSGraph::UBfn::cvpr14;
+    } else if (ubFnName == "chen") {
+        sosParams.ub = SoSGraph::UBfn::chen;
+    } else {
+        std::cout << "Unknown UB name\n";
         exit(-1);
     }
 
@@ -188,22 +201,22 @@ int main(int argc, char **argv) {
         fusion.SetMethod(FusionMove<4>::Method::SOS_UB);
         Optimize(fusion, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha")) {
-        SoSPD dgfm(&energyFunction);
+        SoSPD<> dgfm(&energyFunction, sosParams);
         dgfm.SetProposalCallback(AlphaProposal);
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-alpha-height")) {
-        SoSPD dgfm(&energyFunction);
+        SoSPD<> dgfm(&energyFunction, sosParams);
         dgfm.SetHeightAlphaExpansion();
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-blur-random")) {
-        SoSPD dgfm(&energyFunction);
+        SoSPD<> dgfm(&energyFunction, sosParams);
         dgfm.SetProposalCallback(FusionProposal);
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, image, current, iterations, stats);
     } else if (method == std::string("spd-grad")) {
-        SoSPD dgfm(&energyFunction);
+        SoSPD<> dgfm(&energyFunction, sosParams);
         dgfm.SetProposalCallback(gradCallback);
         dgfm.SetLowerBound(spdLowerBound);
         Optimize(dgfm, energyFunction, image, current, iterations, stats);

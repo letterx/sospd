@@ -3,7 +3,9 @@
 
 #include "higher-order-energy.hpp"
 #include "HOCR.h"
+#ifdef WITH_GRD
 #include "PseudoBoolean.h"
+#endif
 #include "submodular-ibfs.hpp"
 #include "submodular-functions.hpp"
 #include <string>
@@ -96,8 +98,12 @@ template <>
 void AddClique(SubmodularIBFS& opt, int d, const REAL* coeffs, const int* vars) {
     auto varVec = std::vector<int>{vars, vars+d};
     auto energyTable = std::vector<REAL>{coeffs, coeffs+(1<<d)};
-    SubmodularUpperBound(d, energyTable);
     opt.AddClique(varVec, energyTable);
+}
+
+template <typename Optimizer, typename Energy>
+void AddClique(Optimizer& opt, const std::vector<int>& vars, const std::vector<Energy>& energyTable) {
+    AddClique(opt, vars.size(), energyTable.data(), vars.data());
 }
 
 template <typename Opt, typename QR>
@@ -112,6 +118,7 @@ void ToQuadratic(PBF<REAL, D>& opt, QR& qr) {
     convert(qr, tmp_qr);
 }
 
+#ifdef WITH_GRD
 template <typename REAL>
 void AddVars(Petter::PseudoBoolean<REAL>& opt, size_t numVars) {
     // noop
@@ -139,5 +146,6 @@ void AddClique(Petter::PseudoBoolean<PB_REAL>& opt, int d, const REAL* coeffs, c
         opt.add_clique(vars[3], vars[2], vars[1], vars[0], vec_coeffs);
     }
 }
+#endif // !WITH_GRD
 
 #endif
